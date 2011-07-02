@@ -93,7 +93,7 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
 
         String name = inName.toLowerCase();
 
-        if (!isPermissionSet(name)) {
+        if (isPermissionSet(name)) {
             return permissions.get(name);
         } else {
             Permission perm = getServer().getPluginManager().getPermission(name);
@@ -115,7 +115,7 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
 
         String name = perm.getName().toLowerCase();
 
-        if (!isPermissionSet(name)) {
+        if (isPermissionSet(name)) {
             return permissions.get(name);
         } else if (perm != null) {
             return perm.getDefault();
