@@ -67,16 +67,28 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     public boolean isPermissionSet(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Permission name cannot be null");
+        }
+
         calculatePermissions();
 
         return permissions.get(name.toLowerCase());
     }
 
     public boolean isPermissionSet(Permission perm) {
+        if (perm == null) {
+            throw new IllegalArgumentException("Permission cannot be null");
+        }
+
         return isPermissionSet(perm.getName());
     }
 
     public boolean hasPermission(String inName) {
+        if (inName == null) {
+            throw new IllegalArgumentException("Permission name cannot be null");
+        }
+
         calculatePermissions();
 
         String name = inName.toLowerCase();
@@ -95,6 +107,10 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     public boolean hasPermission(Permission perm) {
+        if (perm == null) {
+            throw new IllegalArgumentException("Permission cannot be null");
+        }
+
         calculatePermissions();
 
         String name = perm.getName().toLowerCase();
@@ -109,6 +125,10 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     public PermissionAttachment addAttachment(String name, boolean value) {
+        if (name == null) {
+            throw new IllegalArgumentException("Permission name cannot be null");
+        }
+
         PermissionAttachment result = addAttachment();
         result.setPermission(name, value);
 
@@ -127,6 +147,10 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     }
 
     public void removeAttachment(PermissionAttachment attachment) {
+        if (attachment == null) {
+            throw new IllegalArgumentException("Attachment cannot be null");
+        }
+
         if (attachments.contains(attachment)) {
             attachments.remove(attachment);
             PermissionRemovedExecutor ex = attachment.getRemovalCallback();
