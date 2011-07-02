@@ -73,7 +73,7 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
 
         calculatePermissions();
 
-        return permissions.get(name.toLowerCase());
+        return permissions.containsKey(name.toLowerCase());
     }
 
     public boolean isPermissionSet(Permission perm) {
