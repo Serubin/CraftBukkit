@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.server.EntityHuman;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
@@ -172,10 +173,24 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
             permissions.clear();
 
             for (PermissionAttachment attachment : attachments) {
-                permissions.putAll(attachment.getPermissions());
+                calculateChildPermissions(attachment.getPermissions());
             }
 
             dirtyPermissions = false;
+        }
+    }
+
+    private void calculateChildPermissions(Map<String, Boolean> children) {
+        Set<String> keys = children.keySet();
+
+        for (String name : keys) {
+            Permission perm = getServer().getPluginManager().getPermission(name);
+
+            permissions.put(name.toLowerCase(), children.get(name));
+
+            if (perm != null) {
+                calculateChildPermissions(perm.getChildren());
+            }
         }
     }
 }
