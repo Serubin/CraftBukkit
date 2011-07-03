@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import net.minecraft.server.EntityHuman;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
@@ -15,6 +16,7 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionRemovedExecutor;
+import org.bukkit.plugin.Plugin;
 
 public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     private CraftInventoryPlayer inventory;
@@ -159,6 +161,8 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
             if (ex != null) {
                 ex.attachmentRemoved(attachment);
             }
+
+            recalculatePermissions();
         } else {
             throw new IllegalArgumentException("Given attachment is not part of Permissible object " + this);
         }
@@ -191,6 +195,51 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
             if (perm != null) {
                 calculateChildPermissions(perm.getChildren());
             }
+        }
+    }
+
+    public PermissionAttachment addAttachment(String name, boolean value, Plugin plugin, int ticks) {
+        if (name == null) {
+            throw new IllegalArgumentException("Permission name cannot be null");
+        }
+        if (plugin == null) {
+            throw new IllegalArgumentException("Plugin cannot be null");
+        }
+        
+        PermissionAttachment result = addAttachment(plugin, ticks);
+
+        if (result != null) {
+            result.setPermission(name, value);
+        }
+
+        return result;
+    }
+
+    public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
+        if (plugin == null) {
+            throw new IllegalArgumentException("Plugin cannot be null");
+        }
+        
+        PermissionAttachment result = addAttachment();
+
+        if (getServer().getScheduler().scheduleSyncDelayedTask(plugin, new RemoveAttachmentRunnable(result), ticks) == -1) {
+            getServer().getLogger().log(Level.WARNING, "Could not add PermissionAttachment to " + this + " for plugin " + plugin.getDescription().getFullName() + ": Scheduler returned -1");
+            result.remove();
+            return null;
+        } else {
+            return result;
+        }
+    }
+
+    private class RemoveAttachmentRunnable implements Runnable {
+        private PermissionAttachment attachment;
+
+        public RemoveAttachmentRunnable(PermissionAttachment attachment) {
+            this.attachment = attachment;
+        }
+
+        public void run() {
+            attachment.remove();
         }
     }
 }
