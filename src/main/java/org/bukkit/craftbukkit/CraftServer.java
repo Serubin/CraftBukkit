@@ -1,7 +1,6 @@
 package org.bukkit.craftbukkit;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import org.bukkit.generator.ChunkGenerator;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
@@ -68,6 +67,7 @@ import org.bukkit.util.config.Configuration;
 import org.bukkit.util.config.ConfigurationNode;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.MarkedYAMLException;
 
 public final class CraftServer implements Server {
     private final String serverName = "Craftbukkit";
@@ -393,7 +393,23 @@ public final class CraftServer implements Server {
             }
         }
 
-        Map<String, Map<String, Object>> perms = (Map<String, Map<String, Object>>)yaml.load(stream);
+        Map<String, Map<String, Object>> perms;
+
+        try {
+            perms = (Map<String, Map<String, Object>>)yaml.load(stream);
+        } catch (MarkedYAMLException ex) {
+            getLogger().log(Level.WARNING, "Server permissions file " + file + " is not valid YAML: " + ex.toString());
+            return;
+        } catch (Throwable ex) {
+            getLogger().log(Level.WARNING, "Server permissions file " + file + " is not valid YAML.", ex);
+            return;
+        }
+
+        if (perms == null) {
+            getLogger().log(Level.INFO, "Server permissions file " + file + " is empty, ignoring it");
+            return;
+        }
+
         Set<String> keys = perms.keySet();
 
         for (String name : keys) {
