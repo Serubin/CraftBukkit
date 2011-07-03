@@ -414,25 +414,11 @@ public final class CraftServer implements Server {
 
         for (String name : keys) {
             try {
-                pluginManager.addPermission(loadPermission(name, perms.get(name)));
+                pluginManager.addPermission(Permission.loadPermission(name, perms.get(name)));
             } catch (Throwable ex) {
                 Bukkit.getServer().getLogger().log(Level.SEVERE, "Permission node '" + name + "' in server config is invalid", ex);
             }
         }
-    }
-
-    private Permission loadPermission(String name, Map<String, Object> data) {
-        Permission result = new Permission(name);
-
-        if (data.containsKey("default")) {
-            result.setDefault((Boolean)data.get("default"));
-        }
-
-        if (data.containsKey("children")) {
-            result.getChildren().putAll((Map<String, Boolean>)data.get("children"));
-        }
-
-        return result;
     }
 
     @Override
