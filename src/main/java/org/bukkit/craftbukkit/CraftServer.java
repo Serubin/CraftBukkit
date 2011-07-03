@@ -58,6 +58,7 @@ import org.bukkit.craftbukkit.command.ServerCommandListener;
 import org.bukkit.scheduler.BukkitWorker;
 import org.bukkit.craftbukkit.scheduler.CraftScheduler;
 import org.bukkit.event.world.WorldInitEvent;
+import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.PluginLoadOrder;
 import org.bukkit.util.config.Configuration;
 import org.bukkit.util.config.ConfigurationNode;
@@ -149,6 +150,16 @@ public final class CraftServer implements Server {
     private void loadPlugin(Plugin plugin) {
         try {
             pluginManager.enablePlugin(plugin);
+
+            List<Permission> perms = plugin.getDescription().getPermissions();
+
+            for (Permission perm : perms) {
+                try {
+                    pluginManager.addPermission(perm);
+                } catch (IllegalArgumentException ex) {
+                    getLogger().log(Level.WARNING, "Plugin " + plugin.getDescription().getFullName() + " tried to register permission '" + perm.getName() + "' but it's already registered", ex);
+                }
+            }
         } catch (Throwable ex) {
             Logger.getLogger(CraftServer.class.getName()).log(Level.SEVERE, ex.getMessage() + " loading " + plugin.getDescription().getFullName() + " (Is it up to date?)", ex);
         }
