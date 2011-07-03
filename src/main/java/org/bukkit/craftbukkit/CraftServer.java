@@ -1,5 +1,7 @@
 package org.bukkit.craftbukkit;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.bukkit.generator.ChunkGenerator;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
@@ -18,12 +20,14 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jline.ConsoleReader;
@@ -62,6 +66,8 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.PluginLoadOrder;
 import org.bukkit.util.config.Configuration;
 import org.bukkit.util.config.ConfigurationNode;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 public final class CraftServer implements Server {
     private final String serverName = "Craftbukkit";
@@ -75,6 +81,7 @@ public final class CraftServer implements Server {
     protected final ServerConfigurationManager server;
     private final Map<String, World> worlds = new LinkedHashMap<String, World>();
     private final Configuration configuration;
+    private final Yaml yaml = new Yaml(new SafeConstructor());
 
     public CraftServer(MinecraftServer console, ServerConfigurationManager server) {
         this.console = console;
@@ -101,6 +108,8 @@ public final class CraftServer implements Server {
 
         configuration.getString("settings.update-folder", "update");
         configuration.getInt("settings.spawn-radius", 16);
+
+        configuration.getString("settings.permissions-file", "permissions.yml");
 
         if (configuration.getNode("aliases") == null) {
             List<String> icanhasbukkit = new ArrayList<String>();
@@ -140,6 +149,7 @@ public final class CraftServer implements Server {
 
         if (type == PluginLoadOrder.POSTWORLD) {
             commandMap.registerServerAliases();
+            loadCustomPermissions();
         }
     }
 
@@ -367,6 +377,46 @@ public final class CraftServer implements Server {
         loadPlugins();
         enablePlugins(PluginLoadOrder.STARTUP);
         enablePlugins(PluginLoadOrder.POSTWORLD);
+    }
+
+    private void loadCustomPermissions() {
+        File file = new File(configuration.getString("settings.permissions-file"));
+        FileInputStream stream;
+
+        try {
+            stream = new FileInputStream(file);
+        } catch (FileNotFoundException ex) {
+            try {
+                file.createNewFile();
+            } finally {
+                return;
+            }
+        }
+
+        Map<String, Map<String, Object>> perms = (Map<String, Map<String, Object>>)yaml.load(stream);
+        Set<String> keys = perms.keySet();
+
+        for (String name : keys) {
+            try {
+                pluginManager.addPermission(loadPermission(name, perms.get(name)));
+            } catch (Throwable ex) {
+                Bukkit.getServer().getLogger().log(Level.SEVERE, "Permission node '" + name + "' in server config is invalid", ex);
+            }
+        }
+    }
+
+    private Permission loadPermission(String name, Map<String, Object> data) {
+        Permission result = new Permission(name);
+
+        if (data.containsKey("default")) {
+            result.setDefault((Boolean)data.get("default"));
+        }
+
+        if (data.containsKey("children")) {
+            result.getChildren().putAll((Map<String, Boolean>)data.get("children"));
+        }
+
+        return result;
     }
 
     @Override

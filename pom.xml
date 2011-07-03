@@ -78,6 +78,13 @@
       <type>jar</type>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>1.7</version>
+      <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <!-- This builds a completely 'ready to start' jar with all dependencies inside -->
   <build>
