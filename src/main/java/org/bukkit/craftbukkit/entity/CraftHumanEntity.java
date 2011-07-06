@@ -127,12 +127,16 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         }
     }
 
-    public PermissionAttachment addAttachment(String name, boolean value) {
+    public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
         if (name == null) {
             throw new IllegalArgumentException("Permission name cannot be null");
+        } else if (plugin == null) {
+            throw new IllegalArgumentException("Plugin cannot be null");
+        } else if (!plugin.isEnabled()) {
+            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
         }
 
-        PermissionAttachment result = addAttachment();
+        PermissionAttachment result = addAttachment(plugin);
         result.setPermission(name, value);
 
         recalculatePermissions();
@@ -140,8 +144,14 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         return result;
     }
 
-    public PermissionAttachment addAttachment() {
-        PermissionAttachment result = new PermissionAttachment(this);
+    public PermissionAttachment addAttachment(Plugin plugin) {
+        if (plugin == null) {
+            throw new IllegalArgumentException("Plugin cannot be null");
+        } else if (!plugin.isEnabled()) {
+            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
+        }
+
+        PermissionAttachment result = new PermissionAttachment(plugin, this);
 
         attachments.add(result);
         recalculatePermissions();
@@ -198,12 +208,13 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         }
     }
 
-    public PermissionAttachment addAttachment(String name, boolean value, Plugin plugin, int ticks) {
+    public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
         if (name == null) {
             throw new IllegalArgumentException("Permission name cannot be null");
-        }
-        if (plugin == null) {
+        } else if (plugin == null) {
             throw new IllegalArgumentException("Plugin cannot be null");
+        } else if (!plugin.isEnabled()) {
+            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
         }
         
         PermissionAttachment result = addAttachment(plugin, ticks);
@@ -218,9 +229,11 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
         if (plugin == null) {
             throw new IllegalArgumentException("Plugin cannot be null");
+        } else if (!plugin.isEnabled()) {
+            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
         }
-        
-        PermissionAttachment result = addAttachment();
+
+        PermissionAttachment result = addAttachment(plugin);
 
         if (getServer().getScheduler().scheduleSyncDelayedTask(plugin, new RemoveAttachmentRunnable(result), ticks) == -1) {
             getServer().getLogger().log(Level.WARNING, "Could not add PermissionAttachment to " + this + " for plugin " + plugin.getDescription().getFullName() + ": Scheduler returned -1");
