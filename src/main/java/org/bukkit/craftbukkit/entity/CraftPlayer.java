@@ -31,6 +31,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         super(server, entity);
     }
 
+    @Override
     public boolean isOp() {
         return server.getHandle().isOp(getName());
     }

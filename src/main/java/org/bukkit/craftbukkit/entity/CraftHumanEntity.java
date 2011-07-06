@@ -102,7 +102,7 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
             Permission perm = getServer().getPluginManager().getPermission(name);
 
             if (perm != null) {
-                return perm.getDefault();
+                return perm.getDefault().getValue(isOp());
             } else {
                 return false;
             }
@@ -121,7 +121,7 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         if (isPermissionSet(name)) {
             return permissions.get(name);
         } else if (perm != null) {
-            return perm.getDefault();
+            return perm.getDefault().getValue(isOp());
         } else {
             return false;
         }
@@ -254,5 +254,9 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         public void run() {
             attachment.remove();
         }
+    }
+
+    public boolean isOp() {
+        return false;
     }
 }
