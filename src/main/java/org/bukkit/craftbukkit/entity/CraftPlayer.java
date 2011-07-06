@@ -11,7 +11,6 @@ import net.minecraft.server.Packet53BlockChange;
 import net.minecraft.server.Packet54PlayNoteBlock;
 import net.minecraft.server.Packet61;
 import net.minecraft.server.Packet6SpawnPosition;
-import net.minecraft.server.ServerConfigurationManager;
 import net.minecraft.server.WorldServer;
 import org.bukkit.Achievement;
 import org.bukkit.Effect;
@@ -26,7 +25,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class CraftPlayer extends CraftHumanEntity implements Player {
-
     public CraftPlayer(CraftServer server, EntityPlayer entity) {
         super(server, entity);
     }
@@ -34,6 +32,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     @Override
     public boolean isOp() {
         return server.getHandle().isOp(getName());
+    }
+
+    @Override
+    public void setOp(boolean value) {
+        server.getHandle().e(getName());
     }
 
     public boolean isPlayer() {

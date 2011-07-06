@@ -1,28 +1,21 @@
 
 package org.bukkit.craftbukkit.entity;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
 import net.minecraft.server.EntityHuman;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.craftbukkit.inventory.CraftInventoryPlayer;
 import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.permissions.PermissibleBase;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.permissions.PermissionRemovedExecutor;
 import org.bukkit.plugin.Plugin;
 
 public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     private CraftInventoryPlayer inventory;
-    private final List<PermissionAttachment> attachments = new LinkedList<PermissionAttachment>();
-    private final Map<String, Boolean> permissions = new HashMap<String, Boolean>();
-    private boolean dirtyPermissions = true;
+    private final PermissibleBase perm = new PermissibleBase(this);
+    private boolean op;
 
     public CraftHumanEntity(final CraftServer server, final EntityHuman entity) {
         super(server, entity);
@@ -69,194 +62,52 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
         return getHandle().sleepTicks;
     }
 
+    public boolean isOp() {
+        return op;
+    }
+
     public boolean isPermissionSet(String name) {
-        if (name == null) {
-            throw new IllegalArgumentException("Permission name cannot be null");
-        }
-
-        calculatePermissions();
-
-        return permissions.containsKey(name.toLowerCase());
+        return perm.isPermissionSet(name);
     }
 
     public boolean isPermissionSet(Permission perm) {
-        if (perm == null) {
-            throw new IllegalArgumentException("Permission cannot be null");
-        }
-
-        return isPermissionSet(perm.getName());
+        return this.perm.isPermissionSet(perm);
     }
 
-    public boolean hasPermission(String inName) {
-        if (inName == null) {
-            throw new IllegalArgumentException("Permission name cannot be null");
-        }
-
-        calculatePermissions();
-
-        String name = inName.toLowerCase();
-
-        if (isPermissionSet(name)) {
-            return permissions.get(name);
-        } else {
-            Permission perm = getServer().getPluginManager().getPermission(name);
-
-            if (perm != null) {
-                return perm.getDefault().getValue(isOp());
-            } else {
-                return false;
-            }
-        }
+    public boolean hasPermission(String name) {
+        return perm.hasPermission(name);
     }
 
     public boolean hasPermission(Permission perm) {
-        if (perm == null) {
-            throw new IllegalArgumentException("Permission cannot be null");
-        }
-
-        calculatePermissions();
-
-        String name = perm.getName().toLowerCase();
-
-        if (isPermissionSet(name)) {
-            return permissions.get(name);
-        } else if (perm != null) {
-            return perm.getDefault().getValue(isOp());
-        } else {
-            return false;
-        }
+        return this.perm.hasPermission(perm);
     }
 
     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
-        if (name == null) {
-            throw new IllegalArgumentException("Permission name cannot be null");
-        } else if (plugin == null) {
-            throw new IllegalArgumentException("Plugin cannot be null");
-        } else if (!plugin.isEnabled()) {
-            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
-        }
-
-        PermissionAttachment result = addAttachment(plugin);
-        result.setPermission(name, value);
-
-        recalculatePermissions();
-
-        return result;
+        return perm.addAttachment(plugin, name, value);
     }
 
     public PermissionAttachment addAttachment(Plugin plugin) {
-        if (plugin == null) {
-            throw new IllegalArgumentException("Plugin cannot be null");
-        } else if (!plugin.isEnabled()) {
-            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
-        }
-
-        PermissionAttachment result = new PermissionAttachment(plugin, this);
-
-        attachments.add(result);
-        recalculatePermissions();
-
-        return result;
-    }
-
-    public void removeAttachment(PermissionAttachment attachment) {
-        if (attachment == null) {
-            throw new IllegalArgumentException("Attachment cannot be null");
-        }
-
-        if (attachments.contains(attachment)) {
-            attachments.remove(attachment);
-            PermissionRemovedExecutor ex = attachment.getRemovalCallback();
-            
-            if (ex != null) {
-                ex.attachmentRemoved(attachment);
-            }
-
-            recalculatePermissions();
-        } else {
-            throw new IllegalArgumentException("Given attachment is not part of Permissible object " + this);
-        }
-    }
-
-    public void recalculatePermissions() {
-        dirtyPermissions = true;
-    }
-
-    private synchronized void calculatePermissions() {
-        if (dirtyPermissions) {
-            permissions.clear();
-
-            for (PermissionAttachment attachment : attachments) {
-                calculateChildPermissions(attachment.getPermissions());
-            }
-
-            dirtyPermissions = false;
-        }
-    }
-
-    private void calculateChildPermissions(Map<String, Boolean> children) {
-        Set<String> keys = children.keySet();
-
-        for (String name : keys) {
-            Permission perm = getServer().getPluginManager().getPermission(name);
-
-            permissions.put(name.toLowerCase(), children.get(name));
-
-            if (perm != null) {
-                calculateChildPermissions(perm.getChildren());
-            }
-        }
+        return perm.addAttachment(plugin);
     }
 
     public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
-        if (name == null) {
-            throw new IllegalArgumentException("Permission name cannot be null");
-        } else if (plugin == null) {
-            throw new IllegalArgumentException("Plugin cannot be null");
-        } else if (!plugin.isEnabled()) {
-            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
-        }
-        
-        PermissionAttachment result = addAttachment(plugin, ticks);
-
-        if (result != null) {
-            result.setPermission(name, value);
-        }
-
-        return result;
+        return perm.addAttachment(plugin, name, value, ticks);
     }
 
     public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
-        if (plugin == null) {
-            throw new IllegalArgumentException("Plugin cannot be null");
-        } else if (!plugin.isEnabled()) {
-            throw new IllegalArgumentException("Plugin " + plugin.getDescription().getFullName() + " is disabled");
-        }
-
-        PermissionAttachment result = addAttachment(plugin);
-
-        if (getServer().getScheduler().scheduleSyncDelayedTask(plugin, new RemoveAttachmentRunnable(result), ticks) == -1) {
-            getServer().getLogger().log(Level.WARNING, "Could not add PermissionAttachment to " + this + " for plugin " + plugin.getDescription().getFullName() + ": Scheduler returned -1");
-            result.remove();
-            return null;
-        } else {
-            return result;
-        }
+        return perm.addAttachment(plugin, ticks);
     }
 
-    private class RemoveAttachmentRunnable implements Runnable {
-        private PermissionAttachment attachment;
-
-        public RemoveAttachmentRunnable(PermissionAttachment attachment) {
-            this.attachment = attachment;
-        }
-
-        public void run() {
-            attachment.remove();
-        }
+    public void removeAttachment(PermissionAttachment attachment) {
+        perm.removeAttachment(attachment);
     }
 
-    public boolean isOp() {
-        return false;
+    public void recalculatePermissions() {
+        perm.recalculatePermissions();
+    }
+
+    public void setOp(boolean value) {
+        this.op = value;
+        recalculatePermissions();
     }
 }
