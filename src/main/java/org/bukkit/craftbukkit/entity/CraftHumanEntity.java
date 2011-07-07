@@ -1,6 +1,7 @@
 
 package org.bukkit.craftbukkit.entity;
 
+import java.util.Set;
 import net.minecraft.server.EntityHuman;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
@@ -10,6 +11,7 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.permissions.PermissibleBase;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
 public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
@@ -109,5 +111,9 @@ public class CraftHumanEntity extends CraftLivingEntity implements HumanEntity {
     public void setOp(boolean value) {
         this.op = value;
         recalculatePermissions();
+    }
+
+    public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+        return perm.getEffectivePermissions();
     }
 }
