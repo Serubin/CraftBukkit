@@ -34,6 +34,9 @@ import org.bukkit.plugin.PluginLoadOrder;
 
 public class MinecraftServer implements Runnable, ICommandListener {
 
+    private int onTicktime = 0;
+    private int onEntitytime = 0;
+
     public static Logger log = Logger.getLogger("Minecraft");
     public static HashMap trackerList = new HashMap();
     public NetworkListenThread networkListenThread;
@@ -451,15 +454,25 @@ public class MinecraftServer implements Runnable, ICommandListener {
                     // CraftBukkit end
                 }
 
+                long time = System.currentTimeMillis();
                 worldserver.doTick();
+                onTicktime += (System.currentTimeMillis()-time);
 
                 while (worldserver.v()) {
                     ;
                 }
 
+                time = System.currentTimeMillis();
                 worldserver.cleanUp();
+                onEntitytime += (System.currentTimeMillis()-time);
             }
         // } // CraftBukkit
+        if(this.ticks%100 == 0) {
+            System.out.println(((float)onTicktime/(100)) + " ms average on tick() per Tick");
+            System.out.println(((float)onEntitytime/(100)) + " ms average on updateEntities() per Tick");
+            onTicktime = 0;
+            onEntitytime = 0;
+        }
 
         this.networkListenThread.a();
         this.serverConfigurationManager.b();
