@@ -7,6 +7,7 @@ import org.bukkit.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -35,6 +36,11 @@ import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 
 public class CraftWorld implements World {
+
+    private Chunk cacheChunk;
+    private int cacheChunkx;
+    private int cacheChunkz;
+
     private final WorldServer world;
     private Environment environment;
     private final CraftServer server = (CraftServer)Bukkit.getServer();
@@ -93,7 +99,13 @@ public class CraftWorld implements World {
     }
 
     public Chunk getChunkAt(int x, int z) {
-        return this.world.chunkProviderServer.getChunkAt(x, z).bukkitChunk;
+        if (null != cacheChunk && x == cacheChunkx && z == cacheChunkz) {
+            return cacheChunk;
+        }
+        cacheChunk = this.world.chunkProviderServer.getChunkAt(x, z).bukkitChunk;
+        cacheChunkx = x;
+        cacheChunkz = z;
+        return cacheChunk;
     }
 
     public Chunk getChunkAt(Block block) {
