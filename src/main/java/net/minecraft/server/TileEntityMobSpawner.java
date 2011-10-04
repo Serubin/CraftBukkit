@@ -21,6 +21,22 @@ public class TileEntityMobSpawner extends TileEntity {
         return this.world.a((double) this.x + 0.5D, (double) this.y + 0.5D, (double) this.z + 0.5D, 16.0D) != null;
     }
 
+    // CraftBukkit start
+    public int getId() {
+        return EntityTypes.getIdFromClass(EntityTypes.getClassFromName(mobName));
+    }
+
+    public void setId(int id) {
+        mobName = EntityTypes.getNameFromClass(EntityTypes.getClassFromId(id));
+        if (mobName == null || mobName.length() == 0) {
+            mobName = "Pig";
+        }
+        if  (EntityTypes.a(mobName,  world) == null) {
+            mobName = "Pig";
+        }
+    }
+    // CraftBukkit end
+
     public void h_() {
         this.c = this.b;
         if (this.a()) {
@@ -48,7 +64,8 @@ public class TileEntityMobSpawner extends TileEntity {
                 byte b0 = 4;
 
                 for (int i = 0; i < b0; ++i) {
-                    EntityLiving entityliving = (EntityLiving) ((EntityLiving) EntityTypes.a(this.mobName, this.world));
+                    // CraftBukkit start
+                    Entity entityliving = EntityTypes.a(this.mobName, this.world);
 
                     if (entityliving == null) {
                         return;
@@ -67,7 +84,8 @@ public class TileEntityMobSpawner extends TileEntity {
                         double d5 = (double) this.z + (this.world.random.nextDouble() - this.world.random.nextDouble()) * 4.0D;
 
                         entityliving.setPositionRotation(d3, d4, d5, this.world.random.nextFloat() * 360.0F, 0.0F);
-                        if (entityliving.d()) {
+                        if (entityliving.world.containsEntity(entityliving.boundingBox) && entityliving.world.getEntities(entityliving, entityliving.boundingBox).size() == 0 && !entityliving.world.c(entityliving.boundingBox)) {
+                            // CraftBukkit end
                             // CraftBukkit - added a reason for spawning this creature
                             this.world.addEntity(entityliving, SpawnReason.SPAWNER);
 
@@ -79,7 +97,7 @@ public class TileEntityMobSpawner extends TileEntity {
                                 this.world.a("flame", d0, d1, d2, 0.0D, 0.0D, 0.0D);
                             }
 
-                            entityliving.ab();
+                            // entity.ab(); // CraftBukkit - client side code, and not available in entity
                             this.c();
                         }
                     }

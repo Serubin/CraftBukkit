@@ -19,9 +19,9 @@ import java.net.UnknownHostException;
 import jline.ConsoleReader;
 import joptsimple.OptionSet;
 import org.bukkit.World.Environment;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.LoggerOutputStream;
-import org.bukkit.craftbukkit.command.ColouredConsoleSender;
 import org.bukkit.craftbukkit.scheduler.CraftScheduler;
 import org.bukkit.craftbukkit.util.ServerShutdownThread;
 import org.bukkit.event.server.ServerCommandEvent;
@@ -62,7 +62,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
     public List<WorldServer> worlds = new ArrayList<WorldServer>();
     public CraftServer server;
     public OptionSet options;
-    public ColouredConsoleSender console;
+    public ConsoleCommandSender console;
     public ConsoleReader reader;
     public static int currentTick;
     // CraftBukkit end
@@ -232,9 +232,9 @@ public class MinecraftServer implements Runnable, ICommandListener {
 
             world.tracker = new EntityTracker(this, dimension);
             world.addIWorldAccess(new WorldManager(this, world));
-            world.spawnMonsters = this.propertyManager.getInt("difficulty", 1);
+            world.difficulty = this.propertyManager.getInt("difficulty", 1);
             world.setSpawnFlags(this.propertyManager.getBoolean("spawn-monsters", true), this.spawnAnimals);
-            world.p().d(j);
+            world.p().setGameType(j);
             this.worlds.add(world);
             this.serverConfigurationManager.setPlayerFileData(this.worlds.toArray(new WorldServer[0]));
         }
@@ -315,7 +315,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
         }
 
         WorldServer world = this.worlds.get(0);
-        if (!world.canSave) {
+        if (!world.savingDisabled) {
             this.serverConfigurationManager.savePlayers();
         }
         // CraftBukkit end
@@ -342,7 +342,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
         // CraftBukkit end
     }
 
-    public void a() {
+    public void safeShutdown() {
         this.isRunning = false;
     }
 
@@ -439,20 +439,27 @@ public class MinecraftServer implements Runnable, ICommandListener {
         Vec3D.a();
         ++this.ticks;
 
-        ((CraftScheduler) this.server.getScheduler()).mainThreadHeartbeat(this.ticks); // CraftBukkit
+        // CraftBukkit start - only send timeupdates to the people in that world
 
-        for (j = 0; j < this.worlds.size(); ++j) { // CraftBukkit
-            // if (j == 0 || this.propertyManager.getBoolean("allow-nether", true)) { // CraftBukkit
-                WorldServer worldserver = this.worlds.get(j); // CraftBukkit
+        ((CraftScheduler) this.server.getScheduler()).mainThreadHeartbeat(this.ticks);
 
+        // Send timeupdates to everyone, it will get the right time from the world the player is in.
+        if (this.ticks % 20 == 0) {
+            for (int i = 0; i < this.serverConfigurationManager.players.size(); ++i) {
+                EntityPlayer entityplayer = (EntityPlayer) this.serverConfigurationManager.players.get(i);
+                entityplayer.netServerHandler.sendPacket(new Packet4UpdateTime(entityplayer.getPlayerTime())); // Add support for per player time
+            }
+        }
+
+        for (j = 0; j < this.worlds.size(); ++j) {
+            // if (j == 0 || this.propertyManager.getBoolean("allow-nether", true)) {
+                WorldServer worldserver = this.worlds.get(j);
+
+                /* Drop global timeupdates
                 if (this.ticks % 20 == 0) {
-                    // CraftBukkit start - only send timeupdates to the people in that world
-                    for (int i = 0; i < this.serverConfigurationManager.players.size(); ++i) {
-                        EntityPlayer entityplayer = (EntityPlayer) this.serverConfigurationManager.players.get(i);
-                        entityplayer.netServerHandler.sendPacket(new Packet4UpdateTime(entityplayer.getPlayerTime())); // Add support for per player time
-                    }
-                    // CraftBukkit end
+                    this.serverConfigurationManager.a(new Packet4UpdateTime(worldserver.getTime()), worldserver.worldProvider.dimension);
                 }
+                // CraftBukkit end */
 
                 long time = System.currentTimeMillis();
                 worldserver.doTick();
@@ -463,7 +470,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
                 }
 
                 time = System.currentTimeMillis();
-                worldserver.cleanUp();
+                worldserver.tickEntities();
                 onEntitytime += (System.currentTimeMillis()-time);
             }
         // } // CraftBukkit

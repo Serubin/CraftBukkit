@@ -6,6 +6,7 @@ import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
 import com.avaje.ebean.config.dbplatform.SQLitePlatform;
 import com.avaje.ebeaninternal.server.lib.sql.TransactionIsolation;
+import com.google.common.collect.MapMaker;
 import net.minecraft.server.IWorldAccess;
 import org.bukkit.World.Environment;
 import org.bukkit.command.*;
@@ -26,7 +27,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 import java.util.Set;
 import java.util.logging.Level;
@@ -90,6 +90,7 @@ public final class CraftServer implements Server {
     private final Map<String, World> worlds = new LinkedHashMap<String, World>();
     private final Configuration configuration;
     private final Yaml yaml = new Yaml(new SafeConstructor());
+    private final Map<String, OfflinePlayer> offlinePlayers = new MapMaker().softValues().makeMap();
 
     public CraftServer(MinecraftServer console, ServerConfigurationManager server) {
         this.console = console;
@@ -319,6 +320,10 @@ public final class CraftServer implements Server {
         return this.configuration.getString("settings.update-folder", "update");
     }
 
+    public File getUpdateFolderFile() {
+        return new File((File) console.options.valueOf("plugins"), this.configuration.getString("settings.update-folder", "update"));
+    }
+
     public int getPingPacketLimit() {
         return this.configuration.getInt("settings.ping-packet-limit", 100);
     }
@@ -366,7 +371,8 @@ public final class CraftServer implements Server {
         console.propertyManager = config;
 
         boolean animals = config.getBoolean("spawn-animals", console.spawnAnimals);
-        boolean monsters = config.getBoolean("spawn-monsters", console.worlds.get(0).spawnMonsters > 0);
+        boolean monsters = config.getBoolean("spawn-monsters", console.worlds.get(0).difficulty > 0);
+        int difficulty = config.getInt("difficulty", console.worlds.get(0).difficulty);
 
         console.onlineMode = config.getBoolean("online-mode", console.onlineMode);
         console.spawnAnimals = config.getBoolean("spawn-animals", console.spawnAnimals);
@@ -374,7 +380,7 @@ public final class CraftServer implements Server {
         console.allowFlight = config.getBoolean("allow-flight", console.allowFlight);
 
         for (WorldServer world : console.worlds) {
-            world.spawnMonsters = monsters ? 1 : 0;
+            world.difficulty = difficulty;
             world.setSpawnFlags(monsters, animals);
         }
 
@@ -462,18 +468,28 @@ public final class CraftServer implements Server {
     }
 
     public World createWorld(String name, World.Environment environment) {
-        return createWorld(name, environment, (new Random()).nextLong());
+        return WorldCreator.name(name).environment(environment).createWorld();
     }
 
     public World createWorld(String name, World.Environment environment, long seed) {
-        return createWorld(name, environment, seed, null);
+        return WorldCreator.name(name).environment(environment).seed(seed).createWorld();
     }
 
     public World createWorld(String name, Environment environment, ChunkGenerator generator) {
-        return createWorld(name, environment, (new Random()).nextLong(), generator);
+        return WorldCreator.name(name).environment(environment).generator(generator).createWorld();
     }
 
     public World createWorld(String name, Environment environment, long seed, ChunkGenerator generator) {
+        return WorldCreator.name(name).environment(environment).seed(seed).generator(generator).createWorld();
+    }
+
+    public World createWorld(WorldCreator creator) {
+        if (creator == null) {
+            throw new IllegalArgumentException("Creator may not be null");
+        }
+
+        String name = creator.name();
+        ChunkGenerator generator = creator.generator();
         File folder = new File(name);
         World world = getWorld(name);
 
@@ -496,7 +512,7 @@ public final class CraftServer implements Server {
         }
 
         int dimension = 10 + console.worlds.size();
-        WorldServer internal = new WorldServer(console, new ServerNBTManager(new File("."), name, true), name, dimension, new WorldSettings(seed, getDefaultGameMode().getValue(), true), environment, generator);
+        WorldServer internal = new WorldServer(console, new ServerNBTManager(new File("."), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), true), creator.environment(), generator);
 
         if (!(worlds.containsKey(name.toLowerCase()))) {
             return null;
@@ -506,7 +522,7 @@ public final class CraftServer implements Server {
 
         internal.tracker = new EntityTracker(console, dimension);
         internal.addIWorldAccess((IWorldAccess) new WorldManager(console, internal));
-        internal.spawnMonsters = 1;
+        internal.difficulty = 1;
         internal.setSpawnFlags(true, true);
         console.worlds.add(internal);
 
@@ -573,6 +589,7 @@ public final class CraftServer implements Server {
         }
 
         WorldUnloadEvent e = new WorldUnloadEvent(handle.getWorld());
+        pluginManager.callEvent(new WorldUnloadEvent(handle.getWorld()));
 
         if (e.isCancelled()) {
             return false;
@@ -757,7 +774,7 @@ public final class CraftServer implements Server {
     }
 
     public void shutdown() {
-        console.a();
+        console.safeShutdown();
     }
 
     public int broadcast(String message, String permission) {
@@ -777,9 +794,17 @@ public final class CraftServer implements Server {
 
     public OfflinePlayer getOfflinePlayer(String name) {
         OfflinePlayer result = getPlayerExact(name);
+        String lname = name.toLowerCase();
 
         if (result == null) {
-            result = new CraftOfflinePlayer(this, name);
+            result = offlinePlayers.get(lname);
+
+            if (result == null) {
+                result = new CraftOfflinePlayer(this, name);
+                offlinePlayers.put(lname, result);
+            }
+        } else {
+            offlinePlayers.remove(lname);
         }
 
         return result;
@@ -790,11 +815,11 @@ public final class CraftServer implements Server {
     }
 
     public void banIP(String address) {
-        server.c(address);
+        server.addIpBan(address);
     }
 
     public void unbanIP(String address) {
-        server.d(address);
+        server.removeIpBan(address);
     }
 
     public Set<OfflinePlayer> getBannedPlayers() {
@@ -808,15 +833,24 @@ public final class CraftServer implements Server {
     }
 
     public void setWhitelist(boolean value) {
-        server.o = value;
-        console.propertyManager.b("white-list", value);
-        console.propertyManager.savePropertiesFile();
+        server.hasWhitelist = value;
+        console.propertyManager.setBoolean("white-list", value);
     }
 
     public Set<OfflinePlayer> getWhitelistedPlayers() {
         Set<OfflinePlayer> result = new HashSet<OfflinePlayer>();
 
-        for (Object name : server.e()) {
+        for (Object name : server.getWhitelisted()) {
+            result.add(getOfflinePlayer((String)name));
+        }
+
+        return result;
+    }
+
+    public Set<OfflinePlayer> getOperators() {
+        Set<OfflinePlayer> result = new HashSet<OfflinePlayer>();
+
+        for (Object name : server.operators) {
             result.add(getOfflinePlayer((String)name));
         }
 
@@ -824,11 +858,11 @@ public final class CraftServer implements Server {
     }
 
     public void reloadWhitelist() {
-        server.f();
+        server.reloadWhitelist();
     }
 
     public GameMode getDefaultGameMode() {
-        return GameMode.getByValue(console.worlds.get(0).worldData.p);
+        return GameMode.getByValue(console.worlds.get(0).worldData.getGameType());
     }
 
     public void setDefaultGameMode(GameMode mode) {
@@ -837,7 +871,33 @@ public final class CraftServer implements Server {
         }
 
         for (World world : getWorlds()) {
-            ((CraftWorld)world).getHandle().worldData.p = mode.getValue();
+            ((CraftWorld)world).getHandle().worldData.setGameType(mode.getValue());
+        }
+    }
+
+    public ConsoleCommandSender getConsoleSender() {
+        return console.console;
+    }
+
+    public void detectListNameConflict(EntityPlayer entityPlayer) {
+        // Collisions will make for invisible people
+        for (int i = 0; i < getHandle().players.size(); ++i) {
+            EntityPlayer testEntityPlayer = (EntityPlayer)getHandle().players.get(i);
+
+            // We have a problem!
+            if (testEntityPlayer != entityPlayer && testEntityPlayer.listName.equals(entityPlayer.listName)) {
+                String oldName = entityPlayer.listName;
+                int spaceLeft = 16 - oldName.length();
+
+                if (spaceLeft <= 1) {  // We also hit the list name length limit!
+                    entityPlayer.listName = oldName.subSequence(0, oldName.length() - 2 - spaceLeft)
+                            + String.valueOf(System.currentTimeMillis() % 99);
+                } else {
+                    entityPlayer.listName = oldName + String.valueOf(System.currentTimeMillis() % 99);
+                }
+
+                return;
+            }
         }
     }
 }

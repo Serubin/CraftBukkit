@@ -27,7 +27,7 @@ public class FoodMetaData {
     }
 
     public void a(EntityHuman entityhuman) {
-        int i = entityhuman.world.spawnMonsters;
+        int i = entityhuman.world.difficulty;
 
         this.e = this.foodLevel;
         if (this.exhaustionLevel > 4.0F) {
@@ -49,7 +49,8 @@ public class FoodMetaData {
         if (this.foodLevel >= 18 && entityhuman.W()) {
             ++this.foodTickTimer;
             if (this.foodTickTimer >= 80) {
-                entityhuman.c(1);
+                // CraftBukkit - added RegainReason.
+                entityhuman.c(1, org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.SATIATED);
                 this.foodTickTimer = 0;
             }
         } else if (this.foodLevel <= 0) {
