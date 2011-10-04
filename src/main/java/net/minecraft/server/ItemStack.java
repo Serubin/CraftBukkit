@@ -5,7 +5,7 @@ public final class ItemStack {
     public int count;
     public int b;
     public int id;
-    public int damage; // CraftBukkit - private -> public
+    private int damage;
 
     public ItemStack(Block block) {
         this(block, 1);
@@ -35,7 +35,7 @@ public final class ItemStack {
         this.count = 0;
         this.id = i;
         this.count = j;
-        this.damage = k;
+        this.b(k); // CraftBukkit
     }
 
     public static ItemStack a(NBTTagCompound nbttagcompound) {
@@ -102,7 +102,7 @@ public final class ItemStack {
     }
 
     public boolean d() {
-        return Item.byId[this.id].e() > 0;
+        return Item.byId[this.id].getMaxDurability() > 0;
     }
 
     public boolean usesData() {
@@ -122,11 +122,11 @@ public final class ItemStack {
     }
 
     public void b(int i) {
-        this.damage = i;
+        this.damage = (this.id > 0) && (this.id < 256) ? Item.byId[this.id].filterData(i) : i; // CraftBukkit
     }
 
     public int i() {
-        return Item.byId[this.id].e();
+        return Item.byId[this.id].getMaxDurability();
     }
 
     public void damage(int i, Entity entity) {

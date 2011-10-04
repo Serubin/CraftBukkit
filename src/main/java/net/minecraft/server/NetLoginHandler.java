@@ -5,6 +5,11 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.logging.Logger;
 
+// CraftBukkit start
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.server.ServerListPingEvent;
+// CraftBukkit end
+
 public class NetLoginHandler extends NetHandler {
 
     public static Logger a = Logger.getLogger("Minecraft");
@@ -91,20 +96,20 @@ public class NetLoginHandler extends NetHandler {
             WorldServer worldserver = (WorldServer) entityplayer.world; // CraftBukkit
             ChunkCoordinates chunkcoordinates = worldserver.getSpawn();
 
-            entityplayer.itemInWorldManager.b(worldserver.p().n());
+            entityplayer.itemInWorldManager.b(worldserver.p().getGameType());
             NetServerHandler netserverhandler = new NetServerHandler(this.server, this.networkManager, entityplayer);
 
             int i = entityplayer.id;
             long j = worldserver.getSeed();
             int k = entityplayer.itemInWorldManager.a();
             byte b0 = (byte) worldserver.worldProvider.dimension;
-            byte b1 = (byte) worldserver.spawnMonsters;
+            byte b1 = (byte) worldserver.difficulty;
 
             worldserver.getClass();
-            // CraftBukkit start -- Don't send a higher than 126 MaxPlayer size, otherwise the PlayerInfo window won't render correctly.
+            // CraftBukkit start -- Don't send a higher than 60 MaxPlayer size, otherwise the PlayerInfo window won't render correctly.
             int maxPlayers = this.server.serverConfigurationManager.h();
-            if (maxPlayers > 126) {
-                maxPlayers = 126;
+            if (maxPlayers > 60) {
+                maxPlayers = 60;
             }
             Packet1Login packet1login1 = new Packet1Login("", i, j, k, b0, b1, (byte) -128, (byte) maxPlayers);
             // CraftBukkit end
@@ -117,7 +122,7 @@ public class NetLoginHandler extends NetHandler {
             netserverhandler.a(entityplayer.locX, entityplayer.locY, entityplayer.locZ, entityplayer.yaw, entityplayer.pitch);
             this.server.networkListenThread.a(netserverhandler);
             netserverhandler.sendPacket(new Packet4UpdateTime(entityplayer.getPlayerTime())); // CraftBukkit - add support for player specific time
-            Iterator iterator = entityplayer.ak().iterator();
+            Iterator iterator = entityplayer.getEffects().iterator();
 
             while (iterator.hasNext()) {
                 MobEffect mobeffect = (MobEffect) iterator.next();
@@ -139,7 +144,10 @@ public class NetLoginHandler extends NetHandler {
     public void a(Packet254GetInfo packet254getinfo) {
         if (this.networkManager.f() == null) return; // CraftBukkit - fix NPE when a client queries a server that is unable to handle it.
         try {
-            String s = this.server.p + "\u00A7" + this.server.serverConfigurationManager.g() + "\u00A7" + this.server.serverConfigurationManager.h();
+            // CraftBukkit start
+            ServerListPingEvent pingEvent = CraftEventFactory.callServerListPingEvent(this.server.server, getSocket().getInetAddress(), this.server.p, this.server.serverConfigurationManager.g(), this.server.serverConfigurationManager.h());
+            String s = pingEvent.getMotd() + "\u00A7" + this.server.serverConfigurationManager.g() + "\u00A7" + pingEvent.getMaxPlayers();
+            // CraftBukkit end
 
             this.networkManager.queue(new Packet255KickDisconnect(s));
             this.networkManager.d();

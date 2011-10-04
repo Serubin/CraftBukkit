@@ -20,6 +20,7 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.weather.ThunderChangeEvent;
 import org.bukkit.event.world.SpawnChangeEvent;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Boat;
 import org.bukkit.Chunk;
 import org.bukkit.inventory.ItemStack;
@@ -33,6 +34,7 @@ import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
+import org.bukkit.Difficulty;
 
 public class CraftWorld implements World {
     private final WorldServer world;
@@ -561,20 +563,28 @@ public class CraftWorld implements World {
     }
 
     public void save() {
-        boolean oldSave = world.canSave;
+        boolean oldSave = world.savingDisabled;
 
-        world.canSave = false;
+        world.savingDisabled = false;
         world.save(true, null);
 
-        world.canSave = oldSave;
+        world.savingDisabled = oldSave;
     }
 
     public boolean isAutoSave() {
-        return !world.canSave;
+        return !world.savingDisabled;
     }
 
     public void setAutoSave(boolean value) {
-        world.canSave = !value;
+        world.savingDisabled = !value;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.getHandle().difficulty = difficulty.getValue();
+    }
+
+    public Difficulty getDifficulty() {
+        return Difficulty.getByValue(this.getHandle().difficulty);
     }
 
     public boolean hasStorm() {
@@ -687,7 +697,7 @@ public class CraftWorld implements World {
         } else if (Egg.class.isAssignableFrom(clazz)) {
             entity = new EntityEgg(world, x, y, z);
         } else if (FallingSand.class.isAssignableFrom(clazz)) {
-            entity = new EntityFallingSand(world, x, y, z, 0);
+            entity = new EntityFallingSand(world, x, y, z, 0, 0);
         } else if (Fireball.class.isAssignableFrom(clazz)) {
             entity = new EntityFireball(world);
             ((EntityFireball) entity).setPositionRotation(x, y, z, yaw, pitch);
@@ -755,7 +765,37 @@ public class CraftWorld implements World {
             }
 
         } else if (Painting.class.isAssignableFrom(clazz)) {
-            // negative
+            Block block = getBlockAt(location);
+            BlockFace face = BlockFace.SELF;
+            if (block.getRelative(BlockFace.EAST).getTypeId() == 0) {
+                face = BlockFace.EAST;
+            } else if (block.getRelative(BlockFace.NORTH).getTypeId() == 0) {
+                face = BlockFace.NORTH;
+            } else if (block.getRelative(BlockFace.WEST).getTypeId() == 0) {
+                face = BlockFace.WEST;
+            } else if (block.getRelative(BlockFace.SOUTH).getTypeId() == 0) {
+                face = BlockFace.SOUTH;
+            }
+            int dir;
+            switch(face) {
+            case EAST:
+            default:
+                dir = 0;
+                break;
+            case NORTH:
+                dir = 1;
+                break;
+            case WEST:
+                dir = 2;
+                break;
+            case SOUTH:
+                dir = 3;;
+                break;
+            }
+            entity = new EntityPainting(world, (int) x, (int) y, (int) z, dir);
+            if (!((EntityPainting)entity).i()) {
+                entity = null;
+            }
         } else if (TNTPrimed.class.isAssignableFrom(clazz)) {
             entity = new EntityTNTPrimed(world, x, y, z);
         } else if (ExperienceOrb.class.isAssignableFrom(clazz)) {
@@ -767,7 +807,7 @@ public class CraftWorld implements World {
             // what is this, I don't even
         } else if (Fish.class.isAssignableFrom(clazz)) {
             // this is not a fish, it's a bobber, and it's probably useless
-            entity = new EntityFish(world);
+            entity = new EntityFishingHook(world);
             entity.setLocation(x, y, z, pitch, yaw);
         }
 
@@ -796,7 +836,11 @@ public class CraftWorld implements World {
     }
 
     public int getMaxHeight() {
-        return 128;
+        return world.height;
+    }
+
+    public int getSeaLevel() {
+        return world.seaLevel;
     }
 
     public boolean getKeepSpawnInMemory() {

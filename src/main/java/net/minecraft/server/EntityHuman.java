@@ -62,7 +62,7 @@ public abstract class EntityHuman extends EntityLiving {
     protected float O = 0.1F;
     protected float P = 0.02F;
     private int f = 0;
-    public EntityFish hookedFish = null;
+    public EntityFishingHook hookedFish = null;
 
     public EntityHuman(World world) {
         super(world);
@@ -152,7 +152,7 @@ public abstract class EntityHuman extends EntityLiving {
 
         super.s_();
         if (!this.world.isStatic && this.activeContainer != null && !this.activeContainer.b(this)) {
-            this.x();
+            this.closeInventory();
             this.activeContainer = this.defaultContainer;
         }
 
@@ -251,7 +251,7 @@ public abstract class EntityHuman extends EntityLiving {
         return this.health <= 0 || this.isSleeping();
     }
 
-    protected void x() {
+    protected void closeInventory() {
         this.activeContainer = this.defaultContainer;
     }
 
@@ -267,7 +267,7 @@ public abstract class EntityHuman extends EntityLiving {
     }
 
     private int o() {
-        return this.a(MobEffectList.e) ? 6 - (1 + this.b(MobEffectList.e).c()) * 1 : (this.a(MobEffectList.f) ? 6 + (1 + this.b(MobEffectList.f).c()) * 2 : 6);
+        return this.hasEffect(MobEffectList.FASTER_DIG) ? 6 - (1 + this.getEffect(MobEffectList.FASTER_DIG).getAmplifier()) * 1 : (this.hasEffect(MobEffectList.SLOWER_DIG) ? 6 + (1 + this.getEffect(MobEffectList.SLOWER_DIG).getAmplifier()) * 2 : 6);
     }
 
     protected void c_() {
@@ -291,7 +291,7 @@ public abstract class EntityHuman extends EntityLiving {
             --this.n;
         }
 
-        if (this.world.spawnMonsters == 0 && this.health < 20 && this.ticksLived % 20 * 12 == 0) {
+        if (this.world.difficulty == 0 && this.health < 20 && this.ticksLived % 20 * 12 == 0) {
             // CraftBukkit - added regain reason of "REGEN" for filtering purposes.
             this.c(1, RegainReason.REGEN);
         }
@@ -301,7 +301,7 @@ public abstract class EntityHuman extends EntityLiving {
         super.s();
         this.aj = this.O;
         this.ak = this.P;
-        if (this.at()) {
+        if (this.isSprinting()) {
             this.aj = (float) ((double) this.aj + (double) this.O * 0.3D);
             this.ak = (float) ((double) this.ak + (double) this.P * 0.3D);
         }
@@ -442,12 +442,12 @@ public abstract class EntityHuman extends EntityLiving {
             f /= 5.0F;
         }
 
-        if (this.a(MobEffectList.e)) {
-            f *= 1.0F + (float) (this.b(MobEffectList.e).c() + 1) * 0.2F;
+        if (this.hasEffect(MobEffectList.FASTER_DIG)) {
+            f *= 1.0F + (float) (this.getEffect(MobEffectList.FASTER_DIG).getAmplifier() + 1) * 0.2F;
         }
 
-        if (this.a(MobEffectList.f)) {
-            f *= 1.0F - (float) (this.b(MobEffectList.f).c() + 1) * 0.2F;
+        if (this.hasEffect(MobEffectList.SLOWER_DIG)) {
+            f *= 1.0F - (float) (this.getEffect(MobEffectList.SLOWER_DIG).getAmplifier() + 1) * 0.2F;
         }
 
         return f;
@@ -475,7 +475,7 @@ public abstract class EntityHuman extends EntityLiving {
 
         // CraftBukkit start
         this.spawnWorld = nbttagcompound.getString("SpawnWorld");
-        if (this.spawnWorld == "") {
+        if ("".equals(spawnWorld)) {
             this.spawnWorld = this.world.getServer().getWorlds().get(0).getName();
         }
         // CraftBukkit end
@@ -500,6 +500,7 @@ public abstract class EntityHuman extends EntityLiving {
             nbttagcompound.a("SpawnX", this.b.x);
             nbttagcompound.a("SpawnY", this.b.y);
             nbttagcompound.a("SpawnZ", this.b.z);
+            nbttagcompound.setString("SpawnWorld", spawnWorld); // CraftBukkit - fixes bed spawns for multiworld worlds
         }
 
         this.foodData.b(nbttagcompound);
@@ -534,15 +535,15 @@ public abstract class EntityHuman extends EntityLiving {
                 Entity entity = damagesource.getEntity();
 
                 if (entity instanceof EntityMonster || entity instanceof EntityArrow) {
-                    if (this.world.spawnMonsters == 0) {
+                    if (this.world.difficulty == 0) {
                         i = 0;
                     }
 
-                    if (this.world.spawnMonsters == 1) {
+                    if (this.world.difficulty == 1) {
                         i = i / 3 + 1;
                     }
 
-                    if (this.world.spawnMonsters == 3) {
+                    if (this.world.difficulty == 3) {
                         i = i * 3 / 2;
                     }
                 }
@@ -726,11 +727,11 @@ public abstract class EntityHuman extends EntityLiving {
             // CraftBukkit end
 
             if (flag1) {
-                if (this.at()) {
+                if (this.isSprinting()) {
                     entity.b((double) (-MathHelper.sin(this.yaw * 3.1415927F / 180.0F) * 1.0F), 0.1D, (double) (MathHelper.cos(this.yaw * 3.1415927F / 180.0F) * 1.0F));
                     this.motX *= 0.6D;
                     this.motZ *= 0.6D;
-                    this.g(false);
+                    this.setSprinting(false);
                 }
 
                 if (flag) {
@@ -874,6 +875,8 @@ public abstract class EntityHuman extends EntityLiving {
     }
 
     public void a(boolean flag, boolean flag1, boolean flag2) {
+        if (this.fauxSleeping) return; // CraftBukkit - Can't leave bed if not in one!
+
         this.b(0.6F, 1.8F);
         this.m_();
         ChunkCoordinates chunkcoordinates = this.E;
@@ -973,7 +976,7 @@ public abstract class EntityHuman extends EntityLiving {
     protected void S() {
         super.S();
         this.a(StatisticList.u, 1);
-        if (this.at()) {
+        if (this.isSprinting()) {
             this.b(0.8F);
         } else {
             this.b(0.2F);
@@ -1024,7 +1027,7 @@ public abstract class EntityHuman extends EntityLiving {
                 i = Math.round(MathHelper.a(d0 * d0 + d2 * d2) * 100.0F);
                 if (i > 0) {
                     this.a(StatisticList.l, i);
-                    if (this.at()) {
+                    if (this.isSprinting()) {
                         this.b(0.099999994F * (float) i * 0.01F);
                     } else {
                         this.b(0.01F * (float) i * 0.01F);

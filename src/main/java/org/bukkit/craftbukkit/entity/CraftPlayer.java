@@ -6,6 +6,7 @@ import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.Packet131;
 import net.minecraft.server.Packet200Statistic;
+import net.minecraft.server.Packet201PlayerInfo;
 import net.minecraft.server.Packet3Chat;
 import net.minecraft.server.Packet51MapChunk;
 import net.minecraft.server.Packet53BlockChange;
@@ -47,9 +48,9 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         if (value == isOp()) return;
 
         if (value) {
-            server.getHandle().e(getName());
+            server.getHandle().addOp(getName());
         } else {
-            server.getHandle().f(getName());
+            server.getHandle().removeOp(getName());
         }
 
         perm.recalculatePermissions();
@@ -122,6 +123,39 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     public void setDisplayName(final String name) {
         getHandle().displayName = name;
+    }
+
+    public String getPlayerListName() {
+        return getHandle().listName;
+    }
+
+    public void setPlayerListName(String name) {
+        String oldName = getHandle().listName;
+
+        if (name == null) {
+            name = getName();
+        }
+
+        if (oldName.equals(name)) {
+            return;
+        }
+
+        if (name.length() > 16) {
+            throw new IllegalArgumentException("Player list names can only be a maximum of 16 characters long");
+        }
+
+        // Collisions will make for invisible people
+        for (int i = 0; i < server.getHandle().players.size(); ++i) {
+            if (((EntityPlayer) server.getHandle().players.get(i)).listName.equals(name)) {
+                throw new IllegalArgumentException(name + " is already assigned as a player list name for someone");
+            }
+        }
+
+        getHandle().listName = name;
+
+        // Change the name on the client side
+        server.getHandle().sendAll(new Packet201PlayerInfo(oldName, false, 9999));
+        server.getHandle().sendAll(new Packet201PlayerInfo(name, true, getHandle().i));
     }
 
     @Override
@@ -299,11 +333,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public boolean isSprinting() {
-        return getHandle().at();
+        return getHandle().isSprinting();
     }
 
     public void setSprinting(boolean sprinting) {
-        getHandle().g(sprinting);
+        getHandle().setSprinting(sprinting);
     }
 
     public void loadData() {
@@ -398,21 +432,21 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     public void setBanned(boolean value) {
         if (value) {
-            server.getHandle().a(getName().toLowerCase());
+            server.getHandle().addUserBan(getName().toLowerCase());
         } else {
-            server.getHandle().b(getName().toLowerCase());
+            server.getHandle().removeUserBan(getName().toLowerCase());
         }
     }
 
     public boolean isWhitelisted() {
-        return server.getHandle().e().contains(getName().toLowerCase());
+        return server.getHandle().getWhitelisted().contains(getName().toLowerCase());
     }
 
     public void setWhitelisted(boolean value) {
         if (value) {
-            server.getHandle().k(getName().toLowerCase());
+            server.getHandle().addWhitelist(getName().toLowerCase());
         } else {
-            server.getHandle().l(getName().toLowerCase());
+            server.getHandle().removeWhitelist(getName().toLowerCase());
         }
     }
 
