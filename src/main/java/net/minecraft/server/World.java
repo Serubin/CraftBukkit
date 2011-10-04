@@ -244,7 +244,9 @@ public class World implements IBlockAccess {
     }
 
     public int getTypeId(int i, int j, int k) {
-        return i >= -30000000 && k >= -30000000 && i < 30000000 && k < 30000000 ? (j < 0 ? 0 : (j >= 128 ? 0 : this.getChunkAt(i >> 4, k >> 4).getTypeId(i & 15, j, k & 15))) : 0;
+        if (j < 0 || j >= 128)
+            return 0;
+        return this.getChunkAt(i >> 4, k >> 4).getTypeId(i & 15, j, k & 15);
     }
 
     public boolean isEmpty(int i, int j, int k) {
