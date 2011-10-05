@@ -356,7 +356,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
                     long l = k - i;
 
                     if (l > 2000L) {
-                        log.warning("Can\'t keep up! Did the system time change, or is the server overloaded?");
+//                        log.warning("Can\'t keep up! Did the system time change, or is the server overloaded?");
                         l = 2000L;
                     }
 
