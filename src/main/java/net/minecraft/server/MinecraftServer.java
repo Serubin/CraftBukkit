@@ -468,8 +468,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
             }
         // } // CraftBukkit
         if(this.ticks%100 == 0) {
-            System.out.println(((float)onTicktime/(100)) + " ms average on tick() per Tick");
-            System.out.println(((float)onEntitytime/(100)) + " ms average on updateEntities() per Tick");
+            System.out.println(((float)onTicktime/(100)) + " ms on tick() " + ((float)onEntitytime/(100)) + " ms on updateEntities(). " + Math.min(((float)1000/((float)(onTicktime+onEntitytime)/100)),20) + " TPS. " + serverConfigurationManager.players.size() + " Players. " + ((float)1000/((float)(onTicktime+onEntitytime)/100)) + " potential TPS.");
             onTicktime = 0;
             onEntitytime = 0;
         }
