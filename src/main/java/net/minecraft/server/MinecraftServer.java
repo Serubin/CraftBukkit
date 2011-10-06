@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -474,10 +475,21 @@ public class MinecraftServer implements Runnable, ICommandListener {
                 onEntitytime += (System.currentTimeMillis()-time);
             }
         // } // CraftBukkit
-        if(this.ticks%100 == 0) {
-            System.out.println(((float)onTicktime/(100)) + " ms on tick() " + ((float)onEntitytime/(100)) + " ms on updateEntities(). " + Math.min(((float)1000/((float)(onTicktime+onEntitytime)/100)),20) + " TPS. " + serverConfigurationManager.players.size() + " Players. " + ((float)1000/((float)(onTicktime+onEntitytime)/100)) + " potential TPS.");
+        int loggingTick = 1200;
+        String logPrefix = "[Performance Log]";
+        if(this.ticks%loggingTick == 0) {
+            log.log(Level.INFO, logPrefix + ((float)onTicktime/(loggingTick)) + " ms on tick() " + ((float)onEntitytime/(loggingTick)) + " ms on updateEntities(). " + Math.min(((float)1000/((float)(onTicktime+onEntitytime)/loggingTick)),20) + " TPS. " + serverConfigurationManager.players.size() + " Players. " + ((float)1000/((float)(onTicktime+onEntitytime)/loggingTick)) + " potential TPS.");
             onTicktime = 0;
             onEntitytime = 0;
+
+            HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
+            Set<String> keys = times.keySet();
+            log.log(Level.INFO, logPrefix + "callEvent() times");
+            for (String pluginName : keys) {
+				long time = times.get(pluginName);
+				log.log(Level.INFO, logPrefix + pluginName + ": " + (float)time/(loggingTick*1000*1000) + " ms.");
+				times.put(pluginName, 0L);
+			}
         }
 
         this.networkListenThread.a();
