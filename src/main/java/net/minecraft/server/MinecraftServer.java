@@ -484,10 +484,17 @@ public class MinecraftServer implements Runnable, ICommandListener {
 
             HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
             Set<String> keys = times.keySet();
+            long totaltime = 0;
+            for (String pluginName : keys) {
+                totaltime += times.get(pluginName);
+            }
+			float timeSummary = (float)totaltime/(loggingTick*1000*1000);
+
             log.log(Level.INFO, logPrefix + "callEvent() times");
             for (String pluginName : keys) {
 				long time = times.get(pluginName);
-				log.log(Level.INFO, logPrefix + pluginName + ": " + (float)time/(loggingTick*1000*1000) + " ms.");
+				float timeOnPlugin = (float)time/(loggingTick*1000*1000);
+				log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
 				times.put(pluginName, 0L);
 			}
         }
