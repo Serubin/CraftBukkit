@@ -38,8 +38,8 @@ import org.bukkit.generator.BlockPopulator;
 public class CraftWorld implements World {
 
     private Chunk cacheChunk;
-    private int cacheChunkx;
-    private int cacheChunkz;
+    private int cacheChunkx = Integer.MIN_VALUE;
+    private int cacheChunkz = Integer.MIN_VALUE;
 
     private final WorldServer world;
     private Environment environment;
@@ -99,7 +99,7 @@ public class CraftWorld implements World {
     }
 
     public Chunk getChunkAt(int x, int z) {
-        if (null != cacheChunk && x == cacheChunkx && z == cacheChunkz) {
+        if (x == cacheChunkx && z == cacheChunkz) {
             return cacheChunk;
         }
         cacheChunk = this.world.chunkProviderServer.getChunkAt(x, z).bukkitChunk;
@@ -113,6 +113,9 @@ public class CraftWorld implements World {
     }
 
     public boolean isChunkLoaded(int x, int z) {
+        if (x == cacheChunkx && z == cacheChunkz) {
+            return true;
+        }
         return world.chunkProviderServer.isChunkLoaded(x, z);
     }
 
