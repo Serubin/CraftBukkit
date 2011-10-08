@@ -285,6 +285,9 @@ public class World implements IBlockAccess {
     }
 
     private boolean isChunkLoaded(int i, int j) {
+        if (this.lastXAccessed == i && this.lastZAccessed == j) {
+            return true;
+        }
         return this.chunkProvider.isChunkLoaded(i, j);
     }
 
@@ -296,7 +299,7 @@ public class World implements IBlockAccess {
     public Chunk getChunkAt(int i, int j) {
         Chunk result = null;
         synchronized (this.chunkLock) {
-            if (this.lastChunkAccessed == null || this.lastXAccessed != i || this.lastZAccessed != j) {
+            if (this.lastXAccessed != i || this.lastZAccessed != j) {
                 this.lastXAccessed = i;
                 this.lastZAccessed = j;
                 this.lastChunkAccessed = this.chunkProvider.getOrCreateChunk(i, j);
