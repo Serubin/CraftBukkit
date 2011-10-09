@@ -35,8 +35,11 @@ import org.bukkit.plugin.PluginLoadOrder;
 
 public class MinecraftServer implements Runnable, ICommandListener {
 
+    private int tickDuration = 0;
     private int onTicktime = 0;
     private int onEntitytime = 0;
+    private int onNetworktime = 0;
+    private int onPlayerupdatetime = 0;
 
     public static Logger log = Logger.getLogger("Minecraft");
     public static HashMap trackerList = new HashMap();
@@ -416,6 +419,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
     }
 
     private void h() {
+        long tickDuration_tmp = System.currentTimeMillis();
         ArrayList arraylist = new ArrayList();
         Iterator iterator = trackerList.keySet().iterator();
 
@@ -442,6 +446,8 @@ public class MinecraftServer implements Runnable, ICommandListener {
 
         ((CraftScheduler) this.server.getScheduler()).mainThreadHeartbeat(this.ticks); // CraftBukkit
 
+        long time;
+
         for (j = 0; j < this.worlds.size(); ++j) { // CraftBukkit
             // if (j == 0 || this.propertyManager.getBoolean("allow-nether", true)) { // CraftBukkit
                 WorldServer worldserver = this.worlds.get(j); // CraftBukkit
@@ -455,7 +461,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
                     // CraftBukkit end
                 }
 
-                long time = System.currentTimeMillis();
+                time = System.currentTimeMillis();
                 worldserver.doTick();
                 onTicktime += (System.currentTimeMillis()-time);
 
@@ -468,12 +474,40 @@ public class MinecraftServer implements Runnable, ICommandListener {
                 onEntitytime += (System.currentTimeMillis()-time);
             }
         // } // CraftBukkit
+
+        time = System.currentTimeMillis();
+        this.networkListenThread.a();
+        this.serverConfigurationManager.b();
+        onNetworktime += (System.currentTimeMillis()-time);
+
+        // CraftBukkit start
+        time = System.currentTimeMillis();
+        for (j = 0; j < this.worlds.size(); ++j) {
+            this.worlds.get(j).tracker.updatePlayers();
+        }
+        onPlayerupdatetime += (System.currentTimeMillis()-time);
+        // CraftBukkit end
+
+        for (j = 0; j < this.s.size(); ++j) {
+            ((IUpdatePlayerListBox) this.s.get(j)).a();
+        }
+
+        try {
+            this.b();
+        } catch (Exception exception) {
+            log.log(Level.WARNING, "Unexpected exception while parsing console command", exception);
+        }
+
+        tickDuration += System.currentTimeMillis() - tickDuration_tmp;
         int loggingTick = 1200;
         String logPrefix = "[Performance Log]";
         if(this.ticks%loggingTick == 0) {
-            log.log(Level.INFO, logPrefix + ((float)onTicktime/(loggingTick)) + " ms on tick() " + ((float)onEntitytime/(loggingTick)) + " ms on updateEntities(). " + Math.min(((float)1000/((float)(onTicktime+onEntitytime)/loggingTick)),20) + " TPS. " + serverConfigurationManager.players.size() + " Players. " + ((float)1000/((float)(onTicktime+onEntitytime)/loggingTick)) + " potential TPS.");
+            log.log(Level.INFO, logPrefix + ((float)onTicktime/(loggingTick)) + " ms on tick() " + ((float)onEntitytime/(loggingTick)) + " ms on updateEntities(). " + ((float)onNetworktime/(loggingTick)) + " ms on Network. " + ((float)onPlayerupdatetime/(loggingTick)) + " ms on Playerupdate. " + Math.min(((float)1000/((float)(tickDuration)/loggingTick)),20) + " TPS. " + serverConfigurationManager.players.size() + " Players. " + ((float)1000/((float)(tickDuration)/loggingTick)) + " potential TPS.");
             onTicktime = 0;
             onEntitytime = 0;
+            onNetworktime = 0;
+            onPlayerupdatetime = 0;
+            tickDuration = 0;
 
             HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
             Set<String> keys = times.keySet();
@@ -486,7 +520,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
             log.log(Level.INFO, logPrefix + "callEvent() times");
             log.log(Level.INFO, logPrefix + "Sum: " + timeSummary+ " ms.");
             for (String pluginName : keys) {
-				long time = times.get(pluginName);
+				time = times.get(pluginName);
 				if (time == 0) {
 					continue;
 				}
@@ -494,25 +528,6 @@ public class MinecraftServer implements Runnable, ICommandListener {
 				log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
 				times.put(pluginName, 0L);
 			}
-        }
-
-        this.networkListenThread.a();
-        this.serverConfigurationManager.b();
-
-        // CraftBukkit start
-        for (j = 0; j < this.worlds.size(); ++j) {
-            this.worlds.get(j).tracker.updatePlayers();
-        }
-        // CraftBukkit end
-
-        for (j = 0; j < this.s.size(); ++j) {
-            ((IUpdatePlayerListBox) this.s.get(j)).a();
-        }
-
-        try {
-            this.b();
-        } catch (Exception exception) {
-            log.log(Level.WARNING, "Unexpected exception while parsing console command", exception);
         }
     }
 

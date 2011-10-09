@@ -676,11 +676,12 @@ public class Chunk {
             j = this.entitySlices.length - 1;
         }
 
+        Entity entity1;
         for (int k = i; k <= j; ++k) {
-            List list1 = this.entitySlices[k];
+            List<Entity> list1 = this.entitySlices[k];
 
             for (int l = 0; l < list1.size(); ++l) {
-                Entity entity1 = (Entity) list1.get(l);
+                entity1 = list1.get(l);
 
                 if (entity1 != entity && entity1.boundingBox.a(axisalignedbb)) {
                     list.add(entity1);
