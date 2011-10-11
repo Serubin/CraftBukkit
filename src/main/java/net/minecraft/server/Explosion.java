@@ -11,7 +11,6 @@ import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.Location;
 // CraftBukkit end
 
@@ -194,6 +193,15 @@ public class Explosion {
 
         EntityExplodeEvent event = new EntityExplodeEvent(explode, location, blockList);
         this.world.getServer().getPluginManager().callEvent(event);
+        
+        arraylist.clear();
+        blocks.clear();
+        
+        for (org.bukkit.block.Block block : event.blockList()) {
+            ChunkPosition coords = new ChunkPosition(block.getX(), block.getY(), block.getZ());
+            arraylist.add(coords);
+            blocks.add(coords);
+        }
 
         if (event.isCancelled()) {
             this.wasCanceled = true;
