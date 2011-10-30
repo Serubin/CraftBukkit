@@ -12,7 +12,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 
 public final class SpawnerCreature {
 
-    private static Set b = new HashSet();
+//    private static Set b = new HashSet();
     protected static final Class[] a = new Class[] { EntitySpider.class, EntityZombie.class, EntitySkeleton.class};
 
     public SpawnerCreature() {}
@@ -32,6 +32,7 @@ public final class SpawnerCreature {
         if (!flag && !flag1) {
             return 0;
         } else {
+            Set b = new HashSet();
             b.clear();
 
             int i;
