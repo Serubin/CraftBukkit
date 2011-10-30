@@ -33,6 +33,8 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.PluginLoadOrder;
 // CraftBukkit end
 
+import de.hydrox.minecraft.server.WorldThread;
+
 public class MinecraftServer implements Runnable, ICommandListener {
 
     private int tickDuration = 0;
@@ -458,29 +460,47 @@ public class MinecraftServer implements Runnable, ICommandListener {
             }
         }
 
+        WorldThread[] worldThreads = new WorldThread[this.worlds.size()];
         for (j = 0; j < this.worlds.size(); ++j) {
             // if (j == 0 || this.propertyManager.getBoolean("allow-nether", true)) {
                 WorldServer worldserver = this.worlds.get(j);
+                worldThreads[j] = new WorldThread(worldserver);
+                worldThreads[j].start();
 
-                /* Drop global timeupdates
-                if (this.ticks % 20 == 0) {
-                    this.serverConfigurationManager.a(new Packet4UpdateTime(worldserver.getTime()), worldserver.worldProvider.dimension);
-                }
-                // CraftBukkit end */
-
-                time = System.currentTimeMillis();
-                worldserver.doTick();
-                onTicktime += (System.currentTimeMillis()-time);
-
-                while (worldserver.v()) {
-                    ;
-                }
-
-                time = System.currentTimeMillis();
-                worldserver.tickEntities();
-                onEntitytime += (System.currentTimeMillis()-time);
+//                /* Drop global timeupdates
+//                if (this.ticks % 20 == 0) {
+//                    this.serverConfigurationManager.a(new Packet4UpdateTime(worldserver.getTime()), worldserver.worldProvider.dimension);
+//                }
+//                // CraftBukkit end */
+//
+//                time = System.currentTimeMillis();
+//                worldserver.doTick();
+//                onTicktime += (System.currentTimeMillis()-time);
+//
+//                while (worldserver.v()) {
+//                    ;
+//                }
+//
+//                time = System.currentTimeMillis();
+//                worldserver.tickEntities();
+//                onEntitytime += (System.currentTimeMillis()-time);
             }
         // } // CraftBukkit
+        long tempOnTicktime = 0;
+        long tempOnEntitytime = 0;
+        for (WorldThread worldThread : worldThreads) {
+			try {
+				worldThread.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			tempOnTicktime = Math.max(worldThread.onTicktime,tempOnTicktime);
+			tempOnEntitytime = Math.max(worldThread.onEntitytime,tempOnEntitytime);
+		}
+
+        onTicktime += tempOnTicktime;
+        onEntitytime += tempOnEntitytime;
 
         time = System.currentTimeMillis();
         this.networkListenThread.a();
