@@ -2,14 +2,17 @@ package de.hydrox.minecraft.server;
 
 import net.minecraft.server.WorldServer;
 
-public class WorldThread extends Thread {
+public class WorldThread implements Runnable {
 	
 	private WorldServer worldserver = null;
 	public long onTicktime = 0;
 	public long onEntitytime = 0;
 
+	public boolean done;
+
 	public WorldThread(WorldServer server) {
 		worldserver = server;
+		done = false;
 	}
 	public void run() {
         /* Drop global timeupdates
@@ -22,13 +25,14 @@ public class WorldThread extends Thread {
         worldserver.doTick();
         onTicktime += (System.currentTimeMillis()-time);
 
-        while (worldserver.v()) {
-            ;
-        }
+//        while (worldserver.v()) {
+//            ;
+//        }
 
         time = System.currentTimeMillis();
         worldserver.tickEntities();
         onEntitytime += (System.currentTimeMillis()-time);
+        done = true;
 	}
 
 }

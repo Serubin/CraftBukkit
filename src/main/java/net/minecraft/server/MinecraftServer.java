@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,6 +45,8 @@ public class MinecraftServer implements Runnable, ICommandListener {
     private int onNetworktime = 0;
     private int onPlayerupdatetime = 0;
 
+	private ExecutorService threadPool;
+
     public static Logger log = Logger.getLogger("Minecraft");
     public static HashMap trackerList = new HashMap();
     public NetworkListenThread networkListenThread;
@@ -74,6 +78,8 @@ public class MinecraftServer implements Runnable, ICommandListener {
     // CraftBukkit end
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - adds argument OptionSet
+        threadPool = Executors.newCachedThreadPool();
+
         new ThreadSleepForever(this);
 
         // CraftBukkit start
@@ -465,7 +471,7 @@ public class MinecraftServer implements Runnable, ICommandListener {
             // if (j == 0 || this.propertyManager.getBoolean("allow-nether", true)) {
                 WorldServer worldserver = this.worlds.get(j);
                 worldThreads[j] = new WorldThread(worldserver);
-                worldThreads[j].start();
+                threadPool.execute(worldThreads[j]);
 
 //                /* Drop global timeupdates
 //                if (this.ticks % 20 == 0) {
@@ -488,13 +494,23 @@ public class MinecraftServer implements Runnable, ICommandListener {
         // } // CraftBukkit
         long tempOnTicktime = 0;
         long tempOnEntitytime = 0;
+        boolean running = true;
+        while(running) {
+            running = false;
+            for (WorldThread worldThread : worldThreads) {
+                if (worldThread.done == true) {
+                    continue;
+                }
+                running = true;
+            }
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
         for (WorldThread worldThread : worldThreads) {
-			try {
-				worldThread.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			tempOnTicktime = Math.max(worldThread.onTicktime,tempOnTicktime);
 			tempOnEntitytime = Math.max(worldThread.onEntitytime,tempOnEntitytime);
 		}
