@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.1-newChunkCache-SNAPSHOT</version>
+  <version>1.0.0-newChunkCache-SNAPSHOT</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
   <properties>
@@ -16,6 +16,18 @@
     <developerConnection>scm:git:ssh://git@github.com/Bukkit/CraftBukkit.git</developerConnection>
     <url>https://github.com/Bukkit/CraftBukkit</url>
   </scm>
+  <distributionManagement>
+    <repository>
+      <id>repobo-rel</id>
+      <name>repo.bukkit.org Releases</name>
+      <url>http://repo.bukkit.org/content/repositories/libs-release-local</url>
+    </repository>
+    <snapshotRepository>
+      <id>repobo-snap</id>
+      <name>repo.bukkit.org Snapshots</name>
+      <url>http://repo.bukkit.org/content/repositories/libs-snapshot-local</url>
+    </snapshotRepository>
+  </distributionManagement>
   <repositories>
     <repository>
       <id>bukkit-repo</id>
@@ -32,14 +44,14 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.0-R1-SNAPSHOT</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>minecraft-server</artifactId>
-      <version>1.8.1_01</version>
+      <version>1.9.RC1</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
