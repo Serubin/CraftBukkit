@@ -217,10 +217,10 @@ public class ServerConfigurationManager {
 
     // CraftBukkit start
     public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, boolean flag) {
-        return this.moveToWorld(entityplayer, i, null);
+        return this.moveToWorld(entityplayer, i, flag, null);
     }
 
-    public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, Location location) {
+    public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, boolean flag, Location location) {
         this.server.getTracker(entityplayer.dimension).untrackPlayer(entityplayer);
         // this.server.getTracker(entityplayer.dimension).untrackEntity(entityplayer); // CraftBukkit
         this.getPlayerManager(entityplayer.dimension).removePlayer(entityplayer);
@@ -231,6 +231,10 @@ public class ServerConfigurationManager {
         // CraftBukkit start
         EntityPlayer entityplayer1 = entityplayer;
         org.bukkit.World fromWorld = entityplayer1.getBukkitEntity().getWorld();
+
+        if (flag) {
+            entityplayer1.copyTo(entityplayer);
+        }
 
         if (location == null) {
             boolean isBedSpawn = false;
@@ -301,7 +305,7 @@ public class ServerConfigurationManager {
 
     public void a(EntityPlayer entityplayer, int i) {
         // CraftBukkit start -- Replaced the standard handling of portals with a more customised method.
-        int dimension = entityplayer.dimension;
+        int dimension = i;
         WorldServer fromWorld = this.server.getWorldServer(dimension);
         WorldServer toWorld = null;
         if (dimension < 10) {
@@ -311,13 +315,28 @@ public class ServerConfigurationManager {
                 }
             }
         }
-        double blockRatio = dimension == -1 ? 8 : 0.125;
 
         Location fromLocation = new Location(fromWorld.getWorld(), entityplayer.locX, entityplayer.locY, entityplayer.locZ, entityplayer.yaw, entityplayer.pitch);
-        Location toLocation = toWorld == null ? null : new Location(toWorld.getWorld(), (entityplayer.locX * blockRatio), entityplayer.locY, (entityplayer.locZ * blockRatio), entityplayer.yaw, entityplayer.pitch);
+        Location toLocation = null;
+
+        if (toWorld != null) {
+            if ((dimension == -1) || (dimension == 0)) {
+                double blockRatio = dimension == 0 ? 8 : 0.125;
+
+                toLocation = toWorld == null ? null : new Location(toWorld.getWorld(), (entityplayer.locX * blockRatio), entityplayer.locY, (entityplayer.locZ * blockRatio), entityplayer.yaw, entityplayer.pitch);
+            } else {
+                ChunkCoordinates coords = toWorld.d();
+                toLocation = new Location(toWorld.getWorld(), coords.x, coords.y, coords.z, 90, 0);
+            }
+        }
 
         org.bukkit.craftbukkit.PortalTravelAgent pta = new org.bukkit.craftbukkit.PortalTravelAgent();
         PlayerPortalEvent event = new PlayerPortalEvent((Player) entityplayer.getBukkitEntity(), fromLocation, toLocation, pta);
+
+        if (entityplayer.dimension == 1) {
+            event.useTravelAgent(false);
+        }
+
         Bukkit.getServer().getPluginManager().callEvent(event);
         if (event.isCancelled() || event.getTo() == null) {
             return;
@@ -328,7 +347,7 @@ public class ServerConfigurationManager {
             finalLocation = event.getPortalTravelAgent().findOrCreate(finalLocation);
         }
         toWorld = ((CraftWorld) finalLocation.getWorld()).getHandle();
-        this.moveToWorld(entityplayer, toWorld.dimension, finalLocation);
+        this.moveToWorld(entityplayer, toWorld.dimension, true, finalLocation);
         // CraftBukkit end
     }
 
