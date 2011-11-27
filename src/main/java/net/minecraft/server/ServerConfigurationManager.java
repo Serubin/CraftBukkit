@@ -308,7 +308,7 @@ public class ServerConfigurationManager {
         int dimension = i;
         WorldServer fromWorld = this.server.getWorldServer(entityplayer.dimension);
         WorldServer toWorld = null;
-        if (dimension < 10) {
+        if (entityplayer.dimension < 10) {
             for (WorldServer world : this.server.worlds) {
                 if (world.dimension == dimension) {
                     toWorld = world;
@@ -320,7 +320,7 @@ public class ServerConfigurationManager {
         Location toLocation = null;
 
         if (toWorld != null) {
-            if ((dimension == -1) || (dimension == 0)) {
+            if (((dimension == -1) || (dimension == 0)) && ((entityplayer.dimension == -1) || (entityplayer.dimension == 0))) {
                 double blockRatio = dimension == 0 ? 8 : 0.125;
 
                 toLocation = toWorld == null ? null : new Location(toWorld.getWorld(), (entityplayer.locX * blockRatio), entityplayer.locY, (entityplayer.locZ * blockRatio), entityplayer.yaw, entityplayer.pitch);
