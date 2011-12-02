@@ -335,27 +335,23 @@ public class CraftWorld implements World {
     }
 
     public LivingEntity spawnCreature(Location loc, CreatureType creatureType) {
-        LivingEntity creature;
-        try {
-            EntityLiving entityCreature = (EntityLiving) EntityTypes.a(creatureType.getName(), world);
-            entityCreature.setPosition(loc.getX(), loc.getY(), loc.getZ());
-            creature = (LivingEntity) CraftEntity.getEntity(server, entityCreature);
-            world.addEntity(entityCreature, SpawnReason.CUSTOM);
-        } catch (Exception e) {
-            // if we fail, for any reason, return null.
-            creature = null;
+        Entity result = spawn(loc, creatureType.getEntityClass());
+
+        if (result == null) {
+            return null;
         }
-        return creature;
+
+        return (LivingEntity)result;
     }
 
     public LightningStrike strikeLightning(Location loc) {
-        EntityWeatherStorm lightning = new EntityWeatherStorm(world, loc.getX(), loc.getY(), loc.getZ());
+        EntityWeatherLighting lightning = new EntityWeatherLighting(world, loc.getX(), loc.getY(), loc.getZ());
         world.strikeLightning(lightning);
         return new CraftLightningStrike(server, lightning);
     }
 
     public LightningStrike strikeLightningEffect(Location loc) {
-        EntityWeatherStorm lightning = new EntityWeatherStorm(world, loc.getX(), loc.getY(), loc.getZ(), true);
+        EntityWeatherLighting lightning = new EntityWeatherLighting(world, loc.getX(), loc.getY(), loc.getZ(), true);
         world.strikeLightning(lightning);
         return new CraftLightningStrike(server, lightning);
     }
@@ -659,7 +655,7 @@ public class CraftWorld implements World {
 
     public void playEffect(Location location, Effect effect, int data, int radius) {
         int packetData = effect.getId();
-        Packet61 packet = new Packet61(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data);
+        Packet61WorldEvent packet = new Packet61WorldEvent(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data);
         int distance;
         for (Player player : getPlayers()) {
             distance = (int) player.getLocation().distance(location);
@@ -691,7 +687,7 @@ public class CraftWorld implements World {
         if (Boat.class.isAssignableFrom(clazz)) {
             entity = new EntityBoat(world, x, y, z);
         } else if (FallingSand.class.isAssignableFrom(clazz)) {
-            entity = new EntityFallingSand(world, x, y, z, 0, 0);
+            entity = new EntityFallingBlock(world, x, y, z, 0, 0);
         } else if (Projectile.class.isAssignableFrom(clazz)) {
             if (Snowball.class.isAssignableFrom(clazz)) {
                 entity = new EntitySnowball(world, x, y, z);
@@ -750,7 +746,7 @@ public class CraftWorld implements World {
                 entity = new EntitySkeleton(world);
             } else if (Slime.class.isAssignableFrom(clazz)) {
                 if (MagmaCube.class.isAssignableFrom(clazz)) {
-                    entity = new EntityLavaSlime(world);
+                    entity = new EntityMagmaCube(world);
                 } else {
                     entity = new EntitySlime(world);
                 }
@@ -823,7 +819,7 @@ public class CraftWorld implements World {
             entity = new EntityExperienceOrb(world, x, y, z, 0);
         } else if (Weather.class.isAssignableFrom(clazz)) {
             // not sure what this can do
-            entity = new EntityWeatherStorm(world, x, y, z);
+            entity = new EntityWeatherLighting(world, x, y, z);
         } else if (LightningStrike.class.isAssignableFrom(clazz)) {
             // what is this, I don't even
         } else if (Fish.class.isAssignableFrom(clazz)) {
@@ -912,6 +908,6 @@ public class CraftWorld implements World {
     }
 
     public File getWorldFolder() {
-        return ((PlayerNBTManager)world.q()).a();
+        return ((WorldNBTStorage)world.getDataManager()).getDirectory();
     }
 }

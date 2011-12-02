@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.MagmaCube;
 
 public abstract class CraftEntity implements org.bukkit.entity.Entity {
     private static final Map<String, CraftPlayer> players = new MapMaker().softValues().makeMap();
@@ -81,7 +80,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
             }
             // Slimes are a special (and broken) case
             else if (entity instanceof EntitySlime) {
-                if (entity instanceof EntityLavaSlime) { return new CraftMagmaCube(server, (EntityLavaSlime) entity); }
+                if (entity instanceof EntityMagmaCube) { return new CraftMagmaCube(server, (EntityMagmaCube) entity); }
                 else { return new CraftSlime(server, (EntitySlime) entity); }
             }
             // Flying
@@ -108,7 +107,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
             else if (entity instanceof EntityPotion) { return new CraftThrownPotion(server, (EntityPotion) entity); }
             else if (entity instanceof EntityEnderPearl) { return new CraftEnderPearl(server, (EntityEnderPearl) entity); }
         }
-        else if (entity instanceof EntityFallingSand) { return new CraftFallingSand(server, (EntityFallingSand) entity); }
+        else if (entity instanceof EntityFallingBlock) { return new CraftFallingSand(server, (EntityFallingBlock) entity); }
         else if (entity instanceof EntityFireball) {
             if (entity instanceof EntitySmallFireball) { return new CraftSmallFireball(server, (EntitySmallFireball) entity); }
             else { return new CraftFireball(server, (EntityFireball) entity); }
@@ -118,7 +117,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
         else if (entity instanceof EntityFishingHook) { return new CraftFish(server, (EntityFishingHook) entity); }
         else if (entity instanceof EntityItem) { return new CraftItem(server, (EntityItem) entity); }
         else if (entity instanceof EntityWeather) {
-            if (entity instanceof EntityWeatherStorm) { return new CraftLightningStrike(server, (EntityWeatherStorm) entity); }
+            if (entity instanceof EntityWeatherLighting) { return new CraftLightningStrike(server, (EntityWeatherLighting) entity); }
             else { return new CraftWeather(server, (EntityWeather) entity); }
         }
         else if (entity instanceof EntityMinecart) {
@@ -195,7 +194,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
     }
 
     public boolean isDead() {
-        return !entity.aj();
+        return !entity.isAlive();
     }
 
     @Override

@@ -3,7 +3,6 @@ package org.bukkit.craftbukkit.inventory;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.server.EnchantmentManager;
-import net.minecraft.server.NBTBase;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.NBTTagList;
 import org.bukkit.enchantments.Enchantment;
@@ -119,7 +118,7 @@ public class CraftItemStack extends ItemStack {
         // Ignore damage if item is null
         if (item != null) {
             super.setDurability(durability);
-            item.b(durability);
+            item.setData(durability);
         }
     }
 
@@ -135,7 +134,7 @@ public class CraftItemStack extends ItemStack {
 
     @Override
     public int getMaxStackSize() {
-        return item.getItem().getMaxStackSize();
+        return (item == null) ? 0 : item.getItem().getMaxStackSize();
     }
 
     @Override
@@ -152,7 +151,8 @@ public class CraftItemStack extends ItemStack {
 
     @Override
     public int getEnchantmentLevel(Enchantment ench) {
-        return EnchantmentManager.b(ench.getId(), item);
+        if (item == null) return 0;
+        return EnchantmentManager.getEnchantmentLevel(ench.getId(), item);
     }
 
     @Override
@@ -168,15 +168,15 @@ public class CraftItemStack extends ItemStack {
     @Override
     public Map<Enchantment, Integer> getEnchantments() {
         Map<Enchantment, Integer> result = new HashMap<Enchantment, Integer>();
-        NBTTagList list = item.p();
+        NBTTagList list = (item == null) ? null : item.getEnchantments();
 
         if (list == null) {
             return result;
         }
 
-        for (int i = 0; i < list.d(); i++) {
-            short id = ((NBTTagCompound)list.a(i)).e("id");
-            short level = ((NBTTagCompound)list.a(i)).e("lvl");
+        for (int i = 0; i < list.size(); i++) {
+            short id = ((NBTTagCompound)list.get(i)).getShort("id");
+            short level = ((NBTTagCompound)list.get(i)).getShort("lvl");
 
             result.put(Enchantment.getById(id), (int)level);
         }
@@ -185,6 +185,8 @@ public class CraftItemStack extends ItemStack {
     }
 
     private void rebuildEnchantments(Map<Enchantment, Integer> enchantments) {
+        if (item == null) return;
+
         NBTTagCompound tag = item.tag;
         NBTTagList list = new NBTTagList("ench");
 
@@ -195,13 +197,13 @@ public class CraftItemStack extends ItemStack {
         for (Map.Entry<Enchantment, Integer> entry : enchantments.entrySet()) {
             NBTTagCompound subtag = new NBTTagCompound();
 
-            subtag.a("id", (short)entry.getKey().getId());
-            subtag.a("lvl", (short)(int)entry.getValue());
+            subtag.setShort("id", (short)entry.getKey().getId());
+            subtag.setShort("lvl", (short)(int)entry.getValue());
 
-            list.a(subtag);
+            list.add(subtag);
         }
 
-        tag.a("ench", (NBTBase)list);
+        tag.set("ench", list);
     }
 
     public net.minecraft.server.ItemStack getHandle() {

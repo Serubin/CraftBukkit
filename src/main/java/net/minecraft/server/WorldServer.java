@@ -20,12 +20,15 @@ public class WorldServer extends World implements BlockChangeDelegate {
     public boolean weirdIsOpCache = false;
     public boolean savingDisabled;
     public final MinecraftServer server; // CraftBukkit - private -> public final
-    private EntityList N = new EntityList();
+    private IntHashMap N;
 
     // CraftBukkit start - change signature
     public WorldServer(MinecraftServer minecraftserver, IDataManager idatamanager, String s, int i, WorldSettings worldsettings, org.bukkit.World.Environment env, ChunkGenerator gen) {
         super(idatamanager, s, worldsettings, WorldProvider.byDimension(env.getId()), gen, env);
         this.server = minecraftserver;
+        if (this.N == null) {
+            this.N = new IntHashMap();
+        }
 
         this.dimension = i;
         this.pvpMode = minecraftserver.pvpMode;
@@ -110,7 +113,7 @@ public class WorldServer extends World implements BlockChangeDelegate {
     }
 
     protected IChunkProvider b() {
-        IChunkLoader ichunkloader = this.B.a(this.worldProvider);
+        IChunkLoader ichunkloader = this.dataManager.createChunkLoader(this.worldProvider);
 
         // CraftBukkit start
         InternalChunkGenerator gen;
@@ -119,7 +122,7 @@ public class WorldServer extends World implements BlockChangeDelegate {
             gen = new CustomChunkGenerator(this, this.getSeed(), this.generator);
         } else if (this.worldProvider instanceof WorldProviderHell) {
             gen = new NetherChunkGenerator(this, this.getSeed());
-        } else if (this.worldProvider instanceof WorldProviderSky) {
+        } else if (this.worldProvider instanceof WorldProviderTheEnd) {
             gen = new SkyLandsChunkGenerator(this, this.getSeed());
         } else {
             gen = new NormalChunkGenerator(this, this.getSeed());
@@ -155,6 +158,14 @@ public class WorldServer extends World implements BlockChangeDelegate {
 
         // CraftBukkit - Configurable spawn protection
         return i1 > this.getServer().getSpawnRadius() || this.server.serverConfigurationManager.isOp(entityhuman.name);
+    }
+
+    protected void c() {
+        if (this.N == null) {
+            this.N = new IntHashMap();
+        }
+
+        super.c();
     }
 
     protected void c(Entity entity) {
@@ -235,7 +246,7 @@ public class WorldServer extends World implements BlockChangeDelegate {
     }
 
     public void saveLevel() {
-        this.B.e();
+        this.dataManager.e();
     }
 
     protected void i() {

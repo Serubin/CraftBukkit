@@ -16,7 +16,7 @@ public class BlockStairs extends Block {
         this.g(255);
     }
 
-    public void a(IBlockAccess iblockaccess, int i, int j, int k) {
+    public void updateShape(IBlockAccess iblockaccess, int i, int j, int k) {
         this.a(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
     }
 
@@ -104,17 +104,13 @@ public class BlockStairs extends Block {
         return this.a.canPlace(world, i, j, k);
     }
 
-    public void a(World world, int i, int j, int k) {
+    public void onPlace(World world, int i, int j, int k) {
         this.doPhysics(world, i, j, k, 0);
-        this.a.a(world, i, j, k);
+        this.a.onPlace(world, i, j, k);
     }
 
     public void remove(World world, int i, int j, int k) {
         this.a.remove(world, i, j, k);
-    }
-
-    public void dropNaturally(World world, int i, int j, int k, int l, float f, int i1) {
-        this.a.dropNaturally(world, i, j, k, 0, f, i1); // CraftBukkit - don't propagate stair direction
     }
 
     public void b(World world, int i, int j, int k, Entity entity) {

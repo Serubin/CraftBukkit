@@ -105,7 +105,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         System.setErr(new PrintStream(new LoggerOutputStream(log, Level.SEVERE), true));
         // CraftBukkit end
 
-        log.info("Starting minecraft server version 1.0.0");
+        log.info("Starting minecraft server version 1.0.1");
         if (Runtime.getRuntime().maxMemory() / 1024L / 1024L < 512L) {
             log.warning("**** NOT ENOUGH RAM!");
             log.warning("To start the server with more ram, launch it as \"java -Xmx1024M -Xms1024M -jar minecraft_server.jar\"");
@@ -278,7 +278,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             world.addIWorldAccess(new WorldManager(this, world));
             world.difficulty = this.propertyManager.getInt("difficulty", 1);
             world.setSpawnFlags(this.propertyManager.getBoolean("spawn-monsters", true), this.spawnAnimals);
-            world.r().setGameType(j);
+            world.getWorldData().setGameType(j);
             this.worlds.add(world);
             this.serverConfigurationManager.setPlayerFileData(this.worlds.toArray(new WorldServer[0]));
         }
@@ -314,7 +314,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
                         worldserver.chunkProviderServer.getChunkAt(chunkcoordinates.x + j1 >> 4, chunkcoordinates.z + k1 >> 4);
 
-                        while (worldserver.x() && this.isRunning) {
+                        while (worldserver.updateLights() && this.isRunning) {
                             ;
                         }
                     }
@@ -516,7 +516,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
                 time = System.currentTimeMillis();
                 while (true) {
-                    if (!worldserver.x()) {
+                    if (!worldserver.updateLights()) {
                         worldserver.tickEntities();
                         break;
                     }
@@ -529,7 +529,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
         time = System.currentTimeMillis();
         this.networkListenThread.a();
-        this.serverConfigurationManager.b();
+        this.serverConfigurationManager.tick();
         onNetworktime += (System.currentTimeMillis()-time);
 
         time = System.currentTimeMillis();
@@ -688,15 +688,15 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public String getVersion() {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     public int getPlayerCount() {
-        return this.serverConfigurationManager.j();
+        return this.serverConfigurationManager.getPlayerCount();
     }
 
     public int getMaxPlayers() {
-        return this.serverConfigurationManager.k();
+        return this.serverConfigurationManager.getMaxPlayers();
     }
 
     public String[] getPlayers() {
@@ -757,11 +757,11 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public String[] q() {
-        return (String[]) this.serverConfigurationManager.f().toArray(new String[0]);
+        return (String[]) this.serverConfigurationManager.getBannedAddresses().toArray(new String[0]);
     }
 
     public String[] r() {
-        return (String[]) this.serverConfigurationManager.e().toArray(new String[0]);
+        return (String[]) this.serverConfigurationManager.getBannedPlayers().toArray(new String[0]);
     }
 
     public static boolean isRunning(MinecraftServer minecraftserver) {
