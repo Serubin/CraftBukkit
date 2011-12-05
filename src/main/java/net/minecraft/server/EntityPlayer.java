@@ -27,7 +27,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     private int cc = -99999999;
     private int cd = -99999999;
     private boolean ce = true;
-    private int cf = -99999999;
+    public int cf = -99999999; // Craftbukkit - priv to pub - "lastSentExp"
     private int cg = 60;
     private ItemStack[] ch = new ItemStack[] { null, null, null, null, null};
     private int ci = 0;
@@ -629,6 +629,21 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     @Override
     public String toString() {
         return super.toString() + "(" + this.name + " at " + this.locX + "," + this.locY + "," + this.locZ + ")";
+    }
+
+    public void reset() {
+        this.health = 20;
+        this.fireTicks = 0;
+        this.fallDistance = 0;
+        this.foodData = new FoodMetaData();
+        this.expLevel = 0;
+        this.expTotal = 0;
+        this.exp = 0;
+        this.deathTicks = 0;
+        effects.clear();
+        this.activeContainer = this.defaultContainer;
+        this.cf = -1; // lastSentExp. Find line: "if (this.expTotal != this.XXXX) {"
+        this.giveExp(this.newExp);
     }
     // CraftBukkit end
 }
