@@ -605,10 +605,11 @@ public class CraftWorld implements World {
     }
 
     public boolean isThundering() {
-        return world.worldData.isThundering();
+        return hasStorm() && world.worldData.isThundering();
     }
 
     public void setThundering(boolean thundering) {
+        if (thundering && !hasStorm()) setStorm(true);
         CraftServer server = world.getServer();
 
         ThunderChangeEvent thunder = new ThunderChangeEvent((org.bukkit.World) this, thundering);
@@ -764,6 +765,8 @@ public class CraftWorld implements World {
                 entity = new EntityPigZombie(world);
             } else if (Zombie.class.isAssignableFrom(clazz)) {
                 entity = new EntityZombie(world);
+            } else if (Giant.class.isAssignableFrom(clazz)) {
+                entity = new EntityGiantZombie(world);
             } else if (Silverfish.class.isAssignableFrom(clazz)) {
                 entity = new EntitySilverfish(world);
             } else if (Enderman.class.isAssignableFrom(clazz)) {
@@ -901,9 +904,9 @@ public class CraftWorld implements World {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        
+
         final CraftWorld other = (CraftWorld) obj;
-        
+
         return this.getUID() == other.getUID();
     }
 
