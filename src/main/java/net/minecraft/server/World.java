@@ -1720,6 +1720,8 @@ public class World implements IBlockAccess {
             }
         }
 
+        this.chunkProvider.unloadChunks();
+
         // MethodProfiler.a("mobSpawner"); // CraftBukkit -- not in production code
         // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
         if ((this.allowMonsters || this.allowAnimals) && (this instanceof WorldServer && this.getServer().getHandle().players.size() > 0)) {
@@ -1727,7 +1729,7 @@ public class World implements IBlockAccess {
         }
         // CraftBukkit end
         // MethodProfiler.b("chunkSource"); // CraftBukkit -- not in production code
-        this.chunkProvider.unloadChunks();
+//        this.chunkProvider.unloadChunks();
         int j = this.a(1.0F);
 
         if (j != this.k) {
