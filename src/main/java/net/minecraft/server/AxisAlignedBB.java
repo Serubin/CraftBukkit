@@ -71,7 +71,7 @@ public class AxisAlignedBB
     return b(d1, d2, d3, d4, d5, d6);
   }
 
-  public AxisAlignedBB b(double paramDouble1, double paramDouble2, double paramDouble3) {
+  public AxisAlignedBB grow(double paramDouble1, double paramDouble2, double paramDouble3) {
     double d1 = this.a - paramDouble1;
     double d2 = this.b - paramDouble2;
     double d3 = this.c - paramDouble3;

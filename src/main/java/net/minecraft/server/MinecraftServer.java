@@ -47,8 +47,8 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
     public static Logger log = Logger.getLogger("Minecraft");
     public static HashMap trackerList = new HashMap();
-    private String s;
-    private int t;
+    private String t;
+    private int u;
     public NetworkListenThread networkListenThread;
     public PropertyManager propertyManager;
     // public WorldServer[] worldServer; // CraftBukkit - removed!
@@ -61,16 +61,17 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     int ticks = 0;
     public String k;
     public int l;
-    private List w = new ArrayList();
-    private List x = Collections.synchronizedList(new ArrayList());
+    private List x = new ArrayList();
+    private List y = Collections.synchronizedList(new ArrayList());
     // public EntityTracker[] tracker = new EntityTracker[3]; // CraftBukkit - removed!
     public boolean onlineMode;
     public boolean spawnAnimals;
+    public boolean spawnNPCs;
     public boolean pvpMode;
     public boolean allowFlight;
-    public String r;
-    private RemoteStatusListener y;
-    private RemoteControlListener z;
+    public String s;
+    private RemoteStatusListener z;
+    private RemoteControlListener A;
 
     // CraftBukkit start
     public List<WorldServer> worlds = new ArrayList<WorldServer>();
@@ -117,24 +118,25 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
         log.info("Loading properties");
         this.propertyManager = new PropertyManager(this.options); // CraftBukkit - CLI argument support
-        this.s = this.propertyManager.getString("server-ip", "");
+        this.t = this.propertyManager.getString("server-ip", "");
         this.onlineMode = this.propertyManager.getBoolean("online-mode", true);
         this.spawnAnimals = this.propertyManager.getBoolean("spawn-animals", true);
+        this.spawnNPCs = this.propertyManager.getBoolean("spawn-npcs", true);
         this.pvpMode = this.propertyManager.getBoolean("pvp", true);
         this.allowFlight = this.propertyManager.getBoolean("allow-flight", false);
-        this.r = this.propertyManager.getString("motd", "A Minecraft Server");
-        this.r.replace('\u00a7', '$');
+        this.s = this.propertyManager.getString("motd", "A Minecraft Server");
+        this.s.replace('\u00a7', '$');
         InetAddress inetaddress = null;
 
-        if (this.s.length() > 0) {
-            inetaddress = InetAddress.getByName(this.s);
+        if (this.t.length() > 0) {
+            inetaddress = InetAddress.getByName(this.t);
         }
 
-        this.t = this.propertyManager.getInt("server-port", 25565);
-        log.info("Starting Minecraft server on " + (this.s.length() == 0 ? "*" : this.s) + ":" + this.t);
+        this.u = this.propertyManager.getInt("server-port", 25565);
+        log.info("Starting Minecraft server on " + (this.t.length() == 0 ? "*" : this.t) + ":" + this.u);
 
         try {
-            this.networkListenThread = new NetworkListenThread(this, inetaddress, this.t);
+            this.networkListenThread = new NetworkListenThread(this, inetaddress, this.u);
         } catch (Throwable ioexception) { // CraftBukkit - IOException -> Throwable
             log.warning("**** FAILED TO BIND TO PORT!");
             log.log(Level.WARNING, "The exception was: " + ioexception.toString());
@@ -154,6 +156,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         long i = System.nanoTime();
         String s = this.propertyManager.getString("level-name", "world");
         String s1 = this.propertyManager.getString("level-seed", "");
+        String s2 = this.propertyManager.getString("level-type", "DEFAULT");
         long j = (new Random()).nextLong();
 
         if (s1.length() > 0) {
@@ -168,25 +171,31 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             }
         }
 
-        log.info("Preparing level \"" + s + "\"");
-        this.a(new WorldLoaderServer(new File(".")), s, j);
+        WorldType worldtype = WorldType.a(s2);
 
-        // CraftBukkit start
+        if (worldtype == null) {
+            worldtype = WorldType.NORMAL;
+        }
+
+        log.info("Preparing level \"" + s + "\"");
+        this.a(new WorldLoaderServer(new File(".")), s, j, worldtype);
+
+        // CraftBukkit start - display seconds for the completion time
         long elapsed = System.nanoTime() - i;
-        String time = String.format("%.3fs", elapsed / 10000000000.0D);
+        String time = String.format("%.3fs", elapsed / 1000000000.0D);
         log.info("Done (" + time + ")! For help, type \"help\" or \"?\"");
-        // CratBukkit end
+        // CraftBukkit end
 
         if (this.propertyManager.getBoolean("enable-query", false)) {
             log.info("Starting GS4 status listener");
-            this.y = new RemoteStatusListener(this);
-            this.y.a();
+            this.z = new RemoteStatusListener(this);
+            this.z.a();
         }
 
         if (this.propertyManager.getBoolean("enable-rcon", false)) {
             log.info("Starting remote control listener");
-            this.z = new RemoteControlListener(this);
-            this.z.a();
+            this.A = new RemoteControlListener(this);
+            this.A.a();
             this.remoteConsole = new CraftRemoteConsoleCommandSender();
         }
 
@@ -197,12 +206,12 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             this.propertyManager.properties.remove("spawn-protection");
             this.propertyManager.savePropertiesFile();
         }
-        // CratBukkit end
+        // CraftBukkit end
 
         return true;
     }
 
-    private void a(Convertable convertable, String s, long i) {
+    private void a(Convertable convertable, String s, long i, WorldType worldtype) {
         if (convertable.isConvertable(s)) {
             log.info("Converting map!");
             convertable.convert(s, new ConvertProgressUpdater(this));
@@ -213,7 +222,6 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
         j = WorldSettings.a(j);
         log.info("Default game type: " + j);
-
         // CraftBukkit start (+ removed worldsettings and servernbtmanager)
         int worldCount = 3;
 
@@ -230,25 +238,24 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             }
 
             if (k == 2) {
-                // CraftBukkit start (+ don't do this in server.properties, do it in bukkit.yml)
+                // CraftBukkit - (+ don't do this in server.properties, do it in bukkit.yml)
                 if (this.server.getAllowEnd()) {
                     dimension = 1;
                 } else {
                     continue;
                 }
-                // CraftBukkit end
             }
 
             String worldType = Environment.getEnvironment(dimension).toString().toLowerCase();
             String name = (dimension == 0) ? s : s + "_" + worldType;
 
             ChunkGenerator gen = this.server.getGenerator(name);
-            WorldSettings settings = new WorldSettings(i, j, true, false);
+            WorldSettings settings = new WorldSettings(i, j, true, false, worldtype);
 
             if (k == 0) {
                 world = new WorldServer(this, new ServerNBTManager(server.getWorldContainer(), s, true), s, dimension, settings, org.bukkit.World.Environment.getEnvironment(dimension), gen); // CraftBukkit
             } else {
-                String dim = "DIM-1";
+                String dim = "DIM" + dimension;
 
                 File newWorld = new File(new File(name), dim);
                 File oldWorld = new File(new File(s), dim);
@@ -264,7 +271,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
                         log.info("---- Migration of old " + worldType + " folder failed ----");
                     } else if (newWorld.getParentFile().mkdirs()) {
                         if (oldWorld.renameTo(newWorld)) {
-                            log.info("Success! To restore the nether in the future, simply move " + newWorld + " to " + oldWorld);
+                            log.info("Success! To restore " + worldType + " in the future, simply move " + newWorld + " to " + oldWorld);
                             log.info("---- Migration of old " + worldType + " folder complete ----");
                         } else {
                             log.severe("Could not move folder " + oldWorld + " to " + newWorld + "!");
@@ -300,37 +307,37 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 
         // CraftBukkit start
         for (int i1 = 0; i1 < this.worlds.size(); ++i1) {
-            // if (i1 == 0 || this.propertyManager.getBoolean("allow-nether", true)) {
             WorldServer worldserver = this.worlds.get(i1);
             log.info("Preparing start region for level " + i1 + " (Seed: " + worldserver.getSeed() + ")");
-            if (worldserver.getWorld().getKeepSpawnInMemory()) {
-                // CraftBukkit end
-                ChunkCoordinates chunkcoordinates = worldserver.getSpawn();
+            if (!worldserver.getWorld().getKeepSpawnInMemory()) {
+                continue;
+            }
+            // CraftBukkit end
+            ChunkCoordinates chunkcoordinates = worldserver.getSpawn();
 
-                for (int j1 = -short1; j1 <= short1 && this.isRunning; j1 += 16) {
-                    for (int k1 = -short1; k1 <= short1 && this.isRunning; k1 += 16) {
-                        long l1 = System.currentTimeMillis();
+            for (int j1 = -short1; j1 <= short1 && this.isRunning; j1 += 16) {
+                for (int k1 = -short1; k1 <= short1 && this.isRunning; k1 += 16) {
+                    long l1 = System.currentTimeMillis();
 
-                        if (l1 < l) {
-                            l = l1;
-                        }
+                    if (l1 < l) {
+                        l = l1;
+                    }
 
-                        if (l1 > l + 1000L) {
-                            int i2 = (short1 * 2 + 1) * (short1 * 2 + 1);
-                            int j2 = (j1 + short1) * (short1 * 2 + 1) + k1 + 1;
+                    if (l1 > l + 1000L) {
+                        int i2 = (short1 * 2 + 1) * (short1 * 2 + 1);
+                        int j2 = (j1 + short1) * (short1 * 2 + 1) + k1 + 1;
 
-                            this.b("Preparing spawn area", j2 * 100 / i2);
-                            l = l1;
-                        }
+                        this.b("Preparing spawn area", j2 * 100 / i2);
+                        l = l1;
+                    }
 
-                        worldserver.chunkProviderServer.getChunkAt(chunkcoordinates.x + j1 >> 4, chunkcoordinates.z + k1 >> 4);
+                    worldserver.chunkProviderServer.getChunkAt(chunkcoordinates.x + j1 >> 4, chunkcoordinates.z + k1 >> 4);
 
-                        while (worldserver.updateLights() && this.isRunning) {
-                            ;
-                        }
+                    while (worldserver.updateLights() && this.isRunning) {
+                        ;
                     }
                 }
-            } // CraftBukkit
+            }
         }
 
         // CraftBukkit start
@@ -388,13 +395,13 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             this.serverConfigurationManager.savePlayers();
         }
 
-        // CraftBukkit start - multiworld is handled in saveChunks() already.
-        WorldServer worldserver = this.worlds.get(0);
+        // for (int i = 0; i < this.worldServer.length; ++i) { // CraftBukkit - multiworld is handled in saveChunks() already.
+            WorldServer worldserver = this.worlds.get(0); // CraftBukkit
 
-        if (worldserver != null) {
-            this.saveChunks();
-        }
-        // CraftBukkit end
+            if (worldserver != null) {
+                this.saveChunks();
+            }
+        // } // CraftBukkit
     }
 
     public void safeShutdown() {
@@ -551,8 +558,8 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         // CraftBukkit end
         onPlayerupdatetime += (System.currentTimeMillis()-time);
 
-        for (k = 0; k < this.w.size(); ++k) {
-            ((IUpdatePlayerListBox) this.w.get(k)).a();
+        for (k = 0; k < this.x.size(); ++k) {
+            ((IUpdatePlayerListBox) this.x.get(k)).a();
         }
 
         try {
@@ -596,12 +603,12 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public void issueCommand(String s, ICommandListener icommandlistener) {
-        this.x.add(new ServerCommand(s, icommandlistener));
+        this.y.add(new ServerCommand(s, icommandlistener));
     }
 
     public void b() {
-        while (this.x.size() > 0) {
-            ServerCommand servercommand = (ServerCommand) this.x.remove(0);
+        while (this.y.size() > 0) {
+            ServerCommand servercommand = (ServerCommand) this.y.remove(0);
 
             // CraftBukkit start - ServerCommand for preprocessing
             ServerCommandEvent event = new ServerCommandEvent(Event.Type.SERVER_COMMAND, this.console, servercommand.command);
@@ -615,7 +622,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public void a(IUpdatePlayerListBox iupdateplayerlistbox) {
-        this.w.add(iupdateplayerlistbox);
+        this.x.add(iupdateplayerlistbox);
     }
 
     public static void main(final OptionSet options) { // CraftBukkit - replaces main(String args[])
@@ -687,19 +694,19 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public String getMotd() {
-        return this.s;
-    }
-
-    public int getPort() {
         return this.t;
     }
 
+    public int getPort() {
+        return this.u;
+    }
+
     public String getServerAddress() {
-        return this.r;
+        return this.s;
     }
 
     public String getVersion() {
-        return "1.0.1";
+        return "1.1";
     }
 
     public int getPlayerCount() {
@@ -748,15 +755,15 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     public void o() {}
 
     public String d(String s) {
-        RemoteControlCommandListener.a.a();
-        // CraftBukkt start
+        RemoteControlCommandListener.instance.a();
+        // CraftBukkit start
         ServerCommandEvent event = new ServerCommandEvent(Event.Type.REMOTE_COMMAND, this.remoteConsole, s);
         this.server.getPluginManager().callEvent(event);
-        ServerCommand servercommand = new ServerCommand(event.getCommand(), RemoteControlCommandListener.a);
-        // this.consoleCommandHandler.handle(new ServerCommand(s, RemoteControlCommandListener.a)); // CraftBukkit - removed
+        ServerCommand servercommand = new ServerCommand(event.getCommand(), RemoteControlCommandListener.instance);
+        // this.consoleCommandHandler.handle(new ServerCommand(s, RemoteControlCommandListener.instance)); // CraftBukkit - removed
         this.server.dispatchCommand(this.remoteConsole, servercommand); // CraftBukkit
         // CraftBukkit end
-        return RemoteControlCommandListener.a.b();
+        return RemoteControlCommandListener.instance.b();
     }
 
     public boolean isDebugging() {

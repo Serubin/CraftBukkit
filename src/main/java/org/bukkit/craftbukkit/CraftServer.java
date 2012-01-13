@@ -2,7 +2,6 @@ package org.bukkit.craftbukkit;
 
 import java.io.FileNotFoundException;
 
-import org.bukkit.craftbukkit.command.CraftConsoleCommandSender;
 import org.bukkit.generator.ChunkGenerator;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
@@ -25,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,6 +55,7 @@ import net.minecraft.server.WorldMap;
 import net.minecraft.server.WorldMapCollection;
 import net.minecraft.server.WorldNBTStorage;
 import net.minecraft.server.WorldSettings;
+import net.minecraft.server.WorldType;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -512,6 +513,7 @@ public final class CraftServer implements Server {
         ChunkGenerator generator = creator.generator();
         File folder = new File(name);
         World world = getWorld(name);
+        WorldType type = WorldType.a(creator.type().getName());
 
         if (world != null) {
             return world;
@@ -533,7 +535,7 @@ public final class CraftServer implements Server {
 
         int dimension = 10 + console.worlds.size();
         boolean hardcore = false;
-        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), true, hardcore), creator.environment(), generator);
+        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), true, hardcore, type), creator.environment(), generator);
 
         if (!(worlds.containsKey(name.toLowerCase()))) {
             return null;
@@ -712,6 +714,7 @@ public final class CraftServer implements Server {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, String[]> getCommandAliases() {
         ConfigurationSection section = configuration.getConfigurationSection("aliases");
         Map<String, String[]> result = new LinkedHashMap<String, String[]>();
@@ -782,7 +785,7 @@ public final class CraftServer implements Server {
 
     public CraftMapView getMap(short id) {
         WorldMapCollection collection = console.worlds.get(0).worldMaps;
-        WorldMap worldmap = (WorldMap) collection.a(WorldMap.class, "map_" + id);
+        WorldMap worldmap = (WorldMap) collection.get(WorldMap.class, "map_" + id);
         if (worldmap == null) {
             return null;
         }
@@ -791,7 +794,7 @@ public final class CraftServer implements Server {
 
     public CraftMapView createMap(World world) {
         ItemStack stack = new ItemStack(Item.MAP, 1, -1);
-        WorldMap worldmap = Item.MAP.a(stack, ((CraftWorld) world).getHandle());
+        WorldMap worldmap = Item.MAP.getSavedMap(stack, ((CraftWorld) world).getHandle());
         return worldmap.mapView;
     }
 
@@ -928,14 +931,15 @@ public final class CraftServer implements Server {
     }
 
     public OfflinePlayer[] getOfflinePlayers() {
-        WorldNBTStorage storage = (WorldNBTStorage)console.worlds.get(0).getDataManager();
+        WorldNBTStorage storage = (WorldNBTStorage) console.worlds.get(0).getDataManager();
         String[] files = storage.getPlayerDir().list(new DatFileFilter());
-        OfflinePlayer[] players = new OfflinePlayer[files.length];
+        Set<OfflinePlayer> players = new HashSet<OfflinePlayer>();
 
         for (int i = 0; i < files.length; i++) {
-            players[i] = getOfflinePlayer(files[i].substring(0, files[i].length() - 4));
+            players.add(getOfflinePlayer(files[i].substring(0, files[i].length() - 4)));
         }
+        players.addAll(Arrays.asList(getOnlinePlayers()));
 
-        return players;
+        return players.toArray(new OfflinePlayer[players.size()]);
     }
 }
