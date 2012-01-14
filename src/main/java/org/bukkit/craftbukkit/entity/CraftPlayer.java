@@ -1,12 +1,16 @@
 package org.bukkit.craftbukkit.entity;
 
 import com.google.common.collect.ImmutableSet;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.NBTTagCompound;
 import net.minecraft.server.Packet131ItemData;
@@ -50,6 +54,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     private long lastPlayed = 0;
     private boolean hasPlayedBefore = false;
     private Set<String> channels = new HashSet<String>();
+    private int hash = 0;
 
     public CraftPlayer(CraftServer server, EntityPlayer entity) {
         super(server, entity);
@@ -579,8 +584,9 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 97 * hash + (this.getName() != null ? this.getName().hashCode() : 0);
+        if (hash == 0 || hash == 485) {
+            hash = 97 * 5 + (this.getName() != null ? this.getName().hashCode() : 0);
+        }
         return hash;
     }
 
@@ -644,5 +650,30 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     public Set<String> getListeningPluginChannels() {
         return ImmutableSet.copyOf(channels);
+    }
+
+    public void sendSupportedChannels() {
+        Set<String> listening = server.getMessenger().getIncomingChannels();
+
+        if (!listening.isEmpty()) {
+            Packet250CustomPayload packet = new Packet250CustomPayload();
+
+            packet.tag = "REGISTER";
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+            for (String channel : listening) {
+                try {
+                    stream.write(channel.getBytes("UTF8"));
+                    stream.write((byte)0);
+                } catch (IOException ex) {
+                    Logger.getLogger(CraftPlayer.class.getName()).log(Level.SEVERE, "Could not send Plugin Channel REGISTER to " + getName(), ex);
+                }
+            }
+
+            packet.data = stream.toByteArray();
+            packet.length = packet.data.length;
+
+            getHandle().netServerHandler.sendPacket(packet);
+        }
     }
 }
