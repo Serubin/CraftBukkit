@@ -724,6 +724,11 @@ public class NetServerHandler extends NetHandler implements ICommandListener {
 
     public boolean chat(String s) {
         if (!this.player.dead) {
+            if (s.length() == 0) {
+                a.warning(this.player.name + " tried to send an empty message");
+                return false;
+            }
+
             if (s.startsWith("/")) {
                 this.handleCommand(s);
                 return true;
@@ -923,9 +928,10 @@ public class NetServerHandler extends NetHandler implements ICommandListener {
                     this.player.updateInventory(this.player.activeContainer);
                 }
             } else if (packet7useentity.c == 1) {
-                if (entity instanceof EntityItem) {
-                    disconnect("Attacking an item is not permitted");
-                    System.out.println("Player " + player.name + " tried to attack an item entity, so I have disconnected them for exploiting.");
+                if ((entity instanceof EntityItem) || (entity instanceof EntityExperienceOrb) || (entity instanceof EntityArrow)) {
+                    String type = entity.getClass().getSimpleName();
+                    disconnect("Attacking an " + type + " is not permitted");
+                    System.out.println("Player " + player.name + " tried to attack an " + type + ", so I have disconnected them for exploiting.");
                     return;
                 }
                 
