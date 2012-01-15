@@ -9,8 +9,13 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.Location;
+import org.bukkit.event.entity.EntityCreatePortalEvent;
 
 import java.util.ArrayList;
+import org.bukkit.PortalType;
+import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.util.BlockStateListPopulator;
 // CraftBukkit end
 
 public class EntityEnderDragon extends EntityComplex {
@@ -100,7 +105,7 @@ public class EntityEnderDragon extends EntityComplex {
             this.world.a("largeexplode", this.locX + (double) f, this.locY + 2.0D + (double) d05, this.locZ + (double) f1, 0.0D, 0.0D, 0.0D);
         } else {
             this.v();
-            f = 0.2F / (MathHelper.a(this.motX * this.motX + this.motZ * this.motZ) * 10.0F + 1.0F);
+            f = 0.2F / (MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ) * 10.0F + 1.0F);
             f *= (float) Math.pow(2.0D, this.motY);
             if (this.q) {
                 this.o += f * 0.5F;
@@ -182,7 +187,7 @@ public class EntityEnderDragon extends EntityComplex {
                     this.B();
                 }
 
-                d1 /= (double) MathHelper.a(d0 * d0 + d2 * d2);
+                d1 /= (double) MathHelper.sqrt(d0 * d0 + d2 * d2);
                 f3 = 0.6F;
                 if (d1 < (double) (-f3)) {
                     d1 = (double) (-f3);
@@ -229,7 +234,7 @@ public class EntityEnderDragon extends EntityComplex {
                 }
 
                 this.aY *= 0.8F;
-                float f5 = MathHelper.a(this.motX * this.motX + this.motZ * this.motZ) * 1.0F + 1.0F;
+                float f5 = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ) * 1.0F + 1.0F;
                 double d10 = Math.sqrt(this.motX * this.motX + this.motZ * this.motZ) * 1.0D + 1.0D;
 
                 if (d10 > 40.0D) {
@@ -491,8 +496,8 @@ public class EntityEnderDragon extends EntityComplex {
             EntityExplodeEvent event = new EntityExplodeEvent(bukkitEntity, bukkitEntity.getLocation(), destroyedBlocks, 0F);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled()) {
-                 // this flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will  cause the dragon to slow down.
-                 // We should consider adding an event extension for it, or perhaps returning true if the event is cancelled.
+                // this flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will cause the dragon to slow down.
+                // We should consider adding an event extension for it, or perhaps returning true if the event is cancelled.
                 return flag;
             } else {
                 for (org.bukkit.block.Block block : event.blockList()) {
@@ -547,7 +552,7 @@ public class EntityEnderDragon extends EntityComplex {
             i = expToDrop / 20; // CraftBukkit - drop experience as dragon falls from sky. use experience drop from death event. This is now set in getExpReward()
 
             while (i > 0) {
-                j = EntityExperienceOrb.b(i);
+                j = EntityExperienceOrb.getOrbValue(i);
                 i -= j;
                 this.world.addEntity(new EntityExperienceOrb(this.world, this.locX, this.locY, this.locZ, j));
             }
@@ -559,7 +564,7 @@ public class EntityEnderDragon extends EntityComplex {
             i = expToDrop - 10 * (expToDrop / 20); // CraftBukkit - drop the remaining experience
 
             while (i > 0) {
-                j = EntityExperienceOrb.b(i);
+                j = EntityExperienceOrb.getOrbValue(i);
                 i -= j;
                 this.world.addEntity(new EntityExperienceOrb(this.world, this.locX, this.locY, this.locZ, j));
             }
@@ -584,40 +589,54 @@ public class EntityEnderDragon extends EntityComplex {
 
         BlockEnderPortal.a = true;
         byte b0 = 4;
+        
+        // CraftBukkit start - Replace any "this.world" in the following with just "world"!
+        EntityCreatePortalEvent event = new EntityCreatePortalEvent(this.getBukkitEntity(), new ArrayList<BlockState>(), PortalType.ENDER);
+        BlockStateListPopulator world = new BlockStateListPopulator(this.world.getWorld(), event.getBlocks());
 
         for (int l = k - 1; l <= k + 32; ++l) {
             for (int i1 = i - b0; i1 <= i + b0; ++i1) {
                 for (int j1 = j - b0; j1 <= j + b0; ++j1) {
                     double d0 = (double) (i1 - i);
                     double d1 = (double) (j1 - j);
-                    double d2 = (double) MathHelper.a(d0 * d0 + d1 * d1);
+                    double d2 = (double) MathHelper.sqrt(d0 * d0 + d1 * d1);
 
                     if (d2 <= (double) b0 - 0.5D) {
                         if (l < k) {
                             if (d2 <= (double) (b0 - 1) - 0.5D) {
-                                this.world.setTypeId(i1, l, j1, Block.BEDROCK.id);
+                                world.setTypeId(i1, l, j1, Block.BEDROCK.id);
                             }
                         } else if (l > k) {
-                            this.world.setTypeId(i1, l, j1, 0);
+                            world.setTypeId(i1, l, j1, 0);
                         } else if (d2 > (double) (b0 - 1) - 0.5D) {
-                            this.world.setTypeId(i1, l, j1, Block.BEDROCK.id);
+                            world.setTypeId(i1, l, j1, Block.BEDROCK.id);
                         } else {
-                            this.world.setTypeId(i1, l, j1, Block.ENDER_PORTAL.id);
+                            world.setTypeId(i1, l, j1, Block.ENDER_PORTAL.id);
                         }
                     }
                 }
             }
         }
 
-        this.world.setTypeId(i, k + 0, j, Block.BEDROCK.id);
-        this.world.setTypeId(i, k + 1, j, Block.BEDROCK.id);
-        this.world.setTypeId(i, k + 2, j, Block.BEDROCK.id);
-        this.world.setTypeId(i - 1, k + 2, j, Block.TORCH.id);
-        this.world.setTypeId(i + 1, k + 2, j, Block.TORCH.id);
-        this.world.setTypeId(i, k + 2, j - 1, Block.TORCH.id);
-        this.world.setTypeId(i, k + 2, j + 1, Block.TORCH.id);
-        this.world.setTypeId(i, k + 3, j, Block.BEDROCK.id);
-        this.world.setTypeId(i, k + 4, j, Block.DRAGON_EGG.id);
+        world.setTypeId(i, k + 0, j, Block.BEDROCK.id);
+        world.setTypeId(i, k + 1, j, Block.BEDROCK.id);
+        world.setTypeId(i, k + 2, j, Block.BEDROCK.id);
+        world.setTypeId(i - 1, k + 2, j, Block.TORCH.id);
+        world.setTypeId(i + 1, k + 2, j, Block.TORCH.id);
+        world.setTypeId(i, k + 2, j - 1, Block.TORCH.id);
+        world.setTypeId(i, k + 2, j + 1, Block.TORCH.id);
+        world.setTypeId(i, k + 3, j, Block.BEDROCK.id);
+        world.setTypeId(i, k + 4, j, Block.DRAGON_EGG.id);
+
+        this.world.getServer().getPluginManager().callEvent(event);
+
+        if (!event.isCancelled()) {
+            for (BlockState state : event.getBlocks()) {
+                state.update(true);
+            }
+        }
+        // CraftBukkit end
+
         BlockEnderPortal.a = false;
     }
 

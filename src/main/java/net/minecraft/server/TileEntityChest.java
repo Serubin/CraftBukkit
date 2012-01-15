@@ -11,7 +11,7 @@ public class TileEntityChest extends TileEntity implements IInventory {
     public float f;
     public float g;
     public int h;
-    private int j;
+    private int ticks;
 
     // CraftBukkit start
     public ItemStack[] getContents() {
@@ -159,7 +159,7 @@ public class TileEntityChest extends TileEntity implements IInventory {
         TileEntity entity = this.world.getTileEntity(x, y, z);
 
         if (entity instanceof TileEntityChest) {
-            return (TileEntityChest)entity;
+            return (TileEntityChest) entity;
         } else {
             String name = "null";
             if (entity != null) {
@@ -175,7 +175,7 @@ public class TileEntityChest extends TileEntity implements IInventory {
         super.l_();
         if (this.world == null) return; // CraftBukkit
         this.h();
-        if (++this.j % (20 * 4) == 0) { // CraftBukkit
+        if (++this.ticks % (20 * 4) == 0) { // CraftBukkit
             this.world.playNote(this.x, this.y, this.z, 1, this.h);
         }
 

@@ -14,9 +14,9 @@ public abstract class Packet {
     public static IntHashMap j = new IntHashMap();
     private static Map a = new HashMap();
     private static Set b = new HashSet();
-    private static Set c = new HashSet();
+    private static Set action = new HashSet();
     public final long timestamp = System.currentTimeMillis();
-    public boolean l = false;
+    public boolean lowPriority = false;
 
     public Packet() {}
 
@@ -33,7 +33,7 @@ public abstract class Packet {
             }
 
             if (flag1) {
-                c.add(Integer.valueOf(i));
+                action.add(Integer.valueOf(i));
             }
         }
     }
@@ -67,7 +67,7 @@ public abstract class Packet {
                 return null;
             }
 
-            if (flag && !c.contains(Integer.valueOf(i)) || !flag && !b.contains(Integer.valueOf(i))) {
+            if (flag && !action.contains(Integer.valueOf(i)) || !flag && !b.contains(Integer.valueOf(i))) {
                 throw new IOException("Bad packet id " + i);
             }
 
@@ -103,7 +103,7 @@ public abstract class Packet {
     }
 
     // CraftBukkit - throws IOException
-    public static void a(String s, DataOutputStream dataoutputstream)  throws IOException {
+    public static void a(String s, DataOutputStream dataoutputstream) throws IOException {
         if (s.length() > 32767) {
             throw new IOException("String too big");
         } else {
@@ -113,7 +113,7 @@ public abstract class Packet {
     }
 
     // CraftBukkit - throws IOException
-    public static String a(DataInputStream datainputstream, int i)  throws IOException {
+    public static String a(DataInputStream datainputstream, int i) throws IOException {
         short short1 = datainputstream.readShort();
 
         if (short1 > i) {
@@ -135,7 +135,7 @@ public abstract class Packet {
 
     public abstract void a(DataOutputStream dataoutputstream) throws IOException; // CraftBukkit
 
-    public abstract void a(NetHandler nethandler);
+    public abstract void handle(NetHandler nethandler);
 
     public abstract int a();
 

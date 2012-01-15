@@ -10,13 +10,13 @@ public class ItemDye extends Item {
     public ItemDye(int i) {
         super(i);
         this.a(true);
-        this.f(0);
+        this.setMaxDurability(0);
     }
 
     public String a(ItemStack itemstack) {
         int i = MathHelper.a(itemstack.getData(), 0, 15);
 
-        return super.b() + "." + a[i];
+        return super.getName() + "." + a[i];
     }
 
     public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
@@ -29,8 +29,8 @@ public class ItemDye extends Item {
                 if (i1 == Block.SAPLING.id) {
                     if (!world.isStatic) {
                         // CraftBukkit start
-                        Player player = (entityhuman instanceof EntityPlayer) ? (Player)entityhuman.getBukkitEntity() : null;
-                        ((BlockSapling) Block.SAPLING).b(world, i, j, k, world.random, true, player, itemstack);
+                        Player player = (entityhuman instanceof EntityPlayer) ? (Player) entityhuman.getBukkitEntity() : null;
+                        ((BlockSapling) Block.SAPLING).grow(world, i, j, k, world.random, true, player, itemstack);
                         //--itemstack.count; - called later if the bonemeal attempt was succesful
                         // CraftBukkit end
                     }
@@ -41,8 +41,8 @@ public class ItemDye extends Item {
                 if (i1 == Block.BROWN_MUSHROOM.id || i1 == Block.RED_MUSHROOM.id) {
                     // CraftBukkit start
                     if (!world.isStatic) {
-                        Player player = (entityhuman instanceof EntityPlayer) ? (Player)entityhuman.getBukkitEntity() : null;
-                        ((BlockMushroom) Block.byId[i1]).b(world, i, j, k, world.random, true, player, itemstack);
+                        Player player = (entityhuman instanceof EntityPlayer) ? (Player) entityhuman.getBukkitEntity() : null;
+                        ((BlockMushroom) Block.byId[i1]).grow(world, i, j, k, world.random, true, player, itemstack);
                         //--itemstack.count; - called later if the bonemeal attempt was succesful
                         // CraftBukkit end
                     }

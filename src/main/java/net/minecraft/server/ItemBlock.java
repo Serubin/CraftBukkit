@@ -58,7 +58,7 @@ public class ItemBlock extends Item {
             return false;
         } else if (j == world.height - 1 && Block.byId[this.id].material.isBuildable()) {
             return false;
-        } else if (world.a(this.id, i, j, k, false, l)) {
+        } else if (world.mayPlace(this.id, i, j, k, false, l)) {
             Block block = Block.byId[this.id];
 
             // CraftBukkit start - This executes the placement of the block
@@ -71,8 +71,7 @@ public class ItemBlock extends Item {
             CraftBlockState blockStateBelow = null;
             // Toggles whether the normal or the block below is used for the place event
             boolean eventUseBlockBelow = false;
-            if ((world.getTypeId(i, j - 1, k) == Block.STEP.id || world.getTypeId(i, j - 1, k) == Block.DOUBLE_STEP.id)
-                    && (itemstack.id == Block.DOUBLE_STEP.id || itemstack.id == Block.STEP.id)) {
+            if ((world.getTypeId(i, j - 1, k) == Block.STEP.id || world.getTypeId(i, j - 1, k) == Block.DOUBLE_STEP.id) && (itemstack.id == Block.DOUBLE_STEP.id || itemstack.id == Block.STEP.id)) {
                 blockStateBelow = CraftBlockState.getBlockState(world, i, j - 1, k);
                 // Step is placed on step, forms a doublestep replacing the original step, so we need the lower block
                 eventUseBlockBelow = itemstack.id == Block.STEP.id && blockStateBelow.getTypeId() == Block.STEP.id;
@@ -136,7 +135,7 @@ public class ItemBlock extends Item {
         return Block.byId[this.id].n();
     }
 
-    public String b() {
+    public String getName() {
         return Block.byId[this.id].n();
     }
 }

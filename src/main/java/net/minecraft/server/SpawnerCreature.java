@@ -18,13 +18,16 @@ public final class SpawnerCreature {
     // private static HashMap b = new HashMap(); // CraftBukkit - moved local to spawnEntities
     static private class ChunkEntry extends EntryBase {
         public boolean spawn;
-        public ChunkEntry (int x, int z, boolean spawn) {
+
+        public ChunkEntry(int x, int z, boolean spawn) {
             super(LongHash.toLong(x, z));
             this.spawn = spawn;
         }
+
         int getX() {
             return LongHash.msw(key);
         }
+
         int getZ() {
             return LongHash.lsw(key);
         }
@@ -34,7 +37,7 @@ public final class SpawnerCreature {
 
     public SpawnerCreature() {}
 
-    protected static ChunkPosition a(World world, int i, int j) {
+    protected static ChunkPosition getRandomPosition(World world, int i, int j) {
         int k = i + world.random.nextInt(16);
         int l = world.random.nextInt(world.height);
         int i1 = j + world.random.nextInt(16);
@@ -92,7 +95,7 @@ public final class SpawnerCreature {
                     for (EntryBase base : b) {
                         ChunkEntry entry = (SpawnerCreature.ChunkEntry) base;
                         if (!entry.spawn) {
-                            ChunkPosition chunkposition = a(world, entry.getX() * 16, entry.getZ() * 16);
+                            ChunkPosition chunkposition = getRandomPosition(world, entry.getX() * 16, entry.getZ() * 16);
                             // CraftBukkit end
                             int k1 = chunkposition.x;
                             int l1 = chunkposition.y;
@@ -145,7 +148,7 @@ public final class SpawnerCreature {
                                                             }
 
                                                             entityliving.setPositionRotation((double) f, (double) f1, (double) f2, world.random.nextFloat() * 360.0F, 0.0F);
-                                                            if (entityliving.g()) {
+                                                            if (entityliving.canSpawn()) {
                                                                 ++j2;
                                                                 // CraftBukkit - added a reason for spawning this creature
                                                                 world.addEntity(entityliving, SpawnReason.NATURAL);

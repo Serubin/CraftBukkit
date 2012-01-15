@@ -105,7 +105,7 @@ public class BlockFlowing extends BlockFluids {
             if (!event.isCancelled()) {
                 if (this.material == Material.LAVA && world.getMaterial(i, j - 1, k) == Material.WATER) {
                     world.setTypeId(i, j - 1, k, Block.STONE.id);
-                    this.h(world, i, j - 1, k);
+                    this.fizz(world, i, j - 1, k);
                     return;
                 }
 
@@ -132,7 +132,7 @@ public class BlockFlowing extends BlockFluids {
             BlockFace[] faces = new BlockFace[] { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST };
             int index = 0;
 
-            for (BlockFace currentFace: faces) {
+            for (BlockFace currentFace : faces) {
                 if (aboolean[index]) {
                     BlockFromToEvent event = new BlockFromToEvent(source, currentFace);
 
@@ -156,7 +156,7 @@ public class BlockFlowing extends BlockFluids {
 
             if (i1 > 0) {
                 if (this.material == Material.LAVA) {
-                    this.h(world, i, j, k);
+                    this.fizz(world, i, j, k);
                 } else {
                     Block.byId[i1].b(world, i, j, k, world.getData(i, j, k), 0);
                 }
