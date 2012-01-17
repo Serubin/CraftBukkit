@@ -1,5 +1,10 @@
 package org.bukkit.craftbukkit.block;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
@@ -7,9 +12,14 @@ import org.bukkit.block.PistonMoveReaction;
 
 import net.minecraft.server.BiomeBase;
 import net.minecraft.server.BlockRedstoneWire;
+import net.minecraft.server.EnumSkyBlock;
+import net.minecraft.server.MinecraftServer;
+
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.CraftChunk;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.util.BlockVector;
 
 public class CraftBlock implements Block {
@@ -17,6 +27,7 @@ public class CraftBlock implements Block {
     private final int x;
     private final int y;
     private final int z;
+    private static final Biome BIOME_MAPPING[];
 
     public CraftBlock(CraftChunk chunk, int x, int y, int z) {
         this.x = x;
@@ -108,6 +119,15 @@ public class CraftBlock implements Block {
     public byte getLightLevel() {
         return (byte) chunk.getHandle().world.getLightLevel(this.x, this.y, this.z);
     }
+
+    public byte getLightFromSky() {
+        return (byte) chunk.getHandle().a(EnumSkyBlock.SKY, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
+    }
+
+    public byte getLightFromBlocks() {
+        return (byte) chunk.getHandle().a(EnumSkyBlock.BLOCK, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
+    }
+
 
     public Block getFace(final BlockFace face) {
         return getRelative(face, 1);
@@ -214,6 +234,8 @@ public class CraftBlock implements Block {
             return new CraftNoteBlock(this);
         case JUKEBOX:
             return new CraftJukebox(this);
+        case BREWING_STAND:
+            return new CraftBrewingStand(this);
         default:
             return new CraftBlockState(this);
         }
@@ -224,51 +246,11 @@ public class CraftBlock implements Block {
     }
 
     public static Biome biomeBaseToBiome(BiomeBase base) {
-        if (base == BiomeBase.SWAMPLAND) {
-            return Biome.SWAMPLAND;
-        } else if (base == BiomeBase.FOREST) {
-            return Biome.FOREST;
-        } else if (base == BiomeBase.TAIGA) {
-            return Biome.TAIGA;
-        } else if (base == BiomeBase.DESERT) {
-            return Biome.DESERT;
-        } else if (base == BiomeBase.PLAINS) {
-            return Biome.PLAINS;
-        } else if (base == BiomeBase.HELL) {
-            return Biome.HELL;
-        } else if (base == BiomeBase.SKY) {
-            return Biome.SKY;
-        } else if (base == BiomeBase.RIVER) {
-            return Biome.RIVER;
-        } else if (base == BiomeBase.EXTREME_HILLS) {
-            return Biome.EXTREME_HILLS;
-        } else if (base == BiomeBase.OCEAN) {
-            return Biome.OCEAN;
-        } else if (base == BiomeBase.FROZEN_OCEAN) {
-            return Biome.FROZEN_OCEAN;
-        } else if (base == BiomeBase.FROZEN_RIVER) {
-            return Biome.FROZEN_RIVER;
-        } else if (base == BiomeBase.ICE_PLAINS) {
-            return Biome.ICE_PLAINS;
-        } else if (base == BiomeBase.ICE_MOUNTAINS) {
-            return Biome.ICE_MOUNTAINS;
-        } else if (base == BiomeBase.MUSHROOM_ISLAND) {
-            return Biome.MUSHROOM_ISLAND;
-        } else if (base == BiomeBase.MUSHROOM_SHORE) {
-            return Biome.MUSHROOM_SHORE;
-        } else if (base == BiomeBase.BEACH) {
-            return Biome.BEACH;
-        } else if (base == BiomeBase.DESERT_HILLS) {
-            return Biome.DESERT_HILLS;
-        } else if (base == BiomeBase.FOREST_HILLS) {
-            return Biome.FOREST_HILLS;
-        } else if (base == BiomeBase.TAIGA_HILLS) {
-            return Biome.TAIGA_HILLS;
-        } else if (base == BiomeBase.SMALL_MOUNTAINS) {
-            return Biome.SMALL_MOUNTAINS;
+        if (base == null) {
+            return null;
         }
 
-        return null;
+        return BIOME_MAPPING[base.K];
     }
 
     public double getTemperature() {
@@ -336,6 +318,90 @@ public class CraftBlock implements Block {
 
     public PistonMoveReaction getPistonMoveReaction() {
         return PistonMoveReaction.getById(net.minecraft.server.Block.byId[this.getTypeId()].material.getPushReaction());
+    }
 
+    private boolean itemCausesDrops(ItemStack item) {
+        net.minecraft.server.Block block = net.minecraft.server.Block.byId[this.getTypeId()];
+        net.minecraft.server.Item itemType = item != null ? net.minecraft.server.Item.byId[item.getTypeId()] : null;
+        return block != null && (block.material.k() || (itemType != null && itemType.a(block)));
+    }
+
+    public boolean breakNaturally() {
+        net.minecraft.server.Block block = net.minecraft.server.Block.byId[this.getTypeId()];
+        byte data = getData();
+
+        setTypeId(Material.AIR.getId());
+        if (block != null) {
+            block.dropNaturally(chunk.getHandle().world, x, y, z, data, 1.0F, 0);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean breakNaturally(ItemStack item) {
+        if (itemCausesDrops(item)) {
+            return breakNaturally();
+        } else {
+            return setTypeId(Material.AIR.getId());
+        }
+    }
+
+    public Collection<ItemStack> getDrops() {
+        List<ItemStack> drops = new ArrayList<ItemStack>();
+
+        net.minecraft.server.Block block = net.minecraft.server.Block.byId[this.getTypeId()];
+        if (block != null) {
+            byte data = getData();
+            // based on nms.Block.dropNaturally
+            int count = block.getDropCount(0, chunk.getHandle().world.random);
+            for (int i = 0; i < count; ++i) {
+                int item = block.getDropType(data, chunk.getHandle().world.random, 0);
+                if (item > 0) {
+                    drops.add(new ItemStack(item, 1, (short) net.minecraft.server.Block.getDropData(block, data)));
+                }
+            }
+        }
+        return drops;
+    }
+
+    public Collection<ItemStack> getDrops(ItemStack item) {
+        if (itemCausesDrops(item)) {
+            return getDrops();
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    /* Build biome index based lookup table for BiomeBase to Biome mapping */
+    static {
+        BIOME_MAPPING = new Biome[BiomeBase.a.length];
+        BIOME_MAPPING[BiomeBase.SWAMPLAND.K] = Biome.SWAMPLAND;
+        BIOME_MAPPING[BiomeBase.FOREST.K] = Biome.FOREST;
+        BIOME_MAPPING[BiomeBase.TAIGA.K] = Biome.TAIGA;
+        BIOME_MAPPING[BiomeBase.DESERT.K] = Biome.DESERT;
+        BIOME_MAPPING[BiomeBase.PLAINS.K] = Biome.PLAINS;
+        BIOME_MAPPING[BiomeBase.HELL.K] = Biome.HELL;
+        BIOME_MAPPING[BiomeBase.SKY.K] = Biome.SKY;
+        BIOME_MAPPING[BiomeBase.RIVER.K] = Biome.RIVER;
+        BIOME_MAPPING[BiomeBase.EXTREME_HILLS.K] = Biome.EXTREME_HILLS;
+        BIOME_MAPPING[BiomeBase.OCEAN.K] = Biome.OCEAN;
+        BIOME_MAPPING[BiomeBase.FROZEN_OCEAN.K] = Biome.FROZEN_OCEAN;
+        BIOME_MAPPING[BiomeBase.FROZEN_RIVER.K] = Biome.FROZEN_RIVER;
+        BIOME_MAPPING[BiomeBase.ICE_PLAINS.K] = Biome.ICE_PLAINS;
+        BIOME_MAPPING[BiomeBase.ICE_MOUNTAINS.K] = Biome.ICE_MOUNTAINS;
+        BIOME_MAPPING[BiomeBase.MUSHROOM_ISLAND.K] = Biome.MUSHROOM_ISLAND;
+        BIOME_MAPPING[BiomeBase.MUSHROOM_SHORE.K] = Biome.MUSHROOM_SHORE;
+        BIOME_MAPPING[BiomeBase.BEACH.K] = Biome.BEACH;
+        BIOME_MAPPING[BiomeBase.DESERT_HILLS.K] = Biome.DESERT_HILLS;
+        BIOME_MAPPING[BiomeBase.FOREST_HILLS.K] = Biome.FOREST_HILLS;
+        BIOME_MAPPING[BiomeBase.TAIGA_HILLS.K] = Biome.TAIGA_HILLS;
+        BIOME_MAPPING[BiomeBase.SMALL_MOUNTAINS.K] = Biome.SMALL_MOUNTAINS;
+        /* Sanity check - we should have a record for each record in the BiomeBase.a table */
+        /* Helps avoid missed biomes when we upgrade bukkit to new code with new biomes */
+        for (int i = 0; i < BIOME_MAPPING.length; i++) {
+            if ((BiomeBase.a[i] != null) && (BIOME_MAPPING[i] == null)) {
+                throw new IllegalArgumentException("Missing Biome mapping for BiomeBase[" + i + "]");
+            }
+        }
     }
 }

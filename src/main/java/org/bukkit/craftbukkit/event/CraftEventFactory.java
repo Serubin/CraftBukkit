@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.util.List;
 
 import net.minecraft.server.ChunkCoordinates;
+import net.minecraft.server.Entity;
+import net.minecraft.server.EntityArrow;
 import net.minecraft.server.EntityBlaze;
 import net.minecraft.server.EntityCaveSpider;
 import net.minecraft.server.EntityChicken;
@@ -50,12 +52,15 @@ import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.AnimalTamer;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.CreatureType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Type;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerListPingEvent;
 
@@ -176,6 +181,24 @@ public class CraftEventFactory {
 
         PlayerInteractEvent event = new PlayerInteractEvent(player, action, itemInHand, blockClicked, blockFace);
         craftServer.getPluginManager().callEvent(event);
+
+        return event;
+    }
+
+    /**
+     * EntityShootBowEvent
+     */
+    public static EntityShootBowEvent callEntityShootBowEvent(EntityLiving who, ItemStack itemstack, EntityArrow entityArrow, float force) {
+        LivingEntity shooter = (LivingEntity) who.getBukkitEntity();
+        CraftItemStack itemInHand = new CraftItemStack(itemstack);
+        Arrow arrow = (Arrow) entityArrow.getBukkitEntity();
+
+        if (itemInHand != null && (itemInHand.getType() == Material.AIR || itemInHand.getAmount() == 0)) {
+            itemInHand = null;
+        }
+
+        EntityShootBowEvent event = new EntityShootBowEvent(shooter, itemInHand, arrow, force);
+        Bukkit.getPluginManager().callEvent(event);
 
         return event;
     }
@@ -351,6 +374,21 @@ public class CraftEventFactory {
     public static ServerListPingEvent callServerListPingEvent(Server craftServer, InetAddress address, String motd, int numPlayers, int maxPlayers) {
         ServerListPingEvent event = new ServerListPingEvent(address, motd, numPlayers, maxPlayers);
         craftServer.getPluginManager().callEvent(event);
+        return event;
+    }
+
+    /**
+     * EntityDamage(ByEntityEvent)
+     */
+    public static EntityDamageEvent callEntityDamageEvent(Entity damager, EntityLiving damagee, DamageCause cause, int damage) {
+        EntityDamageEvent event;
+        if (damager != null) {
+            event = new EntityDamageByEntityEvent(damager.getBukkitEntity(), damagee.getBukkitEntity(), cause, damage);
+        } else {
+            event = new EntityDamageEvent(damagee.getBukkitEntity(), cause, damage);
+        }
+        Bukkit.getPluginManager().callEvent(event);
+
         return event;
     }
 }
