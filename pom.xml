@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.1-R1-newChunkCache-SNAPSHOT</version>
+  <version>1.1-R1-newChunkCache</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -24,26 +24,26 @@
     <repository>
       <id>repobo-rel</id>
       <name>repo.bukkit.org Releases</name>
-      <url>http://repo.bukkit.org/content/repositories/libs-release-local</url>
+      <url>http://repo.bukkit.org/content/repositories/releases/</url>
     </repository>
     <snapshotRepository>
       <id>repobo-snap</id>
       <name>repo.bukkit.org Snapshots</name>
-      <url>http://repo.bukkit.org/content/repositories/libs-snapshot-local</url>
+      <url>http://repo.bukkit.org/content/repositories/snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
 
   <repositories>
     <repository>
-      <id>bukkit-repo</id>
-      <url>http://repo.bukkit.org/artifactory/repo</url>
+      <id>repobo-snap</id>
+      <url>http://repo.bukkit.org/content/groups/public</url>
     </repository>
   </repositories>
 
   <pluginRepositories>
     <pluginRepository>
       <id>bukkit-plugins</id>
-      <url>http://repo.bukkit.org/artifactory/plugins-release</url>
+      <url>http://repo.bukkit.org/content/groups/public</url>
     </pluginRepository>
   </pluginRepositories>
 
@@ -51,13 +51,13 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.1-R1-hydrox-SNAPSHOT</version>
+      <version>1.1-R1-hydrox</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.bukkit</groupId>
-      <artifactId>minecraft-server-release</artifactId>
+      <artifactId>minecraft-server</artifactId>
       <version>1.1_01</version>
       <type>jar</type>
       <scope>compile</scope>

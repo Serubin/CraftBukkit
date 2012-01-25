@@ -127,6 +127,7 @@ public final class CraftServer implements Server {
         configuration.options().copyDefaults(true);
         configuration.setDefaults(YamlConfiguration.loadConfiguration(getClass().getClassLoader().getResourceAsStream("configurations/bukkit.yml")));
         saveConfig();
+        ((SimplePluginManager) pluginManager).useTimings(configuration.getBoolean("settings.plugin-profiling", false));
 
         loadPlugins();
         enablePlugins(PluginLoadOrder.STARTUP);
@@ -540,6 +541,16 @@ public final class CraftServer implements Server {
         }
 
         int dimension = 10 + console.worlds.size();
+        boolean used = false;
+        do {
+            for (WorldServer server : console.worlds) {
+                used = server.dimension == dimension;
+               if (used) {
+                    dimension++;
+                    break;
+                }
+            }
+        } while(used);
         boolean hardcore = false;
         WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), true, hardcore, type), creator.environment(), generator);
 
