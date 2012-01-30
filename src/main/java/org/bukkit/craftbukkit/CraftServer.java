@@ -88,7 +88,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
 
 public final class CraftServer implements Server {
-    private final String serverName = "Craftbukkit";
+    private final String serverName = "CraftBukkit";
     private final String serverVersion;
     private final String bukkitVersion = Versioning.getBukkitVersion();
     private final ServicesManager servicesManager = new SimpleServicesManager();
@@ -521,6 +521,7 @@ public final class CraftServer implements Server {
         File folder = new File(getWorldContainer(), name);
         World world = getWorld(name);
         WorldType type = WorldType.a(creator.type().getName());
+        boolean generateStructures = creator.generateStructures();
 
         if (world != null) {
             return world;
@@ -552,7 +553,8 @@ public final class CraftServer implements Server {
             }
         } while(used);
         boolean hardcore = false;
-        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), true, hardcore, type), creator.environment(), generator);
+
+        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), getDefaultGameMode().getValue(), generateStructures, hardcore, type), creator.environment(), generator);
 
         if (!(worlds.containsKey(name.toLowerCase()))) {
             return null;
@@ -769,6 +771,10 @@ public final class CraftServer implements Server {
 
     public boolean getAllowFlight() {
         return this.console.allowFlight;
+    }
+
+    public boolean useExactLoginLocation() {
+        return configuration.getBoolean("settings.use-exact-login-location");
     }
 
     public ChunkGenerator getGenerator(String world) {

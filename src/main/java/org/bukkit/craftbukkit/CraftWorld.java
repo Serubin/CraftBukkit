@@ -993,4 +993,8 @@ public class CraftWorld implements World {
     public org.bukkit.WorldType getWorldType() {
         return org.bukkit.WorldType.getByName(world.getWorldData().getType().name());
     }
+
+    public boolean canGenerateStructures() {
+        return world.getWorldData().o();
+    }
 }
