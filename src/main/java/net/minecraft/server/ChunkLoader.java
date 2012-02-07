@@ -137,6 +137,11 @@ public class ChunkLoader implements IChunkLoader {
 
             while (iterator.hasNext()) {
                 Entity entity = (Entity) iterator.next();
+                if (entity instanceof EntityItem || entity instanceof IMonster
+                        || entity instanceof EntityGhast
+                        || entity instanceof EntitySlime) {
+                    continue;
+                }
 
                 chunk.s = true;
                 nbttagcompound1 = new NBTTagCompound();
