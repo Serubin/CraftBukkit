@@ -7,6 +7,8 @@ import org.bukkit.Location;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.event.entity.EndermanPickupEvent;
 import org.bukkit.event.entity.EndermanPlaceEvent;
+import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 // CraftBukkit end
 
 public class EntityEnderman extends EntityMonster {
@@ -107,9 +109,14 @@ public class EntityEnderman extends EntityMonster {
                     l = this.world.getTypeId(i, j, k);
                     if (b[l]) {
                         // CraftBukkit start - pickup event
+                        // TODO: We still call the old event
                         EndermanPickupEvent pickup = new EndermanPickupEvent(this.getBukkitEntity(), this.world.getWorld().getBlockAt(i, j, k));
                         this.world.getServer().getPluginManager().callEvent(pickup);
-                        if (!pickup.isCancelled()) {
+
+                        EntityChangeBlockEvent event = new EntityChangeBlockEvent(this.getBukkitEntity(), this.world.getWorld().getBlockAt(i, j, k), org.bukkit.Material.AIR);
+                        this.world.getServer().getPluginManager().callEvent(event);
+
+                        if (!pickup.isCancelled() && !event.isCancelled()) {
                             this.setCarriedId(this.world.getTypeId(i, j, k));
                             this.setCarriedData(this.world.getData(i, j, k));
                             this.world.setTypeId(i, j, k, 0);
@@ -126,9 +133,16 @@ public class EntityEnderman extends EntityMonster {
 
                 if (l == 0 && i1 > 0 && Block.byId[i1].b()) {
                     // CraftBukkit start - place event
+                    // TODO: We still call the old event
                     EndermanPlaceEvent place = new EndermanPlaceEvent(this.getBukkitEntity(), new Location(this.world.getWorld(), i, j, k));
                     this.world.getServer().getPluginManager().callEvent(place);
-                    if (!place.isCancelled()) {
+
+                    org.bukkit.block.Block bblock = this.world.getWorld().getBlockAt(i, j, k);
+
+                    EntityChangeBlockEvent event = new EntityChangeBlockEvent(this.getBukkitEntity(), bblock, bblock.getType());
+                    this.world.getServer().getPluginManager().callEvent(event);
+
+                    if (!place.isCancelled() && !event.isCancelled()) {
                         this.world.setTypeIdAndData(i, j, k, this.getCarriedId(), this.getCarriedData());
                         this.setCarriedId(0);
                     }
@@ -229,10 +243,19 @@ public class EntityEnderman extends EntityMonster {
             }
 
             if (flag1) {
-                this.setPosition(this.locX, this.locY, this.locZ);
-                if (this.world.a((Entity) this, this.boundingBox).size() == 0 && !this.world.c(this.boundingBox)) {
-                    flag = true;
+                // CraftBukkit start - teleport event
+                EntityTeleportEvent teleport = new EntityTeleportEvent(this.getBukkitEntity(), new Location(this.world.getWorld(), d3, d4, d5), new Location(this.world.getWorld(), this.locX, this.locY, this.locZ));
+                this.world.getServer().getPluginManager().callEvent(teleport);
+                if (!teleport.isCancelled()) {
+                    Location to = teleport.getTo();
+                    this.setPosition(to.getX(), to.getY(), to.getZ());
+                    if (this.world.a((Entity) this, this.boundingBox).size() == 0 && !this.world.c(this.boundingBox)) {
+                        flag = true;
+                    }
+                } else {
+                    return false;
                 }
+                // CraftBukkit end
             }
         }
 

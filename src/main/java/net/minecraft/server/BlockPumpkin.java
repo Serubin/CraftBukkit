@@ -35,6 +35,7 @@ public class BlockPumpkin extends Block {
 
     public void onPlace(World world, int i, int j, int k) {
         super.onPlace(world, i, j, k);
+        if (world.suppressPhysics) return; // CraftBukkit
         if (world.getTypeId(i, j - 1, k) == Block.SNOW_BLOCK.id && world.getTypeId(i, j - 2, k) == Block.SNOW_BLOCK.id) {
             if (!world.isStatic && world.getServer().getServer().spawnAnimals) { // CraftBukkit - make snowmen obey spawning rules
                 world.setTypeId(i, j, k, 0);
@@ -43,7 +44,7 @@ public class BlockPumpkin extends Block {
                 EntitySnowman entitysnowman = new EntitySnowman(world);
 
                 entitysnowman.setPositionRotation((double) i + 0.5D, (double) j - 1.95D, (double) k + 0.5D, 0.0F, 0.0F);
-                world.addEntity(entitysnowman);
+                world.addEntity(entitysnowman, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.BUILD_SNOWMAN); // CraftBukkit
             }
 
             for (int l = 0; l < 120; ++l) {

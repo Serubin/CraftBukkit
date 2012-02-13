@@ -58,50 +58,32 @@ public class ItemBlock extends Item {
             return false;
         } else if (j == world.height - 1 && Block.byId[this.id].material.isBuildable()) {
             return false;
-        } else if (world.mayPlace(this.id, i, j, k, false, l)) {
-            Block block = Block.byId[this.id];
+        }
+        // CraftBukkit start
+        int id = (l == -1 && itemstack.getItem() instanceof ItemStep) ? Block.DOUBLE_STEP.id : this.id;
+        if (id != this.id || world.mayPlace(this.id, i, j, k, false, l)) {
+            Block block = Block.byId[id];
 
-            // CraftBukkit start - This executes the placement of the block
             CraftBlockState replacedBlockState = CraftBlockState.getBlockState(world, i, j, k);
 
-            // There are like 30 combinations you can mix and match steps and double steps
-            // of different materials, so there are a lot of different cases of what
-            // would happen if you place x step onto another y step, so let's just keep
-            // track of the entire state
-            CraftBlockState blockStateBelow = null;
-            // Toggles whether the normal or the block below is used for the place event
-            boolean eventUseBlockBelow = false;
-            if ((world.getTypeId(i, j - 1, k) == Block.STEP.id || world.getTypeId(i, j - 1, k) == Block.DOUBLE_STEP.id) && (itemstack.id == Block.DOUBLE_STEP.id || itemstack.id == Block.STEP.id)) {
-                blockStateBelow = CraftBlockState.getBlockState(world, i, j - 1, k);
-                // Step is placed on step, forms a doublestep replacing the original step, so we need the lower block
-                eventUseBlockBelow = itemstack.id == Block.STEP.id && blockStateBelow.getTypeId() == Block.STEP.id;
-            }
-
             world.suppressPhysics = true;
-            world.setTypeIdAndData(i, j, k, this.id, this.filterData(itemstack.getData()));
-            BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, eventUseBlockBelow ? blockStateBelow : replacedBlockState, clickedX, clickedY, clickedZ, block);
+            world.setTypeIdAndData(i, j, k, id, this.filterData(itemstack.getData()));
+            BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, replacedBlockState, clickedX, clickedY, clickedZ, block);
+            id = world.getTypeId(i, j, k);
+            int data = world.getData(i, j, k);
             replacedBlockState.update(true);
             world.suppressPhysics = false;
 
             if (event.isCancelled() || !event.canBuild()) {
                 return true;
             }
-            /**
-            * @see net.minecraft.server.World#setTypeIdAndData(int i, int j, int k, int l, int i1)
-            *
-            * This replaces world.setTypeIdAndData(IIIII), we're doing this because we need to
-            * hook between the 'placement' and the informing to 'world' so we can
-            * sanely undo this.
-            *
-            * Whenever the call to 'world.setTypeIdAndData' changes we need to figure out again what to
-            * replace this with.
-            */
-            if (world.setTypeIdAndData(i, j, k, this.id, this.filterData(itemstack.getData()))) { // <-- world.setTypeIdAndData does this to place the block
-                // CraftBukkit end
-                if (world.getTypeId(i, j, k) == this.id) {
-                    Block.byId[this.id].postPlace(world, i, j, k, l);
-                    Block.byId[this.id].postPlace(world, i, j, k, entityhuman);
+
+            if (world.setTypeIdAndData(i, j, k, id, data)) {
+                if (Block.byId[id] != null) {
+                    Block.byId[id].postPlace(world, i, j, k, l);
+                    Block.byId[id].postPlace(world, i, j, k, entityhuman);
                 }
+                // CraftBukkit end
 
                 world.makeSound((double) ((float) i + 0.5F), (double) ((float) j + 0.5F), (double) ((float) k + 0.5F), block.stepSound.getName(), (block.stepSound.getVolume1() + 1.0F) / 2.0F, block.stepSound.getVolume2() * 0.8F);
                 --itemstack.count;

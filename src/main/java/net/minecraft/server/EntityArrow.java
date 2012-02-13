@@ -5,6 +5,7 @@ import java.util.List;
 // CraftBukkit start
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Projectile;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -187,14 +188,20 @@ public class EntityArrow extends Entity {
                         damagesource = DamageSource.arrow(this, this.shooter);
                     }
 
-                    if (this.isBurning()) {
-                        movingobjectposition.entity.setOnFire(5);
+                    if (this.isBurning() && this.world.pvpMode) { // CraftBukkit - abide by pvp setting.
+                        // CraftBukkit start
+                        EntityCombustByEntityEvent combustEvent = new EntityCombustByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), 5);
+                        Bukkit.getPluginManager().callEvent(combustEvent);
+
+                        if (!combustEvent.isCancelled()) {
+                            movingobjectposition.entity.setOnFire(combustEvent.getDuration());
+                        }
+                        // CraftBukkit end
                     }
 
                     // CraftBukkit start
                     boolean stick;
-                    if (entity instanceof EntityLiving) {
-
+                    if (entity instanceof EntityLiving || entity instanceof EntityComplexPart) {
                         org.bukkit.entity.Entity damagee = movingobjectposition.entity.getBukkitEntity();
                         Projectile projectile = (Projectile) this.getBukkitEntity();
 
@@ -210,6 +217,7 @@ public class EntityArrow extends Entity {
                     } else {
                         stick = movingobjectposition.entity.damageEntity(damagesource, l);
                     }
+
                     if (stick) {
                         // CraftBukkit end
                         if (movingobjectposition.entity instanceof EntityLiving) {

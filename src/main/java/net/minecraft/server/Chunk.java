@@ -311,8 +311,11 @@ public class Chunk {
             if (l1 != 0) {
                 if (!this.world.isStatic) {
                     Block.byId[l1].remove(this.world, i2, j, j2);
-                } else if (Block.byId[l1] instanceof BlockContainer && l1 != l) {
-                    this.world.n(i2, j, j2);
+                    // CraftBukkit start - delete tile entities for removed blocks
+                     if (Block.byId[l1] instanceof BlockContainer) {
+                        this.world.n(i2, j, j2);
+                     }
+                    // CraftBukkit end
                 }
             }
 
@@ -384,7 +387,14 @@ public class Chunk {
             this.b[i << this.world.heightBitsPlusFour | k << this.world.heightBits | j] = (byte) (b0 & 255);
             if (k1 != 0) {
                 Block.byId[k1].remove(this.world, l1, j, i2);
+                // CraftBukkit start - delete tile entities for removed blocks
+                if (Block.byId[k1] instanceof BlockContainer) {
+                   this.world.n(l1, j, i2);
+                }
+                // CraftBukkit end
             }
+
+            if ((this.b[i << this.world.heightBitsPlusFour | k << this.world.heightBits | j] & 255) != l) return false; // CraftBukkit
 
             this.g.a(i, j, k, 0);
             if (Block.lightBlock[b0 & 255] != 0) {
@@ -593,6 +603,8 @@ public class Chunk {
         } else {
             System.out.println("Attempted to place a tile entity (" + tileentity + ") at " + tileentity.x + "," + tileentity.y + "," + tileentity.z
                     + " (" + org.bukkit.Material.getMaterial(getTypeId(i, j, k)) + ") where there was no entity tile!");
+            System.out.println("Chunk coordinates: " + (this.x * 16) + "," + (this.z * 16));
+            new Exception().printStackTrace();
             // CraftBukkit end
         }
     }
