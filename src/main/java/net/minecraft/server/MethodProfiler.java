@@ -54,12 +54,32 @@ public class MethodProfiler
   }
   public static void print(int ticks)
   {
+	  long sum = 0;
+	  HashMap<String, Long> newTimes = new HashMap<String, Long>();
 	  Bukkit.getLogger().info("Profiler:");
 	  Bukkit.getLogger().info("" + e.size());
 	  String[] keys = e.keySet().toArray(new String[0]);
 	  Arrays.sort(keys);
 	  for (String key : keys) {
-		  Bukkit.getLogger().info(key + ": " + (float)e.get(key)/(ticks*1000*1000) + "ms.");				
+		Long tmp = e.get(key);
+		for (String key2 : keys) {
+			if (!key2.equals(key) && key2.startsWith(key)) {
+				if(key2.split("\\.").length == (key.split("\\.").length + 1)) {
+					tmp = tmp - e.get(key2);
+				}
+			}
+		}
+		newTimes.put(key,tmp);
+		sum += tmp;
+	}
+	  for (String key : keys) {
+		  long normal = e.get(key);
+		  long slim = newTimes.get(key);
+		  String slimText = "";
+		  if (normal != slim) {
+			slimText = "("+ (float)slim/(ticks*1000*1000) + "ms) ";
+		  }
+		  Bukkit.getLogger().info(key + ": " + (float)normal/(ticks*1000*1000) + "ms. " + slimText + "(" +  (float)100*slim/sum + "%)");
 	  }
 	  e.clear();
   }

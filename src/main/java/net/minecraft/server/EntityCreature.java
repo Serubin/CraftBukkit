@@ -35,7 +35,9 @@ public abstract class EntityCreature extends EntityLiving {
             Entity target = this.findTarget();
             if (target != null) {
                 EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), target.getBukkitEntity(), EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
+                MethodProfiler.a("event");
                 this.world.getServer().getPluginManager().callEvent(event);
+                MethodProfiler.a();
 
                 if (!event.isCancelled()) {
                     if (event.getTarget() == null) {
@@ -53,7 +55,9 @@ public abstract class EntityCreature extends EntityLiving {
         } else if (!this.target.isAlive()) {
             // CraftBukkit start
             EntityTargetEvent event = new EntityTargetEvent(this.getBukkitEntity(), null, EntityTargetEvent.TargetReason.TARGET_DIED);
+            MethodProfiler.a("event");
             this.world.getServer().getPluginManager().callEvent(event);
+            MethodProfiler.a();
 
             if (!event.isCancelled()) {
                 if (event.getTarget() == null) {

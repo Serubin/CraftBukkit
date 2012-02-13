@@ -532,13 +532,17 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
                 // CraftBukkit end */
 
                 time = System.currentTimeMillis();
+                MethodProfiler.a("doTick");
                 worldserver.doTick();
+                MethodProfiler.a();
                 onTicktime += (System.currentTimeMillis()-time);
 
                 time = System.currentTimeMillis();
                 while (true) {
                     if (!worldserver.updateLights()) {
+                        MethodProfiler.a("tickEntities");
                         worldserver.tickEntities();
+                        MethodProfiler.a();
                         break;
                     }
                 }
@@ -549,15 +553,19 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         // } // CraftBukkit
 
         time = System.currentTimeMillis();
+        MethodProfiler.a("network");
         this.networkListenThread.a();
         this.serverConfigurationManager.tick();
+        MethodProfiler.a();
         onNetworktime += (System.currentTimeMillis()-time);
 
         time = System.currentTimeMillis();
+        MethodProfiler.a("updatePlayers");
         // CraftBukkit start
         for (k = 0; k < this.worlds.size(); ++k) {
             this.worlds.get(k).tracker.updatePlayers();
         }
+        MethodProfiler.a();
         // CraftBukkit end
         onPlayerupdatetime += (System.currentTimeMillis()-time);
 
