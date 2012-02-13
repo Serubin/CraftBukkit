@@ -601,6 +601,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
 				log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
 				times.put(pluginName, 0L);
 			}
+            MethodProfiler.print(loggingTick);
         }
         this.f[this.ticks % 100] = System.nanoTime() - i;
     }

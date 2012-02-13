@@ -1096,8 +1096,8 @@ public class World implements IBlockAccess {
     }
 
     public void tickEntities() {
-        // MethodProfiler.a("entities"); // CraftBukkit - not in production code
-        // MethodProfiler.a("global"); // CraftBukkit - not in production code
+        MethodProfiler.a("entities"); // CraftBukkit - not in production code
+        MethodProfiler.a("global"); // CraftBukkit - not in production code
 
         int i;
         Entity entity;
@@ -1115,7 +1115,7 @@ public class World implements IBlockAccess {
             }
         }
 
-        // MethodProfiler.b("remove"); // CraftBukkit - not in production code
+        MethodProfiler.b("remove"); // CraftBukkit - not in production code
         this.entityList.removeAll(this.J);
 
         int j;
@@ -1135,7 +1135,7 @@ public class World implements IBlockAccess {
         }
 
         this.J.clear();
-        // MethodProfiler.b("regular"); // CraftBukkit - not in production code
+        MethodProfiler.b("regular"); // CraftBukkit - not in production code
 
         for (i = 0; i < this.entityList.size(); ++i) {
             entity = (Entity) this.entityList.get(i);
@@ -1152,7 +1152,7 @@ public class World implements IBlockAccess {
                 this.playerJoinedWorld(entity);
             }
 
-            // MethodProfiler.a("remove"); // CraftBukkit - not in production code
+            MethodProfiler.a("remove"); // CraftBukkit - not in production code
             if (entity.dead) {
                 j = entity.ca;
                 k = entity.cc;
@@ -1164,10 +1164,10 @@ public class World implements IBlockAccess {
                 this.d(entity);
             }
 
-            // MethodProfiler.a(); // CraftBukkit - not in production code
+            MethodProfiler.a(); // CraftBukkit - not in production code
         }
 
-        // MethodProfiler.b("tileEntities"); // CraftBukkit - not in production code
+        MethodProfiler.b("tileEntities"); // CraftBukkit - not in production code
         this.S = true;
         Iterator iterator = this.tileEntityList.iterator();
 
@@ -1196,7 +1196,7 @@ public class World implements IBlockAccess {
             this.N.clear();
         }
 
-        // MethodProfiler.b("pendingTileEntities"); // CraftBukkit - not in production code
+        MethodProfiler.b("pendingTileEntities"); // CraftBukkit - not in production code
         if (!this.M.isEmpty()) {
             Iterator iterator1 = this.M.iterator();
 
@@ -1229,8 +1229,8 @@ public class World implements IBlockAccess {
             this.M.clear();
         }
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
     }
 
     public void a(Collection collection) {
@@ -1264,7 +1264,7 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.a("chunkCheck"); // CraftBukkit - not in production code
+            MethodProfiler.a("chunkCheck"); // CraftBukkit - not in production code
             if (Double.isNaN(entity.locX) || Double.isInfinite(entity.locX)) {
                 entity.locX = entity.bL;
             }
@@ -1302,7 +1302,7 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.a(); // CraftBukkit - not in production code
+            MethodProfiler.a(); // CraftBukkit - not in production code
             if (flag && entity.bZ && entity.passenger != null) {
                 if (!entity.passenger.dead && entity.passenger.vehicle == entity) {
                     this.playerJoinedWorld(entity.passenger);
@@ -1727,13 +1727,13 @@ public class World implements IBlockAccess {
 
         this.chunkProvider.unloadChunks();
 
-        // MethodProfiler.a("mobSpawner"); // CraftBukkit - not in production code
+         MethodProfiler.a("mobSpawner"); // CraftBukkit - not in production code
         // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
         if ((this.allowMonsters || this.allowAnimals) && (this instanceof WorldServer && this.getServer().getHandle().players.size() > 0)) {
             SpawnerCreature.spawnEntities(this, this.allowMonsters, this.allowAnimals && this.worldData.getTime() % 400L == 0L);
         }
         // CraftBukkit end
-        // MethodProfiler.b("chunkSource"); // CraftBukkit - not in production code
+         MethodProfiler.b("chunkSource"); // CraftBukkit - not in production code
 //        this.chunkProvider.unloadChunks();
         int j = this.a(1.0F);
 
@@ -1743,16 +1743,16 @@ public class World implements IBlockAccess {
 
         i = this.worldData.getTime() + 1L;
         if (i % (long) this.u == 0L) {
-            // MethodProfiler.b("save"); // CraftBukkit - not in production code
+            MethodProfiler.b("save"); // CraftBukkit - not in production code
             this.save(false, (IProgressUpdate) null);
         }
 
         this.worldData.a(i);
-        // MethodProfiler.b("tickPending"); // CraftBukkit - not in production code
+         MethodProfiler.b("tickPending"); // CraftBukkit - not in production code
         this.a(false);
-        // MethodProfiler.b("tickTiles"); // CraftBukkit - not in production code
+         MethodProfiler.b("tickTiles"); // CraftBukkit - not in production code
         this.k();
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+         MethodProfiler.a(); // CraftBukkit - not in production code
     }
 
     private void z() {
@@ -1871,7 +1871,7 @@ public class World implements IBlockAccess {
 
     protected void k() {
         // this.T.clear(); // CraftBukkit - removed
-        // MethodProfiler.a("buildList"); // CraftBukkit - not in production code
+        MethodProfiler.a("buildList"); // CraftBukkit - not in production code
 
         int i;
         int j;
@@ -1896,7 +1896,7 @@ public class World implements IBlockAccess {
         i = 0;
         int j1 = 0;
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
         // Iterator iterator = this.T.iterator(); // CraftBukkit - removed
 
         // CraftBukkit start
@@ -1907,13 +1907,13 @@ public class World implements IBlockAccess {
             int k1 = chunkX * 16;
 
             j = chunkZ * 16;
-            // MethodProfiler.a("getChunk"); // CraftBukkit - not in production code
+            MethodProfiler.a("getChunk"); // CraftBukkit - not in production code
             Chunk chunk = this.getChunkAt(chunkX, chunkZ);
             // CraftBukkit end
 
-            // MethodProfiler.b("tickChunk"); // CraftBukkit - not in production code
+            MethodProfiler.b("tickChunk"); // CraftBukkit - not in production code
             chunk.i();
-            // MethodProfiler.b("moodSound"); // CraftBukkit - not in production code
+            MethodProfiler.b("moodSound"); // CraftBukkit - not in production code
             int l1;
             int i2;
             int j2;
@@ -1939,7 +1939,7 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.b("thunder"); // CraftBukkit - not in production code
+            MethodProfiler.b("thunder"); // CraftBukkit - not in production code
             if (this.random.nextInt(100000) == 0 && this.w() && this.v()) {
                 this.l = this.l * 3 + 1013904223;
                 l1 = this.l >> 2;
@@ -1952,7 +1952,7 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.b("iceandsnow"); // CraftBukkit - not in production code
+            MethodProfiler.b("iceandsnow"); // CraftBukkit - not in production code
             if (this.random.nextInt(16) == 0) {
                 this.l = this.l * 3 + 1013904223;
                 l1 = this.l >> 2;
@@ -1986,9 +1986,9 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.b("checkLight"); // CraftBukkit - not in production code
+            MethodProfiler.b("checkLight"); // CraftBukkit - not in production code
             this.s(k1 + this.random.nextInt(16), this.random.nextInt(this.height), j + this.random.nextInt(16));
-            // MethodProfiler.b("tickTiles"); // CraftBukkit - not in production code
+            MethodProfiler.b("tickTiles"); // CraftBukkit - not in production code
 
             for (l1 = 0; l1 < 20; ++l1) {
                 this.l = this.l * 3 + 1013904223;
@@ -2005,7 +2005,7 @@ public class World implements IBlockAccess {
                 }
             }
 
-            // MethodProfiler.a(); // CraftBukkit - not in production code
+            MethodProfiler.a(); // CraftBukkit - not in production code
         }
     }
 
@@ -2485,7 +2485,7 @@ public class World implements IBlockAccess {
     }
 
     public PathEntity findPath(Entity entity, Entity entity1, float f) {
-        // MethodProfiler.a("pathfind"); // CraftBukkit - not in production code
+        MethodProfiler.a("pathfind"); // CraftBukkit - not in production code
         int i = MathHelper.floor(entity.locX);
         int j = MathHelper.floor(entity.locY);
         int k = MathHelper.floor(entity.locZ);
@@ -2499,12 +2499,12 @@ public class World implements IBlockAccess {
         ChunkCache chunkcache = new ChunkCache(this, i1, j1, k1, l1, i2, j2);
         PathEntity pathentity = (new Pathfinder(chunkcache)).a(entity, entity1, f);
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
         return pathentity;
     }
 
     public PathEntity a(Entity entity, int i, int j, int k, float f) {
-        // MethodProfiler.a("pathfind"); // CraftBukkit - not in production code
+        MethodProfiler.a("pathfind"); // CraftBukkit - not in production code
         int l = MathHelper.floor(entity.locX);
         int i1 = MathHelper.floor(entity.locY);
         int j1 = MathHelper.floor(entity.locZ);
@@ -2518,7 +2518,7 @@ public class World implements IBlockAccess {
         ChunkCache chunkcache = new ChunkCache(this, l1, i2, j2, k2, l2, i3);
         PathEntity pathentity = (new Pathfinder(chunkcache)).a(entity, i, j, k, f);
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
         return pathentity;
     }
 

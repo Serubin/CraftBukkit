@@ -170,7 +170,7 @@ public abstract class EntityLiving extends Entity {
     public void am() {
         this.an = this.ao;
         super.am();
-        // MethodProfiler.a("mobBaseTick"); // CraftBukkit - not in production code
+        MethodProfiler.a("mobBaseTick"); // CraftBukkit - not in production code
         if (this.random.nextInt(1000) < this.a++) {
             this.a = -this.h();
             this.al();
@@ -250,7 +250,7 @@ public abstract class EntityLiving extends Entity {
         this.Y = this.X;
         this.lastYaw = this.yaw;
         this.lastPitch = this.pitch;
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
     }
 
     // CraftBukkit start
@@ -932,7 +932,7 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
-        // MethodProfiler.a("ai"); // CraftBukkit - not in production code
+        MethodProfiler.a("ai"); // CraftBukkit - not in production code
         if (this.M()) {
             this.aZ = false;
             this.aW = 0.0F;
@@ -947,7 +947,7 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
         boolean flag = this.aK();
         boolean flag1 = this.aL();
 
@@ -972,7 +972,7 @@ public abstract class EntityLiving extends Entity {
         this.al *= this.G();
         this.a(this.aW, this.aX);
         this.al = f;
-        // MethodProfiler.a("push"); // CraftBukkit - not in production code
+        MethodProfiler.a("push"); // CraftBukkit - not in production code
         List list1 = this.world.getEntities(this, this.boundingBox.grow(0.20000000298023224D, 0.0D, 0.20000000298023224D));
 
         if (list1 != null && list1.size() > 0) {
@@ -985,7 +985,7 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
-        // MethodProfiler.a(); // CraftBukkit - not in production code
+        MethodProfiler.a(); // CraftBukkit - not in production code
     }
 
     protected boolean as() {
