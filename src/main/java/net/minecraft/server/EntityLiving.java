@@ -63,7 +63,7 @@ public abstract class EntityLiving extends Entity {
     protected EntityLiving lastDamager = null;
     public int aJ = 0;
     public int aK = 0;
-    protected HashMap effects = new HashMap();
+    public HashMap effects = new HashMap(); // CraftBukkit - protected -> public
     private boolean b = true;
     private int c;
     private ControllerLook lookController;
@@ -177,7 +177,7 @@ public abstract class EntityLiving extends Entity {
         }
 
         // CraftBukkit start - don't inline the damage, perform it with an event
-        if (this.isAlive() && this.inBlock()) {
+        if (this.isAlive() && this.inBlock() && !(this instanceof EntityEnderDragon)) { // EnderDragon's don't suffocate.
             EntityDamageEvent event = new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.SUFFOCATION, 1);
             this.world.getServer().getPluginManager().callEvent(event);
 
@@ -216,9 +216,11 @@ public abstract class EntityLiving extends Entity {
 
             this.extinguish();
         } else {
-            if (this.getAirTicks() != 300) { // CraftBukkit - only set if needed to work around a datawatcher inefficiency
+            // CraftBukkit start - only set if needed to work around a datawatcher inefficiency
+            if (this.getAirTicks() != 300) {
                 this.setAirTicks(maxAirTicks);
             }
+            // CraftBukkit end
         }
 
         this.ax = this.ay;

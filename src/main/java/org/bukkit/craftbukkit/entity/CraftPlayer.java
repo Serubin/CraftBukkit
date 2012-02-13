@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.entity;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,22 +12,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.minecraft.server.ChunkCoordinates;
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.NBTTagCompound;
-import net.minecraft.server.Packet131ItemData;
-import net.minecraft.server.Packet200Statistic;
-import net.minecraft.server.Packet201PlayerInfo;
-import net.minecraft.server.Packet250CustomPayload;
-import net.minecraft.server.Packet3Chat;
-import net.minecraft.server.Packet51MapChunk;
-import net.minecraft.server.Packet53BlockChange;
-import net.minecraft.server.Packet54PlayNoteBlock;
-import net.minecraft.server.Packet61WorldEvent;
-import net.minecraft.server.Packet6SpawnPosition;
-import net.minecraft.server.Packet70Bed;
-import net.minecraft.server.WorldServer;
+import net.minecraft.server.*;
 import org.bukkit.*;
+import org.bukkit.Achievement;
+import org.bukkit.Material;
+import org.bukkit.Statistic;
+import org.bukkit.World;
 import org.bukkit.configuration.serialization.DelegateDeserialization;
 import org.bukkit.craftbukkit.CraftOfflinePlayer;
 import org.bukkit.craftbukkit.CraftServer;
@@ -46,6 +37,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     private long lastPlayed = 0;
     private boolean hasPlayedBefore = false;
     private Set<String> channels = new HashSet<String>();
+    private Map<String, Player> hiddenPlayers = new MapMaker().softValues().makeMap();
     private int hash = 0;
 
     public CraftPlayer(CraftServer server, EntityPlayer entity) {
@@ -162,8 +154,16 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         getHandle().listName = name;
 
         // Change the name on the client side
-        server.getHandle().sendAll(new Packet201PlayerInfo(oldName, false, 9999));
-        server.getHandle().sendAll(new Packet201PlayerInfo(name, true, getHandle().ping));
+        Packet201PlayerInfo oldpacket = new Packet201PlayerInfo(oldName, false, 9999);
+        Packet201PlayerInfo packet = new Packet201PlayerInfo(name, true, getHandle().ping);
+        for (int i = 0; i < server.getHandle().players.size(); ++i) {
+            EntityPlayer entityplayer = (EntityPlayer) server.getHandle().players.get(i);
+
+            if (entityplayer.getBukkitEntity().canSee(this)) {
+                entityplayer.netServerHandler.sendPacket(oldpacket);
+                entityplayer.netServerHandler.sendPacket(packet);
+            }
+        }
     }
 
     @Override
@@ -562,6 +562,40 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setBedSpawnLocation(Location location) {
         getHandle().a(new ChunkCoordinates(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
         getHandle().spawnWorld = location.getWorld().getName();
+    }
+
+    public void hidePlayer(Player player) {
+        if (hiddenPlayers.containsKey(player.getName())) return;
+        hiddenPlayers.put(player.getName(), player);
+
+        //remove this player from the hidden player's EntityTrackerEntry
+        EntityTracker tracker = ((WorldServer) entity.world).tracker;
+        EntityPlayer other = ((CraftPlayer) player).getHandle();
+        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.a(other.id);
+        if (entry != null) {
+            entry.c(getHandle());
+        }
+
+        //remove the hidden player from this player user list
+        getHandle().netServerHandler.sendPacket(new Packet201PlayerInfo(player.getPlayerListName(), false, 9999));
+    }
+
+    public void showPlayer(Player player) {
+        if (!hiddenPlayers.containsKey(player.getName())) return;
+        hiddenPlayers.remove(player.getName());
+
+        EntityTracker tracker = ((WorldServer) entity.world).tracker;
+        EntityPlayer other = ((CraftPlayer) player).getHandle();
+        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.a(other.id);
+        if (entry != null && !entry.trackedPlayers.contains(getHandle())) {
+            entry.b(getHandle());
+        }
+
+        getHandle().netServerHandler.sendPacket(new Packet201PlayerInfo(player.getPlayerListName(), true, getHandle().ping));
+    }
+
+    public boolean canSee(Player player) {
+        return !hiddenPlayers.containsKey(player.getName());
     }
 
     public Map<String, Object> serialize() {
