@@ -1,22 +1,19 @@
 package net.minecraft.server;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-// CraftBukkit start
 import org.bukkit.Bukkit;
+import org.bukkit.PortalType;
+import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.util.BlockStateListPopulator;
+import org.bukkit.event.entity.EntityCreatePortalEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityCreatePortalEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-
-import java.util.ArrayList;
-import org.bukkit.PortalType;
-import org.bukkit.block.BlockState;
-import org.bukkit.craftbukkit.util.BlockStateListPopulator;
-// CraftBukkit end
 
 public class EntityEnderDragon extends EntityComplex {
 
@@ -40,6 +37,8 @@ public class EntityEnderDragon extends EntityComplex {
     private Entity u;
     public int r = 0;
     public EntityEnderCrystal s = null;
+    
+    private int gg;
 
     public EntityEnderDragon(World world) {
         super(world);
@@ -178,6 +177,44 @@ public class EntityEnderDragon extends EntityComplex {
                     }
 
                     this.b = this.u.boundingBox.b + d7;
+                    
+                    Entity entity = this.u;
+                    
+                    if (d6 < 60.0F) {
+                        double q0 = entity.locX - this.locX;
+                        double q1 = entity.boundingBox.b + (double) (entity.length / 2.0F) - (this.locY + (double) (this.length / 2.0F));
+                        double q2 = entity.locZ - this.locZ;
+
+                        if (this.attackTicks == 0) {
+                            ++this.gg;
+                            if (this.gg == 1) {
+                                this.attackTicks = 60;
+                            } else if (this.gg <= 10) {
+                                this.attackTicks = 3;
+                            } else {
+                                this.attackTicks = 100;
+                                this.gg = 0;
+                            }
+
+                            if (this.gg > 1) {
+                                float q4 = MathHelper.c(f) * 1.5F;
+
+                                this.world.a((EntityHuman) null, 1009, (int) this.locX, (int) this.locY, (int) this.locZ, 0);
+
+                                for (int i = 0; i < 1; ++i) {
+                                    EntityDragonFireball entitydragonfireball = new EntityDragonFireball(this.world, this, q0 + this.random.nextGaussian() * (double) q4, q1, q2 + this.random.nextGaussian() * (double) q4);
+
+                                    entitydragonfireball.locY = this.locY + (double) (this.length / 2.0F) + 0.5D;
+                                    this.world.addEntity(entitydragonfireball);
+                                }
+                            }
+                        }
+                    }
+                    
+                    
+                    
+                    
+                    
                 } else {
                     this.a += this.random.nextGaussian() * 2.0D;
                     this.c += this.random.nextGaussian() * 2.0D;

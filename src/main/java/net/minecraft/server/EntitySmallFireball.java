@@ -2,6 +2,7 @@ package net.minecraft.server;
 
 // CraftBukkit start
 import org.bukkit.Bukkit;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -35,6 +36,9 @@ public class EntitySmallFireball extends EntityFireball {
             // CraftBukkit end
             final Entity movingEntity = movingobjectposition.entity;
             if (movingEntity != null) {
+        	if (movingEntity instanceof EntityEnderDragon) {
+        	    return;
+        	}
                 // CraftBukkit start - entity damage by entity event + combust event
                 if (!movingEntity.isFireproof()) { // check if not fireproof
                     org.bukkit.entity.Entity damagee = movingEntity.getBukkitEntity();
