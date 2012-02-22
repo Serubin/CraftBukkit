@@ -44,6 +44,7 @@ public class MethodProfiler
 
   public static void b(String paramString)
   {
+    if (!a) return;
     a();
     a(paramString);
   }
@@ -54,7 +55,8 @@ public class MethodProfiler
   }
   public static void print(int ticks)
   {
-	  long sum = 0;
+      if (!a) return;
+      long sum = 0;
 	  HashMap<String, Long> newTimes = new HashMap<String, Long>();
 	  Bukkit.getLogger().info("Profiler:");
 	  Bukkit.getLogger().info("" + e.size());
