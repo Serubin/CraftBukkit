@@ -84,7 +84,7 @@ public class CraftWorld implements World {
     }
 
     public Block getBlockAt(int x, int y, int z) {
-        return getChunkAt(x >> 4, z >> 4).getBlock(x & 0xF, y & 0x7F, z & 0xF);
+        return getChunkAt(x >> 4, z >> 4).getBlock(x & 0xF, y & 0xFF, z & 0xF);
     }
 
     public int getBlockTypeIdAt(int x, int y, int z) {
@@ -239,7 +239,7 @@ public class CraftWorld implements World {
         for (int xx = px; xx < (px + 16); xx++) {
             world.notify(xx, 0, pz);
         }
-        world.notify(px, 127, pz + 15);
+        world.notify(px, 255, pz + 15);
 
         return true;
     }
@@ -796,6 +796,9 @@ public class CraftWorld implements World {
             } else if (Arrow.class.isAssignableFrom(clazz)) {
                 entity = new EntityArrow(world);
                 entity.setPositionRotation(x, y, z, 0, 0);
+            } else if (ThrownExpBottle.class.isAssignableFrom(clazz)) {
+                entity = new EntityThrownExpBottle(world);
+                entity.setPositionRotation(x, y, z, 0, 0);
             } else if (Fireball.class.isAssignableFrom(clazz)) {
                 if (SmallFireball.class.isAssignableFrom(clazz)) {
                     entity = new EntitySmallFireball(world);
@@ -828,8 +831,12 @@ public class CraftWorld implements World {
                 } else {
                     entity = new EntityCow(world);
                 }
-            } else if (Snowman.class.isAssignableFrom(clazz)) {
-                entity = new EntitySnowman(world);
+            } else if (Golem.class.isAssignableFrom(clazz)) {
+                if (Snowman.class.isAssignableFrom(clazz)) {
+                    entity = new EntitySnowman(world);
+                } else if (IronGolem.class.isAssignableFrom(clazz)) {
+                    entity = new EntityIronGolem(world);
+                }
             } else if (Creeper.class.isAssignableFrom(clazz)) {
                 entity = new EntityCreeper(world);
             } else if (Ghast.class.isAssignableFrom(clazz)) {
@@ -856,8 +863,12 @@ public class CraftWorld implements World {
                 }
             } else if (Squid.class.isAssignableFrom(clazz)) {
                 entity = new EntitySquid(world);
-            } else if (Wolf.class.isAssignableFrom(clazz)) {
-                entity = new EntityWolf(world);
+            } else if (Tameable.class.isAssignableFrom(clazz)) {
+                if (Wolf.class.isAssignableFrom(clazz)) {
+                    entity = new EntityWolf(world);
+                } else if (Ocelot.class.isAssignableFrom(clazz)) {
+                    entity = new EntityOcelot(world);
+                }
             } else if (PigZombie.class.isAssignableFrom(clazz)) {
                 entity = new EntityPigZombie(world);
             } else if (Zombie.class.isAssignableFrom(clazz)) {
@@ -954,11 +965,11 @@ public class CraftWorld implements World {
     }
 
     public int getMaxHeight() {
-        return world.height;
+        return world.getHeight();
     }
 
     public int getSeaLevel() {
-        return world.seaLevel;
+        return 64;
     }
 
     public boolean getKeepSpawnInMemory() {
