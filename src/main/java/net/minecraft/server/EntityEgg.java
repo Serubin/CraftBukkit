@@ -1,14 +1,12 @@
 package net.minecraft.server;
 
-import org.bukkit.Bukkit;
+// CraftBukkit start
 import org.bukkit.Location;
 import org.bukkit.entity.Animals;
-import org.bukkit.entity.CreatureType;
-import org.bukkit.entity.Projectile;
+import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
+// CraftBukkit end
 
 public class EntityEgg extends EntityProjectile {
 
@@ -27,25 +25,7 @@ public class EntityEgg extends EntityProjectile {
     protected void a(MovingObjectPosition movingobjectposition) {
         // CraftBukkit start
         if (movingobjectposition.entity != null) {
-            boolean stick;
-            if (movingobjectposition.entity instanceof EntityLiving || movingobjectposition.entity instanceof EntityComplexPart) {
-                org.bukkit.entity.Entity damagee = movingobjectposition.entity.getBukkitEntity();
-                Projectile projectile = (Projectile) this.getBukkitEntity();
-
-                EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(projectile, damagee, EntityDamageEvent.DamageCause.PROJECTILE, 0);
-                Bukkit.getPluginManager().callEvent(event);
-
-                if (event.isCancelled()) {
-                    stick = !projectile.doesBounce();
-                } else {
-                    // this function returns if the egg should stick in or not, i.e. !bounce
-                    stick = movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.shooter), event.getDamage());
-                }
-            } else {
-                stick = movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.shooter), 0);
-            }
-
-            if (stick) {
+            if (org.bukkit.craftbukkit.event.CraftEventFactory.handleProjectileEvent((org.bukkit.entity.Projectile) this.getBukkitEntity(), movingobjectposition.entity, DamageSource.projectile(this, this.shooter), 0)) {
                 ; // Original code does nothing *yet*
             }
         }
@@ -56,7 +36,7 @@ public class EntityEgg extends EntityProjectile {
             numHatching = 0;
         }
 
-        CreatureType hatchingType = CreatureType.CHICKEN;
+        EntityType hatchingType = EntityType.CHICKEN;
 
         if (this.shooter instanceof EntityPlayer) {
             org.bukkit.entity.Player player = (this.shooter == null) ? null : (org.bukkit.entity.Player) this.shooter.getBukkitEntity();
@@ -66,7 +46,7 @@ public class EntityEgg extends EntityProjectile {
 
             hatching = event.isHatching();
             numHatching = event.getNumHatches();
-            hatchingType = event.getHatchType();
+            hatchingType = event.getHatchingType();
         }
 
         if (hatching) {

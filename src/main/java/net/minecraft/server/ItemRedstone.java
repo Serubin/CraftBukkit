@@ -12,7 +12,7 @@ public class ItemRedstone extends Item {
         super(i);
     }
 
-    public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
+    public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
         int clickedX = i, clickedY = j, clickedZ = k; // CraftBukkit
 
         if (world.getTypeId(i, j, k) != Block.SNOW.id) {
@@ -55,7 +55,7 @@ public class ItemRedstone extends Item {
                 world.suppressPhysics = true;
                 world.setRawTypeId(i, j, k, Block.REDSTONE_WIRE.id); // We update after the event
 
-                BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ, Block.REDSTONE_WIRE);
+                BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ);
                 blockState.update(true);
 
                 if (event.isCancelled() || !event.canBuild()) {

@@ -16,7 +16,7 @@ public class ItemFlintAndSteel extends Item {
         this.setMaxDurability(64);
     }
 
-    public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
+    public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
         int clickedX = i, clickedY = j, clickedZ = k; // CraftBukkit
 
         if (l == 0) {
@@ -68,7 +68,7 @@ public class ItemFlintAndSteel extends Item {
                 world.setTypeId(i, j, k, Block.FIRE.id);
 
                 // CraftBukkit start
-                BlockPlaceEvent placeEvent = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ, Block.FIRE.id);
+                BlockPlaceEvent placeEvent = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ);
 
                 if (placeEvent.isCancelled() || !placeEvent.canBuild()) {
                     placeEvent.getBlockPlaced().setTypeIdAndData(0, (byte) 0, false);

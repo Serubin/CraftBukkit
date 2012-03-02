@@ -193,12 +193,12 @@ public class AxisAlignedBB
 
     Vec3D localVec3D7 = null;
 
-    if ((localVec3D1 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D1) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D1;
-    if ((localVec3D2 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D2) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D2;
-    if ((localVec3D3 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D3) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D3;
-    if ((localVec3D4 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D4) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D4;
-    if ((localVec3D5 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D5) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D5;
-    if ((localVec3D6 != null) && ((localVec3D7 == null) || (paramVec3D1.c(localVec3D6) < paramVec3D1.c(localVec3D7)))) localVec3D7 = localVec3D6;
+    if ((localVec3D1 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D1) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D1;
+    if ((localVec3D2 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D2) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D2;
+    if ((localVec3D3 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D3) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D3;
+    if ((localVec3D4 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D4) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D4;
+    if ((localVec3D5 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D5) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D5;
+    if ((localVec3D6 != null) && ((localVec3D7 == null) || (paramVec3D1.distanceSquared(localVec3D6) < paramVec3D1.distanceSquared(localVec3D7)))) localVec3D7 = localVec3D6;
 
     if (localVec3D7 == null) return null;
 

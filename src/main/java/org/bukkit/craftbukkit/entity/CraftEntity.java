@@ -9,7 +9,10 @@ import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
 import java.util.List;
@@ -130,7 +133,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
         }
         else if (entity instanceof EntityPainting) { return new CraftPainting(server, (EntityPainting) entity); }
         else if (entity instanceof EntityTNTPrimed) { return new CraftTNTPrimed(server, (EntityTNTPrimed) entity); }
-        
+
         throw new IllegalArgumentException("Unknown entity");
     }
 
@@ -294,7 +297,7 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
     }
 
     public void playEffect(EntityEffect type) {
-        this.getHandle().world.a(getHandle(), type.getData());
+        this.getHandle().world.broadcastEntityEffect(getHandle(), type.getData());
     }
 
     public void setHandle(final Entity entity) {
@@ -323,5 +326,42 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
         int hash = 7;
         hash = 29 * hash + this.getEntityId();
         return hash;
+    }
+
+    public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
+        server.getEntityMetadata().setMetadata(this, metadataKey, newMetadataValue);
+    }
+
+    public List<MetadataValue> getMetadata(String metadataKey) {
+        return server.getEntityMetadata().getMetadata(this, metadataKey);
+    }
+
+    public boolean hasMetadata(String metadataKey) {
+        return server.getEntityMetadata().hasMetadata(this, metadataKey);
+    }
+
+    public void removeMetadata(String metadataKey, Plugin owningPlugin) {
+        server.getEntityMetadata().removeMetadata(this, metadataKey, owningPlugin);
+    }
+
+    public boolean isInsideVehicle() {
+        return getHandle().vehicle != null;
+    }
+
+    public boolean leaveVehicle() {
+        if (getHandle().vehicle == null) {
+            return false;
+        }
+
+        getHandle().setPassengerOf(null);
+        return true;
+    }
+
+    public org.bukkit.entity.Entity getVehicle() {
+        if (getHandle().vehicle == null) {
+            return null;
+        }
+
+        return getHandle().vehicle.getBukkitEntity();
     }
 }

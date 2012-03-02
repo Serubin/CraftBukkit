@@ -3,24 +3,27 @@ package org.bukkit.craftbukkit.block;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
-import org.bukkit.block.PistonMoveReaction;
 
 import net.minecraft.server.BiomeBase;
 import net.minecraft.server.BlockRedstoneWire;
 import net.minecraft.server.EnumSkyBlock;
-import net.minecraft.server.MinecraftServer;
 
-import org.bukkit.*;
+import org.bukkit.Chunk;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Biome;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.PistonMoveReaction;
 import org.bukkit.craftbukkit.CraftChunk;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BlockVector;
+
+import java.util.List;
 
 public class CraftBlock implements Block {
     private final CraftChunk chunk;
@@ -121,11 +124,11 @@ public class CraftBlock implements Block {
     }
 
     public byte getLightFromSky() {
-        return (byte) chunk.getHandle().a(EnumSkyBlock.SKY, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
+        return (byte) chunk.getHandle().getBrightness(EnumSkyBlock.SKY, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
     }
 
     public byte getLightFromBlocks() {
-        return (byte) chunk.getHandle().a(EnumSkyBlock.BLOCK, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
+        return (byte) chunk.getHandle().getBrightness(EnumSkyBlock.BLOCK, this.x & 0xF, this.y & 0x7F, this.z & 0xF);
     }
 
 
@@ -250,7 +253,7 @@ public class CraftBlock implements Block {
             return null;
         }
 
-        return BIOME_MAPPING[base.K];
+        return BIOME_MAPPING[base.id];
     }
 
     public double getTemperature() {
@@ -323,7 +326,7 @@ public class CraftBlock implements Block {
     private boolean itemCausesDrops(ItemStack item) {
         net.minecraft.server.Block block = net.minecraft.server.Block.byId[this.getTypeId()];
         net.minecraft.server.Item itemType = item != null ? net.minecraft.server.Item.byId[item.getTypeId()] : null;
-        return block != null && (block.material.k() || (itemType != null && itemType.a(block)));
+        return block != null && (block.material.isAlwaysDestroyable() || (itemType != null && itemType.canDestroySpecialBlock(block)));
     }
 
     public boolean breakNaturally() {
@@ -374,34 +377,50 @@ public class CraftBlock implements Block {
 
     /* Build biome index based lookup table for BiomeBase to Biome mapping */
     static {
-        BIOME_MAPPING = new Biome[BiomeBase.a.length];
-        BIOME_MAPPING[BiomeBase.SWAMPLAND.K] = Biome.SWAMPLAND;
-        BIOME_MAPPING[BiomeBase.FOREST.K] = Biome.FOREST;
-        BIOME_MAPPING[BiomeBase.TAIGA.K] = Biome.TAIGA;
-        BIOME_MAPPING[BiomeBase.DESERT.K] = Biome.DESERT;
-        BIOME_MAPPING[BiomeBase.PLAINS.K] = Biome.PLAINS;
-        BIOME_MAPPING[BiomeBase.HELL.K] = Biome.HELL;
-        BIOME_MAPPING[BiomeBase.SKY.K] = Biome.SKY;
-        BIOME_MAPPING[BiomeBase.RIVER.K] = Biome.RIVER;
-        BIOME_MAPPING[BiomeBase.EXTREME_HILLS.K] = Biome.EXTREME_HILLS;
-        BIOME_MAPPING[BiomeBase.OCEAN.K] = Biome.OCEAN;
-        BIOME_MAPPING[BiomeBase.FROZEN_OCEAN.K] = Biome.FROZEN_OCEAN;
-        BIOME_MAPPING[BiomeBase.FROZEN_RIVER.K] = Biome.FROZEN_RIVER;
-        BIOME_MAPPING[BiomeBase.ICE_PLAINS.K] = Biome.ICE_PLAINS;
-        BIOME_MAPPING[BiomeBase.ICE_MOUNTAINS.K] = Biome.ICE_MOUNTAINS;
-        BIOME_MAPPING[BiomeBase.MUSHROOM_ISLAND.K] = Biome.MUSHROOM_ISLAND;
-        BIOME_MAPPING[BiomeBase.MUSHROOM_SHORE.K] = Biome.MUSHROOM_SHORE;
-        BIOME_MAPPING[BiomeBase.BEACH.K] = Biome.BEACH;
-        BIOME_MAPPING[BiomeBase.DESERT_HILLS.K] = Biome.DESERT_HILLS;
-        BIOME_MAPPING[BiomeBase.FOREST_HILLS.K] = Biome.FOREST_HILLS;
-        BIOME_MAPPING[BiomeBase.TAIGA_HILLS.K] = Biome.TAIGA_HILLS;
-        BIOME_MAPPING[BiomeBase.SMALL_MOUNTAINS.K] = Biome.SMALL_MOUNTAINS;
+        BIOME_MAPPING = new Biome[BiomeBase.biomes.length];
+        BIOME_MAPPING[BiomeBase.SWAMPLAND.id] = Biome.SWAMPLAND;
+        BIOME_MAPPING[BiomeBase.FOREST.id] = Biome.FOREST;
+        BIOME_MAPPING[BiomeBase.TAIGA.id] = Biome.TAIGA;
+        BIOME_MAPPING[BiomeBase.DESERT.id] = Biome.DESERT;
+        BIOME_MAPPING[BiomeBase.PLAINS.id] = Biome.PLAINS;
+        BIOME_MAPPING[BiomeBase.HELL.id] = Biome.HELL;
+        BIOME_MAPPING[BiomeBase.SKY.id] = Biome.SKY;
+        BIOME_MAPPING[BiomeBase.RIVER.id] = Biome.RIVER;
+        BIOME_MAPPING[BiomeBase.EXTREME_HILLS.id] = Biome.EXTREME_HILLS;
+        BIOME_MAPPING[BiomeBase.OCEAN.id] = Biome.OCEAN;
+        BIOME_MAPPING[BiomeBase.FROZEN_OCEAN.id] = Biome.FROZEN_OCEAN;
+        BIOME_MAPPING[BiomeBase.FROZEN_RIVER.id] = Biome.FROZEN_RIVER;
+        BIOME_MAPPING[BiomeBase.ICE_PLAINS.id] = Biome.ICE_PLAINS;
+        BIOME_MAPPING[BiomeBase.ICE_MOUNTAINS.id] = Biome.ICE_MOUNTAINS;
+        BIOME_MAPPING[BiomeBase.MUSHROOM_ISLAND.id] = Biome.MUSHROOM_ISLAND;
+        BIOME_MAPPING[BiomeBase.MUSHROOM_SHORE.id] = Biome.MUSHROOM_SHORE;
+        BIOME_MAPPING[BiomeBase.BEACH.id] = Biome.BEACH;
+        BIOME_MAPPING[BiomeBase.DESERT_HILLS.id] = Biome.DESERT_HILLS;
+        BIOME_MAPPING[BiomeBase.FOREST_HILLS.id] = Biome.FOREST_HILLS;
+        BIOME_MAPPING[BiomeBase.TAIGA_HILLS.id] = Biome.TAIGA_HILLS;
+        BIOME_MAPPING[BiomeBase.SMALL_MOUNTAINS.id] = Biome.SMALL_MOUNTAINS;
         /* Sanity check - we should have a record for each record in the BiomeBase.a table */
         /* Helps avoid missed biomes when we upgrade bukkit to new code with new biomes */
         for (int i = 0; i < BIOME_MAPPING.length; i++) {
-            if ((BiomeBase.a[i] != null) && (BIOME_MAPPING[i] == null)) {
+            if ((BiomeBase.biomes[i] != null) && (BIOME_MAPPING[i] == null)) {
                 throw new IllegalArgumentException("Missing Biome mapping for BiomeBase[" + i + "]");
             }
         }
+    }
+
+    public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
+        chunk.getCraftWorld().getBlockMetadata().setMetadata(this, metadataKey, newMetadataValue);
+    }
+
+    public List<MetadataValue> getMetadata(String metadataKey) {
+        return chunk.getCraftWorld().getBlockMetadata().getMetadata(this, metadataKey);
+    }
+
+    public boolean hasMetadata(String metadataKey) {
+        return chunk.getCraftWorld().getBlockMetadata().hasMetadata(this, metadataKey);
+    }
+
+    public void removeMetadata(String metadataKey, Plugin owningPlugin) {
+        chunk.getCraftWorld().getBlockMetadata().removeMetadata(this, metadataKey, owningPlugin);
     }
 }

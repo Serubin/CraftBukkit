@@ -1,6 +1,5 @@
 package net.minecraft.server;
 
-import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -28,8 +27,8 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.LoggerOutputStream;
 import org.bukkit.craftbukkit.scheduler.CraftScheduler;
 import org.bukkit.craftbukkit.util.ServerShutdownThread;
-import org.bukkit.event.Event;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldSaveEvent;
@@ -172,7 +171,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             }
         }
 
-        WorldType worldtype = WorldType.a(s2);
+        WorldType worldtype = WorldType.getType(s2);
 
         if (worldtype == null) {
             worldtype = WorldType.NORMAL;
@@ -614,13 +613,13 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
             ServerCommand servercommand = (ServerCommand) this.y.remove(0);
 
             // CraftBukkit start - ServerCommand for preprocessing
-            ServerCommandEvent event = new ServerCommandEvent(Event.Type.SERVER_COMMAND, this.console, servercommand.command);
+            ServerCommandEvent event = new ServerCommandEvent(this.console, servercommand.command);
             this.server.getPluginManager().callEvent(event);
             servercommand = new ServerCommand(event.getCommand(), servercommand.source);
             // CraftBukkit end
 
-            // this.consoleCommandHandler.handle(servercommand); // CraftBukkit - Removed its now called in server.dispatchCommand
-            this.server.dispatchCommand(this.console, servercommand); // CraftBukkit
+            // this.consoleCommandHandler.handle(servercommand); // CraftBukkit - Removed its now called in server.dispatchServerCommand
+            this.server.dispatchServerCommand(this.console, servercommand); // CraftBukkit
         }
     }
 
@@ -760,11 +759,11 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     public String d(String s) {
         RemoteControlCommandListener.instance.a();
         // CraftBukkit start
-        ServerCommandEvent event = new ServerCommandEvent(Event.Type.REMOTE_COMMAND, this.remoteConsole, s);
+        RemoteServerCommandEvent event = new RemoteServerCommandEvent(this.remoteConsole, s);
         this.server.getPluginManager().callEvent(event);
         ServerCommand servercommand = new ServerCommand(event.getCommand(), RemoteControlCommandListener.instance);
         // this.consoleCommandHandler.handle(new ServerCommand(s, RemoteControlCommandListener.instance)); // CraftBukkit - removed
-        this.server.dispatchCommand(this.remoteConsole, servercommand); // CraftBukkit
+        this.server.dispatchServerCommand(this.remoteConsole, servercommand); // CraftBukkit
         // CraftBukkit end
         return RemoteControlCommandListener.instance.b();
     }

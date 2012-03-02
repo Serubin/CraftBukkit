@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.1-R4-newChunkCache</version>
+  <version>1.1-R5-newChunkCache</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -51,14 +51,14 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.1-R4-hydrox</version>
+      <version>1.1-R5-hydrox</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>minecraft-server</artifactId>
-      <version>1.1_01</version>
+      <version>1.1_02</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
@@ -111,6 +111,12 @@
       <type>jar</type>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.3</version>
+        <scope>provided</scope>
+    </dependency>
     <!-- testing -->
     <dependency>
       <groupId>junit</groupId>
@@ -129,6 +135,11 @@
       <artifactId>hamcrest-library</artifactId>
       <version>1.2.1</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.1</version>
     </dependency>
   </dependencies>
 

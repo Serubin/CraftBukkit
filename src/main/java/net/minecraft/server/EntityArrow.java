@@ -6,8 +6,6 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 // CraftBukkit end
@@ -46,7 +44,7 @@ public class EntityArrow extends Entity {
         this.shooter = entityliving;
         this.fromPlayer = entityliving instanceof EntityHuman;
         this.b(0.5F, 0.5F);
-        this.setPositionRotation(entityliving.locX, entityliving.locY + (double) entityliving.y(), entityliving.locZ, entityliving.yaw, entityliving.pitch);
+        this.setPositionRotation(entityliving.locX, entityliving.locY + (double) entityliving.getHeadHeight(), entityliving.locZ, entityliving.yaw, entityliving.pitch);
         this.locX -= (double) (MathHelper.cos(this.yaw / 180.0F * 3.1415927F) * 0.16F);
         this.locY -= 0.10000000149011612D;
         this.locZ -= (double) (MathHelper.sin(this.yaw / 180.0F * 3.1415927F) * 0.16F);
@@ -132,7 +130,7 @@ public class EntityArrow extends Entity {
             vec3d = Vec3D.create(this.locX, this.locY, this.locZ);
             vec3d1 = Vec3D.create(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
             if (movingobjectposition != null) {
-                vec3d1 = Vec3D.create(movingobjectposition.f.a, movingobjectposition.f.b, movingobjectposition.f.c);
+                vec3d1 = Vec3D.create(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
             }
 
             Entity entity = null;
@@ -151,7 +149,7 @@ public class EntityArrow extends Entity {
                     MovingObjectPosition movingobjectposition1 = axisalignedbb1.a(vec3d, vec3d1);
 
                     if (movingobjectposition1 != null) {
-                        double d1 = vec3d.c(movingobjectposition1.f); // CraftBukkit - distance efficiency
+                        double d1 = vec3d.distanceSquared(movingobjectposition1.pos); // CraftBukkit - distance efficiency
 
                         if (d1 < d0 || d0 == 0.0D) {
                             entity = entity1;
@@ -169,7 +167,8 @@ public class EntityArrow extends Entity {
 
             if (movingobjectposition != null) {
                 // CraftBukkit start
-                ProjectileHitEvent phe = new ProjectileHitEvent((Projectile) this.getBukkitEntity());
+                Projectile projectile = (Projectile) this.getBukkitEntity();
+                ProjectileHitEvent phe = new ProjectileHitEvent(projectile);
                 this.world.getServer().getPluginManager().callEvent(phe);
                 // CraftBukkit end
                 if (movingobjectposition.entity != null) {
@@ -188,7 +187,7 @@ public class EntityArrow extends Entity {
                         damagesource = DamageSource.arrow(this, this.shooter);
                     }
 
-                    if (this.isBurning() && this.world.pvpMode) { // CraftBukkit - abide by pvp setting.
+                    if (this.isBurning() && (!(movingobjectposition.entity instanceof EntityPlayer) || this.world.pvpMode)) { // CraftBukkit - abide by pvp setting if destination is a player.
                         // CraftBukkit start
                         EntityCombustByEntityEvent combustEvent = new EntityCombustByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), 5);
                         Bukkit.getPluginManager().callEvent(combustEvent);
@@ -198,28 +197,8 @@ public class EntityArrow extends Entity {
                         }
                         // CraftBukkit end
                     }
-
-                    // CraftBukkit start
-                    boolean stick;
-                    if (entity instanceof EntityLiving || entity instanceof EntityComplexPart) {
-                        org.bukkit.entity.Entity damagee = movingobjectposition.entity.getBukkitEntity();
-                        Projectile projectile = (Projectile) this.getBukkitEntity();
-
-                        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(projectile, damagee, EntityDamageEvent.DamageCause.PROJECTILE, l);
-                        Bukkit.getPluginManager().callEvent(event);
-
-                        if (event.isCancelled()) {
-                            stick = !projectile.doesBounce();
-                        } else {
-                            // this function returns if the arrow should stick in or not, i.e. !bounce
-                            stick = movingobjectposition.entity.damageEntity(damagesource, event.getDamage());
-                        }
-                    } else {
-                        stick = movingobjectposition.entity.damageEntity(damagesource, l);
-                    }
-
-                    if (stick) {
-                        // CraftBukkit end
+                    // CraftBukkit - entity.damageEntity -> event function
+                    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleProjectileEvent(projectile, entity, damagesource, l)) {
                         if (movingobjectposition.entity instanceof EntityLiving) {
                             ++((EntityLiving) movingobjectposition.entity).aJ;
                             if (this.n > 0) {
@@ -247,9 +226,9 @@ public class EntityArrow extends Entity {
                     this.g = movingobjectposition.d;
                     this.h = this.world.getTypeId(this.e, this.f, this.g);
                     this.i = this.world.getData(this.e, this.f, this.g);
-                    this.motX = (double) ((float) (movingobjectposition.f.a - this.locX));
-                    this.motY = (double) ((float) (movingobjectposition.f.b - this.locY));
-                    this.motZ = (double) ((float) (movingobjectposition.f.c - this.locZ));
+                    this.motX = (double) ((float) (movingobjectposition.pos.a - this.locX));
+                    this.motY = (double) ((float) (movingobjectposition.pos.b - this.locY));
+                    this.motZ = (double) ((float) (movingobjectposition.pos.c - this.locZ));
                     f2 = MathHelper.sqrt(this.motX * this.motX + this.motY * this.motY + this.motZ * this.motZ);
                     this.locX -= this.motX / (double) f2 * 0.05000000074505806D;
                     this.locY -= this.motY / (double) f2 * 0.05000000074505806D;

@@ -6,6 +6,7 @@ import java.util.Set;
 import org.apache.commons.lang.Validate;
 
 import org.bukkit.craftbukkit.entity.*;
+import org.bukkit.craftbukkit.metadata.BlockMetadataStore;
 import org.bukkit.entity.*;
 import org.bukkit.entity.Entity;
 
@@ -31,6 +32,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Boat;
 import org.bukkit.Chunk;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 import org.bukkit.BlockChangeDelegate;
@@ -38,6 +40,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -46,6 +49,7 @@ import org.bukkit.Difficulty;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.plugin.messaging.StandardMessenger;
+import org.bukkit.potion.Potion;
 
 public class CraftWorld implements World {
 
@@ -59,6 +63,7 @@ public class CraftWorld implements World {
     private ConcurrentMap<Integer, CraftChunk> unloadedChunks = new MapMaker().weakValues().makeMap();
     private final ChunkGenerator generator;
     private final List<BlockPopulator> populators = new ArrayList<BlockPopulator>();
+    private final BlockMetadataStore blockMetadata = new BlockMetadataStore(this);
 
     private static final Random rand = new Random();
 
@@ -346,7 +351,12 @@ public class CraftWorld implements World {
         return (Arrow) arrow.getBukkitEntity();
     }
 
+    @Deprecated
     public LivingEntity spawnCreature(Location loc, CreatureType creatureType) {
+        return spawnCreature(loc, creatureType.toEntityType());
+    }
+
+    public LivingEntity spawnCreature(Location loc, EntityType creatureType) {
         Entity result = spawn(loc, creatureType.getEntityClass());
 
         if (result == null) {
@@ -375,16 +385,16 @@ public class CraftWorld implements World {
     public boolean generateTree(Location loc, TreeType type, BlockChangeDelegate delegate) {
         switch (type) {
         case BIG_TREE:
-            return new WorldGenBigTree(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), null, null, null);
+            return new WorldGenBigTree(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         case BIRCH:
-            return new WorldGenForest(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), null, null, null);
+            return new WorldGenForest(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         case REDWOOD:
-            return new WorldGenTaiga2(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), null, null, null);
+            return new WorldGenTaiga2(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         case TALL_REDWOOD:
             return new WorldGenTaiga1().generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         case TREE:
         default:
-            return new WorldGenTrees(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), null, null, null);
+            return new WorldGenTrees(false).generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         }
     }
 
@@ -546,8 +556,36 @@ public class CraftWorld implements World {
     }
 
     @SuppressWarnings("unchecked")
+    @Deprecated
     public <T extends Entity> Collection<T> getEntitiesByClass(Class<T>... classes) {
+        return (Collection<T>)getEntitiesByClasses(classes);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Entity> Collection<T> getEntitiesByClass(Class<T> clazz) {
         Collection<T> list = new ArrayList<T>();
+
+        for (Object entity: world.entityList) {
+            if (entity instanceof net.minecraft.server.Entity) {
+                Entity bukkitEntity = ((net.minecraft.server.Entity) entity).getBukkitEntity();
+
+                if (bukkitEntity == null) {
+                    continue;
+                }
+
+                Class<?> bukkitClass = bukkitEntity.getClass();
+
+                if (clazz.isAssignableFrom(bukkitClass)) {
+                    list.add((T) bukkitEntity);
+                }
+            }
+        }
+
+        return list;
+    }
+
+    public Collection<Entity> getEntitiesByClasses(Class<?>... classes) {
+        Collection<Entity> list = new ArrayList<Entity>();
 
         for (Object entity: world.entityList) {
             if (entity instanceof net.minecraft.server.Entity) {
@@ -561,7 +599,7 @@ public class CraftWorld implements World {
 
                 for (Class<?> clazz : classes) {
                     if (clazz.isAssignableFrom(bukkitClass)) {
-                        list.add((T) bukkitEntity);
+                        list.add(bukkitEntity);
                         break;
                     }
                 }
@@ -611,6 +649,10 @@ public class CraftWorld implements World {
 
     public Difficulty getDifficulty() {
         return Difficulty.getByValue(this.getHandle().difficulty);
+    }
+
+    public BlockMetadataStore getBlockMetadata() {
+        return blockMetadata;
     }
 
     public boolean hasStorm() {
@@ -690,6 +732,21 @@ public class CraftWorld implements World {
 
     public void playEffect(Location location, Effect effect, int data) {
         playEffect(location, effect, data, 64);
+    }
+
+    public <T> void playEffect(Location loc, Effect effect, T data) {
+        playEffect(loc, effect, data, 64);
+    }
+
+    public <T> void playEffect(Location loc, Effect effect, T data, int radius) {
+        if (data != null) {
+            Validate.isTrue(data.getClass().equals(effect.getData()), "Wrong kind of data for this effect!");
+        } else {
+            Validate.isTrue(effect.getData() == null, "Wrong kind of data for this effect!");
+        }
+
+        int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
+        playEffect(loc, effect, datavalue, radius);
     }
 
     public void playEffect(Location location, Effect effect, int data, int radius) {
@@ -995,7 +1052,7 @@ public class CraftWorld implements World {
     }
 
     public boolean canGenerateStructures() {
-        return world.getWorldData().o();
+        return world.getWorldData().shouldGenerateMapFeatures();
     }
 
     public long getTicksPerAnimalSpawns() {
@@ -1012,5 +1069,21 @@ public class CraftWorld implements World {
 
     public void setTicksPerMonsterSpawns(int ticksPerMonsterSpawns) {
         world.ticksPerMonsterSpawns = ticksPerMonsterSpawns;
+    }
+
+    public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
+        server.getWorldMetadata().setMetadata(this, metadataKey, newMetadataValue);
+    }
+
+    public List<MetadataValue> getMetadata(String metadataKey) {
+        return server.getWorldMetadata().getMetadata(this, metadataKey);
+    }
+
+    public boolean hasMetadata(String metadataKey) {
+        return server.getWorldMetadata().hasMetadata(this, metadataKey);
+    }
+
+    public void removeMetadata(String metadataKey, Plugin owningPlugin) {
+        server.getWorldMetadata().removeMetadata(this, metadataKey, owningPlugin);
     }
 }

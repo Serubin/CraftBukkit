@@ -20,7 +20,7 @@ public class ItemBlock extends Item {
         return this.id;
     }
 
-    public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
+    public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
         int clickedX = i, clickedY = j, clickedZ = k; // CraftBukkit
         int i1 = world.getTypeId(i, j, k);
 
@@ -68,7 +68,7 @@ public class ItemBlock extends Item {
 
             world.suppressPhysics = true;
             world.setTypeIdAndData(i, j, k, id, this.filterData(itemstack.getData()));
-            BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, replacedBlockState, clickedX, clickedY, clickedZ, block);
+            BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, replacedBlockState, clickedX, clickedY, clickedZ);
             id = world.getTypeId(i, j, k);
             int data = world.getData(i, j, k);
             replacedBlockState.update(true);

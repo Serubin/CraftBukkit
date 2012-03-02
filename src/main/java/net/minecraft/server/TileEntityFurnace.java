@@ -1,9 +1,16 @@
 package net.minecraft.server;
 
 // CraftBukkit start
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 // CraftBukkit end
 
 public class TileEntityFurnace extends TileEntity implements IInventory {
@@ -15,9 +22,22 @@ public class TileEntityFurnace extends TileEntity implements IInventory {
 
     // CraftBukkit start
     private int lastTick = (int) (System.currentTimeMillis() / 50);
+    public List<HumanEntity> transaction = new ArrayList<HumanEntity>();
 
     public ItemStack[] getContents() {
         return this.items;
+    }
+
+    public void onOpen(CraftHumanEntity who) {
+        transaction.add(who);
+    }
+
+    public void onClose(CraftHumanEntity who) {
+        transaction.remove(who);
+    }
+
+    public List<HumanEntity> getViewers() {
+        return transaction;
     }
     // CraftBukkit end
 
@@ -94,7 +114,7 @@ public class TileEntityFurnace extends TileEntity implements IInventory {
                 NBTTagCompound nbttagcompound1 = new NBTTagCompound();
 
                 nbttagcompound1.setByte("Slot", (byte) i);
-                this.items[i].b(nbttagcompound1);
+                this.items[i].save(nbttagcompound1);
                 nbttaglist.add(nbttagcompound1);
             }
         }
@@ -190,7 +210,7 @@ public class TileEntityFurnace extends TileEntity implements IInventory {
         if (this.items[0] == null) {
             return false;
         } else {
-            ItemStack itemstack = FurnaceRecipes.getInstance().a(this.items[0].getItem().id);
+            ItemStack itemstack = FurnaceRecipes.getInstance().getResult(this.items[0].getItem().id);
 
             // CraftBukkit - consider resultant count instead of current count
             return itemstack == null ? false : (this.items[2] == null ? true : (!this.items[2].doMaterialsMatch(itemstack) ? false : (this.items[2].count + itemstack.count <= this.getMaxStackSize() && this.items[2].count < this.items[2].getMaxStackSize() ? true : this.items[2].count + itemstack.count <= itemstack.getMaxStackSize())));
@@ -199,7 +219,7 @@ public class TileEntityFurnace extends TileEntity implements IInventory {
 
     public void burn() {
         if (this.canBurn()) {
-            ItemStack itemstack = FurnaceRecipes.getInstance().a(this.items[0].getItem().id);
+            ItemStack itemstack = FurnaceRecipes.getInstance().getResult(this.items[0].getItem().id);
 
             // CraftBukkit start
             CraftItemStack source = new CraftItemStack(this.items[0]);

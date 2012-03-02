@@ -3,12 +3,9 @@ package net.minecraft.server;
 import java.util.List;
 
 // CraftBukkit start
-import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Explosive;
 import org.bukkit.entity.Projectile;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 // CraftBukkit end
@@ -97,7 +94,7 @@ public class EntityFireball extends Entity {
         vec3d = Vec3D.create(this.locX, this.locY, this.locZ);
         vec3d1 = Vec3D.create(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
         if (movingobjectposition != null) {
-            vec3d1 = Vec3D.create(movingobjectposition.f.a, movingobjectposition.f.b, movingobjectposition.f.c);
+            vec3d1 = Vec3D.create(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
         }
 
         Entity entity = null;
@@ -113,7 +110,7 @@ public class EntityFireball extends Entity {
                 MovingObjectPosition movingobjectposition1 = axisalignedbb.a(vec3d, vec3d1);
 
                 if (movingobjectposition1 != null) {
-                    double d1 = vec3d.c(movingobjectposition1.f); // CraftBukkit - distance efficiency
+                    double d1 = vec3d.distanceSquared(movingobjectposition1.pos); // CraftBukkit - distance efficiency
 
                     if (d1 < d0 || d0 == 0.0D) {
                         entity = entity1;
@@ -181,30 +178,14 @@ public class EntityFireball extends Entity {
     protected void a(MovingObjectPosition movingobjectposition) {
         if (!this.world.isStatic) {
             // CraftBukkit start
-            ProjectileHitEvent phe = new ProjectileHitEvent((Projectile) this.getBukkitEntity());
+            Projectile projectile = (Projectile) this.getBukkitEntity();
+            ProjectileHitEvent phe = new ProjectileHitEvent(projectile);
             this.world.getServer().getPluginManager().callEvent(phe);
             // CraftBukkit end
             if (!this.world.isStatic) {
                 // CraftBukkit start
                 if (movingobjectposition.entity != null) {
-                    boolean stick;
-                    if (movingobjectposition.entity instanceof EntityLiving || movingobjectposition.entity instanceof EntityComplexPart) {
-                        org.bukkit.entity.Entity damagee = movingobjectposition.entity.getBukkitEntity();
-                        Projectile projectile = (Projectile) this.getBukkitEntity();
-
-                        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(projectile, damagee, EntityDamageEvent.DamageCause.PROJECTILE, 0);
-                        Bukkit.getPluginManager().callEvent(event);
-
-                        if (event.isCancelled()) {
-                            stick = !projectile.doesBounce();
-                        } else {
-                            // this function returns if the fireball should stick in or not, i.e. !bounce
-                            stick = movingobjectposition.entity.damageEntity(DamageSource.fireball(this, this.shooter), event.getDamage());
-                        }
-                    } else {
-                        stick = movingobjectposition.entity.damageEntity(DamageSource.fireball(this, this.shooter), 0);
-                    }
-                    if (stick) {
+                    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleProjectileEvent(projectile, movingobjectposition.entity, DamageSource.projectile(this, this.shooter), 0)) {
                         ;
                     }
                 }

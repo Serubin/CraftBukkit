@@ -1,103 +1,135 @@
 package org.bukkit.craftbukkit;
 
-import java.io.FileNotFoundException;
-
-import org.bukkit.generator.ChunkGenerator;
-import com.avaje.ebean.config.DataSourceConfig;
-import com.avaje.ebean.config.ServerConfig;
-import com.avaje.ebean.config.dbplatform.SQLitePlatform;
-import com.avaje.ebeaninternal.server.lib.sql.TransactionIsolation;
-import com.google.common.collect.MapMaker;
-import net.minecraft.server.IWorldAccess;
-import org.bukkit.World.Environment;
-import org.bukkit.command.*;
-import org.bukkit.entity.Player;
-import org.bukkit.event.world.WorldLoadEvent;
-import org.bukkit.event.world.WorldSaveEvent;
-import org.bukkit.event.world.WorldUnloadEvent;
-import org.bukkit.inventory.FurnaceRecipe;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
-import org.bukkit.inventory.ShapelessRecipe;
-
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jline.ConsoleReader;
+
 import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.ConvertProgressUpdater;
 import net.minecraft.server.Convertable;
+import net.minecraft.server.CraftingManager;
 import net.minecraft.server.Enchantment;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.EntityTracker;
+import net.minecraft.server.FurnaceRecipes;
 import net.minecraft.server.IProgressUpdate;
+import net.minecraft.server.IWorldAccess;
+import net.minecraft.server.Item;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.MobEffectList;
 import net.minecraft.server.PropertyManager;
+import net.minecraft.server.ServerCommand;
 import net.minecraft.server.ServerConfigurationManager;
 import net.minecraft.server.ServerNBTManager;
 import net.minecraft.server.WorldLoaderServer;
 import net.minecraft.server.WorldManager;
-import net.minecraft.server.WorldServer;
-import net.minecraft.server.ServerCommand;
-import net.minecraft.server.Item;
-import net.minecraft.server.ItemStack;
 import net.minecraft.server.WorldMap;
 import net.minecraft.server.WorldMapCollection;
 import net.minecraft.server.WorldNBTStorage;
+import net.minecraft.server.WorldServer;
 import net.minecraft.server.WorldSettings;
 import net.minecraft.server.WorldType;
-import org.bukkit.*;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Server;
+import org.bukkit.World;
+import org.bukkit.World.Environment;
+import org.bukkit.WorldCreator;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.conversations.Conversable;
+import org.bukkit.craftbukkit.help.SimpleHelpMap;
+import org.bukkit.craftbukkit.inventory.CraftFurnaceRecipe;
+import org.bukkit.craftbukkit.inventory.CraftInventoryCustom;
+import org.bukkit.craftbukkit.inventory.CraftRecipe;
+import org.bukkit.craftbukkit.inventory.CraftShapedRecipe;
+import org.bukkit.craftbukkit.inventory.CraftShapelessRecipe;
+import org.bukkit.craftbukkit.inventory.RecipeIterator;
+import org.bukkit.craftbukkit.map.CraftMapView;
+import org.bukkit.craftbukkit.metadata.EntityMetadataStore;
+import org.bukkit.craftbukkit.metadata.PlayerMetadataStore;
+import org.bukkit.craftbukkit.metadata.WorldMetadataStore;
+import org.bukkit.craftbukkit.potion.CraftPotionBrewer;
+import org.bukkit.craftbukkit.scheduler.CraftScheduler;
+import org.bukkit.craftbukkit.updater.AutoUpdater;
+import org.bukkit.craftbukkit.updater.BukkitDLUpdaterService;
+import org.bukkit.craftbukkit.util.DatFileFilter;
+import org.bukkit.craftbukkit.util.Versioning;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.world.WorldInitEvent;
+import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.event.world.WorldSaveEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
+import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.help.HelpMap;
+import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.permissions.Permissible;
+import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginLoadOrder;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.ServicesManager;
 import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.SimpleServicesManager;
 import org.bukkit.plugin.java.JavaPluginLoader;
 import org.bukkit.plugin.messaging.Messenger;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.craftbukkit.inventory.CraftFurnaceRecipe;
-import org.bukkit.craftbukkit.inventory.CraftRecipe;
-import org.bukkit.craftbukkit.inventory.CraftShapedRecipe;
-import org.bukkit.craftbukkit.inventory.CraftShapelessRecipe;
-import org.bukkit.craftbukkit.map.CraftMapView;
-import org.bukkit.craftbukkit.potion.CraftPotionBrewer;
-import org.bukkit.scheduler.BukkitWorker;
-import org.bukkit.craftbukkit.scheduler.CraftScheduler;
-import org.bukkit.craftbukkit.util.DatFileFilter;
-import org.bukkit.craftbukkit.util.Versioning;
-import org.bukkit.util.permissions.DefaultPermissions;
-import org.bukkit.event.world.WorldInitEvent;
-import org.bukkit.permissions.Permission;
-import org.bukkit.plugin.PluginLoadOrder;
 import org.bukkit.potion.Potion;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.plugin.messaging.StandardMessenger;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitWorker;
+import org.bukkit.util.permissions.DefaultPermissions;
+
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.MarkedYAMLException;
+
+import org.apache.commons.lang.Validate;
+import com.avaje.ebean.config.DataSourceConfig;
+import com.avaje.ebean.config.ServerConfig;
+import com.avaje.ebean.config.dbplatform.SQLitePlatform;
+import com.avaje.ebeaninternal.server.lib.sql.TransactionIsolation;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.MapMaker;
+
+import jline.ConsoleReader;
 
 public final class CraftServer implements Server {
     private final String serverName = "CraftBukkit";
     private final String serverVersion;
     private final String bukkitVersion = Versioning.getBukkitVersion();
     private final ServicesManager servicesManager = new SimpleServicesManager();
-    private final BukkitScheduler scheduler = new CraftScheduler(this);
+    private final BukkitScheduler scheduler = new CraftScheduler();
     private final SimpleCommandMap commandMap = new SimpleCommandMap(this);
+    private final SimpleHelpMap helpMap = new SimpleHelpMap();
     private final StandardMessenger messenger = new StandardMessenger();
     private final PluginManager pluginManager = new SimplePluginManager(this, commandMap);
     protected final MinecraftServer console;
@@ -106,6 +138,10 @@ public final class CraftServer implements Server {
     private YamlConfiguration configuration;
     private final Yaml yaml = new Yaml(new SafeConstructor());
     private final Map<String, OfflinePlayer> offlinePlayers = new MapMaker().softValues().makeMap();
+    private AutoUpdater updater;
+    private final EntityMetadataStore entityMetadata = new EntityMetadataStore();
+    private final PlayerMetadataStore playerMetadata = new PlayerMetadataStore();
+    private final WorldMetadataStore worldMetadata = new WorldMetadataStore();
 
     static {
         ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
@@ -135,7 +171,13 @@ public final class CraftServer implements Server {
         configuration.options().copyDefaults(true);
         configuration.setDefaults(YamlConfiguration.loadConfiguration(getClass().getClassLoader().getResourceAsStream("configurations/bukkit.yml")));
         saveConfig();
-        ((SimplePluginManager) pluginManager).useTimings(configuration.getBoolean("settings.plugin-profiling", false));
+        ((SimplePluginManager) pluginManager).useTimings(configuration.getBoolean("settings.plugin-profiling"));
+
+        updater = new AutoUpdater(new BukkitDLUpdaterService(configuration.getString("auto-updater.host")), getLogger(), configuration.getString("auto-updater.preferred-channel"));
+        updater.setEnabled(configuration.getBoolean("auto-updater.enabled"));
+        updater.getOnBroken().addAll(configuration.getStringList("auto-updater.on-broken"));
+        updater.getOnUpdate().addAll(configuration.getStringList("auto-updater.on-update"));
+        updater.check(serverVersion);
 
         loadPlugins();
         enablePlugins(PluginLoadOrder.STARTUP);
@@ -164,6 +206,8 @@ public final class CraftServer implements Server {
             Plugin[] plugins = pluginManager.loadPlugins(pluginFolder);
             for (Plugin plugin : plugins) {
                 try {
+                    String message = String.format("Loading %s", plugin.getDescription().getFullName());
+                    plugin.getLogger().info(message);
                     plugin.onLoad();
                 } catch (Throwable ex) {
                     Logger.getLogger(CraftServer.class.getName()).log(Level.SEVERE, ex.getMessage() + " initializing " + plugin.getDescription().getFullName() + " (Is it up to date?)", ex);
@@ -175,6 +219,11 @@ public final class CraftServer implements Server {
     }
 
     public void enablePlugins(PluginLoadOrder type) {
+        if (type == PluginLoadOrder.STARTUP) {
+            helpMap.clear();
+            helpMap.initializeGeneralTopics(this);
+        }
+
         Plugin[] plugins = pluginManager.getPlugins();
 
         for (Plugin plugin : plugins) {
@@ -187,6 +236,7 @@ public final class CraftServer implements Server {
             commandMap.registerServerAliases();
             loadCustomPermissions();
             DefaultPermissions.registerCorePermissions();
+            helpMap.initializeCommands(this);
         }
     }
 
@@ -394,7 +444,15 @@ public final class CraftServer implements Server {
     }
 
     // NOTE: Should only be called from MinecraftServer.b()
-    public boolean dispatchCommand(CommandSender sender, ServerCommand serverCommand) {
+    public boolean dispatchServerCommand(CommandSender sender, ServerCommand serverCommand) {
+        if (sender instanceof Conversable) {
+            Conversable conversable = (Conversable)sender;
+
+            if (conversable.isConversing()) {
+                conversable.acceptConversationInput(serverCommand.command);
+                return true;
+            }
+        }
         return dispatchCommand(sender, serverCommand.command);
     }
 
@@ -441,6 +499,7 @@ public final class CraftServer implements Server {
 
         pluginManager.clearPlugins();
         commandMap.clearCommands();
+        resetRecipes();
 
         int pollCount = 0;
 
@@ -471,6 +530,7 @@ public final class CraftServer implements Server {
         enablePlugins(PluginLoadOrder.POSTWORLD);
     }
 
+    @SuppressWarnings({ "unchecked", "finally" })
     private void loadCustomPermissions() {
         File file = new File(configuration.getString("settings.permissions-file"));
         FileInputStream stream;
@@ -547,7 +607,7 @@ public final class CraftServer implements Server {
         ChunkGenerator generator = creator.generator();
         File folder = new File(getWorldContainer(), name);
         World world = getWorld(name);
-        WorldType type = WorldType.a(creator.type().getName());
+        WorldType type = WorldType.getType(creator.type().getName());
         boolean generateStructures = creator.generateStructures();
 
         if (world != null) {
@@ -757,10 +817,40 @@ public final class CraftServer implements Server {
             }
         }
         toAdd.addToCraftingManager();
+        CraftingManager.getInstance().sort();
         return true;
     }
 
-    @SuppressWarnings("unchecked")
+    public List<Recipe> getRecipesFor(ItemStack result) {
+        List<Recipe> results = new ArrayList<Recipe>();
+        Iterator<Recipe> iter = recipeIterator();
+        while (iter.hasNext()) {
+            Recipe recipe = iter.next();
+            ItemStack stack = recipe.getResult();
+            if (stack.getType() != result.getType()) {
+                continue;
+            }
+            if (result.getDurability() == -1 || result.getDurability() == stack.getDurability()) {
+                results.add(recipe);
+            }
+        }
+        return results;
+    }
+
+    public Iterator<Recipe> recipeIterator() {
+        return new RecipeIterator();
+    }
+
+    public void clearRecipes() {
+        CraftingManager.getInstance().recipies.clear();
+        FurnaceRecipes.getInstance().recipies.clear();
+    }
+
+    public void resetRecipes() {
+        CraftingManager.getInstance().recipies = new CraftingManager().recipies;
+        FurnaceRecipes.getInstance().recipies = new FurnaceRecipes().recipies;
+    }
+
     public Map<String, String[]> getCommandAliases() {
         ConfigurationSection section = configuration.getConfigurationSection("aliases");
         Map<String, String[]> result = new LinkedHashMap<String, String[]>();
@@ -770,10 +860,9 @@ public final class CraftServer implements Server {
                 List<String> commands = null;
 
                 if (section.isList(key)) {
-                    commands = section.getList(key);
+                    commands = section.getStringList(key);
                 } else {
-                    commands = new ArrayList<String>();
-                    commands.add(section.getString(key));
+                    commands = ImmutableList.<String>of(section.getString(key));
                 }
 
                 result.put(key, commands.toArray(new String[0]));
@@ -843,7 +932,7 @@ public final class CraftServer implements Server {
     }
 
     public CraftMapView createMap(World world) {
-        ItemStack stack = new ItemStack(Item.MAP, 1, -1);
+        net.minecraft.server.ItemStack stack = new net.minecraft.server.ItemStack(Item.MAP, 1, -1);
         WorldMap worldmap = Item.MAP.getSavedMap(stack, ((CraftWorld) world).getHandle());
         return worldmap.mapView;
     }
@@ -885,8 +974,9 @@ public final class CraftServer implements Server {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     public Set<String> getIPBans() {
-        return new HashSet(server.banByIP);
+        return new HashSet<String>(server.banByIP);
     }
 
     public void banIP(String address) {
@@ -954,6 +1044,18 @@ public final class CraftServer implements Server {
         return console.console;
     }
 
+    public EntityMetadataStore getEntityMetadata() {
+        return entityMetadata;
+    }
+
+    public PlayerMetadataStore getPlayerMetadata() {
+        return playerMetadata;
+    }
+
+    public WorldMetadataStore getWorldMetadata() {
+        return worldMetadata;
+    }
+
     public void detectListNameConflict(EntityPlayer entityPlayer) {
         // Collisions will make for invisible people
         for (int i = 0; i < getHandle().players.size(); ++i) {
@@ -1012,5 +1114,38 @@ public final class CraftServer implements Server {
         }
 
         return result;
+    }
+
+    public void onPlayerJoin(Player player) {
+        if ((updater.isEnabled()) && (updater.getCurrent() != null) && (player.hasPermission(Server.BROADCAST_CHANNEL_ADMINISTRATIVE))) {
+            if ((updater.getCurrent().isBroken()) && (updater.getOnBroken().contains(updater.WARN_OPERATORS))) {
+                player.sendMessage(ChatColor.DARK_RED + "The version of CraftBukkit that this server is running is known to be broken. Please consider updating to the latest version at dl.bukkit.org.");
+            } else if ((updater.isUpdateAvailable()) && (updater.getOnUpdate().contains(updater.WARN_OPERATORS))) {
+                player.sendMessage(ChatColor.DARK_PURPLE + "The version of CraftBukkit that this server is running is out of date. Please consider updating to the latest version at dl.bukkit.org.");
+            }
+        }
+    }
+
+    public Inventory createInventory(InventoryHolder owner, InventoryType type) {
+        // TODO: Create the appropriate type, rather than Custom?
+        return new CraftInventoryCustom(owner, type);
+    }
+
+    public Inventory createInventory(InventoryHolder owner, int size) throws IllegalArgumentException {
+        Validate.isTrue(size % 9 == 0, "Chests must have a size that is a multiple of 9!");
+        return new CraftInventoryCustom(owner, size);
+    }
+
+    public Inventory createInventory(InventoryHolder owner, int size, String title) throws IllegalArgumentException {
+        Validate.isTrue(size % 9 == 0, "Chests must have a size that is a multiple of 9!");
+        return new CraftInventoryCustom(owner, size, title);
+    }
+
+    public HelpMap getHelpMap() {
+        return helpMap;
+    }
+
+    public SimpleCommandMap getCommandMap() {
+        return commandMap;
     }
 }

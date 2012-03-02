@@ -9,6 +9,10 @@ import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.CraftChunk;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.material.MaterialData;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.plugin.Plugin;
+
+import java.util.List;
 
 public class CraftBlockState implements BlockState {
     private final CraftWorld world;
@@ -80,9 +84,11 @@ public class CraftBlockState implements BlockState {
     }
 
     public boolean setTypeId(final int type) {
-        this.type = type;
+        if (this.type != type) {
+            this.type = type;
 
-        createData((byte) 0);
+            createData((byte) 0);
+        }
         return true;
     }
 
@@ -126,7 +132,7 @@ public class CraftBlockState implements BlockState {
     }
 
     private void createData(final byte data) {
-        Material mat = Material.getMaterial(type);
+        Material mat = getType();
         if (mat == null || mat.getData() == null) {
             this.data = new MaterialData(type, data);
         } else {
@@ -142,8 +148,8 @@ public class CraftBlockState implements BlockState {
         return new Location(world, x, y, z);
     }
 
-    public void setData(byte data) {
-        createData(data);
+    public void setRawData(byte data) {
+        this.data.setData(data);
     }
 
     @Override
@@ -186,5 +192,21 @@ public class CraftBlockState implements BlockState {
         hash = 73 * hash + this.type;
         hash = 73 * hash + (this.data != null ? this.data.hashCode() : 0);
         return hash;
+    }
+
+    public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
+        chunk.getCraftWorld().getBlockMetadata().setMetadata(getBlock(), metadataKey, newMetadataValue);
+    }
+
+    public List<MetadataValue> getMetadata(String metadataKey) {
+        return chunk.getCraftWorld().getBlockMetadata().getMetadata(getBlock(), metadataKey);
+    }
+
+    public boolean hasMetadata(String metadataKey) {
+        return chunk.getCraftWorld().getBlockMetadata().hasMetadata(getBlock(), metadataKey);
+    }
+
+    public void removeMetadata(String metadataKey, Plugin owningPlugin) {
+        chunk.getCraftWorld().getBlockMetadata().removeMetadata(getBlock(), metadataKey, owningPlugin);
     }
 }

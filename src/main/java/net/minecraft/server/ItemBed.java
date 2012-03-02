@@ -12,7 +12,7 @@ public class ItemBed extends Item {
         super(i);
     }
 
-    public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
+    public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
         if (l != 1) {
             return false;
         } else {
@@ -47,7 +47,7 @@ public class ItemBed extends Item {
                     world.setTypeIdAndData(i, j, k, blockbed.id, i1);
 
                     // CraftBukkit start - bed
-                    BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ, blockbed);
+                    BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, clickedX, clickedY, clickedZ);
 
                     if (event.isCancelled() || !event.canBuild()) {
                         event.getBlockPlaced().setTypeIdAndData(blockState.getTypeId(), blockState.getRawData(), false);

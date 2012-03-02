@@ -4,17 +4,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+// CraftBukkit start
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.inventory.InventoryView;
+// CraftBukkit end
 
 public class CraftingManager {
 
     private static final CraftingManager a = new CraftingManager();
-    private List b = new ArrayList();
+    public List recipies = new ArrayList(); // CraftBukkit - private -> public
+    // CraftBukkit start
+    public CraftingRecipe lastRecipe;
+    public InventoryView lastCraftView;
+    // CraftBukkit end
 
     public static final CraftingManager getInstance() {
         return a;
     }
 
-    private CraftingManager() {
+    public CraftingManager() { // CraftBukkit - private -> public
         (new RecipesTools()).a(this);
         (new RecipesWeapons()).a(this);
         (new RecipeIngots()).a(this);
@@ -91,9 +99,16 @@ public class CraftingManager {
         this.registerShapedRecipe(new ItemStack(Item.BED, 1), new Object[] { "###", "XXX", Character.valueOf('#'), Block.WOOL, Character.valueOf('X'), Block.WOOD});
         this.registerShapedRecipe(new ItemStack(Block.ENCHANTMENT_TABLE, 1), new Object[] { " B ", "D#D", "###", Character.valueOf('#'), Block.OBSIDIAN, Character.valueOf('B'), Item.BOOK, Character.valueOf('D'), Item.DIAMOND});
         this.registerShapelessRecipe(new ItemStack(Item.EYE_OF_ENDER, 1), new Object[] { Item.ENDER_PEARL, Item.BLAZE_POWDER});
-        Collections.sort(this.b, new RecipeSorter(this));
-        System.out.println(this.b.size() + " recipes");
+        //Collections.sort(this.b, new RecipeSorter(this)); // CraftBukkit - removed; see below
+        this.sort(); // CraftBukkit - moved sort to a separate method
+        System.out.println(this.recipies.size() + " recipes");
     }
+
+    // CraftBukkit start
+    public void sort() {
+        Collections.sort(this.recipies, new RecipeSorter(this));
+    }
+    // CraftBukkit end
 
     public void registerShapedRecipe(ItemStack itemstack, Object... aobject) { // CraftBukkit - default -> public
         String s = "";
@@ -150,7 +165,7 @@ public class CraftingManager {
             }
         }
 
-        this.b.add(new ShapedRecipes(j, k, aitemstack, itemstack));
+        this.recipies.add(new ShapedRecipes(j, k, aitemstack, itemstack));
     }
 
     public void registerShapelessRecipe(ItemStack itemstack, Object... aobject) { // CraftBukkit - default -> public
@@ -174,7 +189,7 @@ public class CraftingManager {
             }
         }
 
-        this.b.add(new ShapelessRecipes(itemstack, arraylist));
+        this.recipies.add(new ShapelessRecipes(itemstack, arraylist));
     }
 
     public ItemStack craft(InventoryCrafting inventorycrafting) {
@@ -211,13 +226,27 @@ public class CraftingManager {
                 j1 = 0;
             }
 
-            return new ItemStack(itemstack.id, 1, j1);
+            // CraftBukkit start - construct a dummy repair recipe
+            ItemStack result = new ItemStack(itemstack.id, 1, j1);
+            List<ItemStack> ingredients = new ArrayList<ItemStack>();
+            ingredients.add(itemstack.cloneItemStack());
+            ingredients.add(itemstack1.cloneItemStack());
+            ShapelessRecipes recipe = new ShapelessRecipes(result.cloneItemStack(), ingredients);
+            inventorycrafting.currentRecipe = recipe;
+            result = CraftEventFactory.callPreCraftEvent(inventorycrafting, result, lastCraftView, true);
+            return result;
+            // CraftBukkit end
         } else {
-            for (j = 0; j < this.b.size(); ++j) {
-                CraftingRecipe craftingrecipe = (CraftingRecipe) this.b.get(j);
+            for (j = 0; j < this.recipies.size(); ++j) {
+                CraftingRecipe craftingrecipe = (CraftingRecipe) this.recipies.get(j);
 
                 if (craftingrecipe.a(inventorycrafting)) {
-                    return craftingrecipe.b(inventorycrafting);
+                    // CraftBukkit start - INVENTORY_PRE_CRAFT event
+                    inventorycrafting.currentRecipe = craftingrecipe;
+                    ItemStack result = craftingrecipe.b(inventorycrafting);
+                    result = CraftEventFactory.callPreCraftEvent(inventorycrafting, result, lastCraftView, false);
+                    return result;
+                    // CraftBukkit end
                 }
             }
 
@@ -225,7 +254,7 @@ public class CraftingManager {
         }
     }
 
-    public List b() {
-        return this.b;
+    public List getRecipies() {
+        return this.recipies;
     }
 }

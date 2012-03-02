@@ -8,34 +8,60 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.minecraft.server.*;
+
+import org.apache.commons.lang.Validate;
 import org.bukkit.*;
+
+import net.minecraft.server.Container;
+import net.minecraft.server.EntityPlayer;
+import net.minecraft.server.Packet131ItemData;
+import net.minecraft.server.Packet200Statistic;
+import net.minecraft.server.Packet201PlayerInfo;
+import net.minecraft.server.Packet3Chat;
+import net.minecraft.server.Packet51MapChunk;
+import net.minecraft.server.Packet53BlockChange;
+import net.minecraft.server.Packet54PlayNoteBlock;
+import net.minecraft.server.Packet61WorldEvent;
+import net.minecraft.server.Packet6SpawnPosition;
+import net.minecraft.server.Packet70Bed;
+import net.minecraft.server.WorldServer;
 import org.bukkit.Achievement;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.DelegateDeserialization;
+import org.bukkit.conversations.Conversation;
+import org.bukkit.craftbukkit.conversations.ConversationTracker;
+import org.bukkit.craftbukkit.CraftEffect;
 import org.bukkit.craftbukkit.CraftOfflinePlayer;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.map.CraftMapView;
 import org.bukkit.craftbukkit.map.RenderData;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.InventoryView.Property;
 import org.bukkit.map.MapView;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.messaging.StandardMessenger;
+import org.bukkit.potion.Potion;
 
 @DelegateDeserialization(CraftOfflinePlayer.class)
 public class CraftPlayer extends CraftHumanEntity implements Player {
     private long firstPlayed = 0;
     private long lastPlayed = 0;
     private boolean hasPlayedBefore = false;
+    private ConversationTracker conversationTracker = new ConversationTracker();
     private Set<String> channels = new HashSet<String>();
     private Map<String, Player> hiddenPlayers = new MapMaker().softValues().makeMap();
     private int hash = 0;
@@ -62,10 +88,6 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         }
 
         perm.recalculatePermissions();
-    }
-
-    public boolean isPlayer() {
-        return true;
     }
 
     public boolean isOnline() {
@@ -100,7 +122,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
             return 1.62D;
         } else {
             if (isSneaking()) {
-                return 1.42D;
+                return 1.54D;
             } else {
                 return 1.62D;
             }
@@ -114,7 +136,15 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void sendMessage(String message) {
-        this.sendRawMessage(message);
+        if (!conversationTracker.isConversingModaly()) {
+            this.sendRawMessage(message);
+        }
+    }
+
+    public void sendMessage(String[] messages) {
+        for (String message : messages) {
+            sendMessage(message);
+        }
     }
 
     public String getDisplayName() {
@@ -226,6 +256,17 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         int packetData = effect.getId();
         Packet61WorldEvent packet = new Packet61WorldEvent(packetData, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), data);
         getHandle().netServerHandler.sendPacket(packet);
+    }
+
+    public <T> void playEffect(Location loc, Effect effect, T data) {
+        if (data != null) {
+            Validate.isTrue(data.getClass().equals(effect.getData()), "Wrong kind of data for this effect!");
+        } else {
+            Validate.isTrue(effect.getData() == null, "Wrong kind of data for this effect!");
+        }
+
+        int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
+        playEffect(loc, effect, datavalue);
     }
 
     public void sendBlockChange(Location loc, Material material, byte data) {
@@ -485,20 +526,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     public void setExp(float exp) {
         getHandle().exp = exp;
-
-        giveExp(0);
-    }
-
-    public int getExperience() {
-        return (int) (getExp() * 100);
-    }
-
-    public void setExperience(int exp) {
-        setExp(exp / 100);
+        getHandle().lastSentExp = -1;
     }
 
     public int getLevel() {
-        return (int) getHandle().expLevel;
+        return getHandle().expLevel;
     }
 
     public void setLevel(int level) {
@@ -512,11 +544,6 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
     public void setTotalExperience(int exp) {
         getHandle().expTotal = exp;
-        getHandle().lastSentExp = -1;
-
-        if (getTotalExperience() > getExperience()) {
-            getHandle().expTotal = getTotalExperience();
-        }
     }
 
     public float getExhaustion() {
@@ -560,7 +587,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void setBedSpawnLocation(Location location) {
-        getHandle().a(new ChunkCoordinates(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
+        getHandle().setRespawnPosition(new ChunkCoordinates(location.getBlockX(), location.getBlockY(), location.getBlockZ()));
         getHandle().spawnWorld = location.getWorld().getName();
     }
 
@@ -571,9 +598,9 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         //remove this player from the hidden player's EntityTrackerEntry
         EntityTracker tracker = ((WorldServer) entity.world).tracker;
         EntityPlayer other = ((CraftPlayer) player).getHandle();
-        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.a(other.id);
+        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.get(other.id);
         if (entry != null) {
-            entry.c(getHandle());
+            entry.clear(getHandle());
         }
 
         //remove the hidden player from this player user list
@@ -586,9 +613,9 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
         EntityTracker tracker = ((WorldServer) entity.world).tracker;
         EntityPlayer other = ((CraftPlayer) player).getHandle();
-        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.a(other.id);
+        EntityTrackerEntry entry = (EntityTrackerEntry) tracker.trackedEntities.get(other.id);
         if (entry != null && !entry.trackedPlayers.contains(getHandle())) {
-            entry.b(getHandle());
+            entry.updatePlayer(getHandle());
         }
 
         getHandle().netServerHandler.sendPacket(new Packet201PlayerInfo(player.getPlayerListName(), true, getHandle().ping));
@@ -670,6 +697,22 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         data.setLong("lastPlayed", System.currentTimeMillis());
     }
 
+    public boolean beginConversation(Conversation conversation) {
+        return conversationTracker.beginConversation(conversation);
+    }
+
+    public void abandonConversation(Conversation conversation) {
+        conversationTracker.abandonConversation(conversation);
+    }
+
+    public void acceptConversationInput(String input) {
+        conversationTracker.acceptConversationInput(input);
+    }
+
+    public boolean isConversing() {
+        return conversationTracker.isConversing();
+    }
+
     public void sendPluginMessage(Plugin source, String channel, byte[] message) {
         StandardMessenger.validatePluginMessage(server.getMessenger(), source, channel, message);
 
@@ -717,5 +760,42 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
             getHandle().netServerHandler.sendPacket(packet);
         }
+    }
+
+    public EntityType getType() {
+        return EntityType.PLAYER;
+    }
+
+    public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
+        server.getPlayerMetadata().setMetadata(this, metadataKey, newMetadataValue);
+    }
+
+    @Override
+    public List<MetadataValue> getMetadata(String metadataKey) {
+        return server.getPlayerMetadata().getMetadata(this, metadataKey);
+    }
+
+    @Override
+    public boolean hasMetadata(String metadataKey) {
+        return server.getPlayerMetadata().hasMetadata(this, metadataKey);
+    }
+
+    @Override
+    public void removeMetadata(String metadataKey, Plugin owningPlugin) {
+        server.getPlayerMetadata().removeMetadata(this, metadataKey, owningPlugin);
+    }
+
+    @Override
+    public boolean setWindowProperty(Property prop, int value) {
+        Container container = getHandle().activeContainer;
+        if (container.getBukkitView().getType() != prop.getType()) {
+            return false;
+        }
+        getHandle().setContainerData(container, prop.getId(), value);
+        return true;
+    }
+
+    public void disconnect(String reason) {
+        conversationTracker.abandonAllConversations();
     }
 }

@@ -68,7 +68,7 @@ public class Vec3D
     return MathHelper.sqrt(d1 * d1 + d2 * d2 + d3 * d3);
   }
 
-  public double c(Vec3D paramVec3D) {
+  public double distanceSquared(Vec3D paramVec3D) {
     double d1 = paramVec3D.a - this.a;
     double d2 = paramVec3D.b - this.b;
     double d3 = paramVec3D.c - this.c;

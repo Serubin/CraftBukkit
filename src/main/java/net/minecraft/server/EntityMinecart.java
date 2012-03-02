@@ -1,9 +1,11 @@
 package net.minecraft.server;
 
+// CraftBukkit start
+import java.util.ArrayList;
 import java.util.List;
 
-// CraftBukkit start
 import org.bukkit.Location;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -13,6 +15,8 @@ import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.vehicle.VehicleUpdateEvent;
 import org.bukkit.util.Vector;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.craftbukkit.entity.CraftHumanEntity;
 // CraftBukkit end
 
 public class EntityMinecart extends Entity implements IInventory {
@@ -40,9 +44,28 @@ public class EntityMinecart extends Entity implements IInventory {
     private double flyingY = 0.95;
     private double flyingZ = 0.95;
     public double maxSpeed = 0.4D;
+    public List<HumanEntity> transaction = new ArrayList<HumanEntity>(); // CraftBukkit
 
     public ItemStack[] getContents() {
         return this.items;
+    }
+
+    public void onOpen(CraftHumanEntity who) {
+        transaction.add(who);
+    }
+
+    public void onClose(CraftHumanEntity who) {
+        transaction.remove(who);
+    }
+
+    public List<HumanEntity> getViewers() {
+        return transaction;
+    }
+
+    public InventoryHolder getOwner() {
+        org.bukkit.entity.Entity cart = getBukkitEntity();
+        if(cart instanceof InventoryHolder) return (InventoryHolder) cart;
+        return null;
     }
     // CraftBukkit end
 
@@ -153,7 +176,8 @@ public class EntityMinecart extends Entity implements IInventory {
                                 }
 
                                 itemstack.count -= k;
-                                EntityItem entityitem = new EntityItem(this.world, this.locX + (double) f, this.locY + (double) f1, this.locZ + (double) f2, new ItemStack(itemstack.id, k, itemstack.getData(), itemstack.getEnchantments())); // CraftBukkit - include enchantments in the new itemstack
+                                // CraftBukkit - include enchantments in the new itemstack
+                                EntityItem entityitem = new EntityItem(this.world, this.locX + (double) f, this.locY + (double) f1, this.locZ + (double) f2, new ItemStack(itemstack.id, k, itemstack.getData(), itemstack.getEnchantments())); 
                                 float f3 = 0.05F;
 
                                 entityitem.motX = (double) ((float) this.random.nextGaussian() * f3);
@@ -197,7 +221,8 @@ public class EntityMinecart extends Entity implements IInventory {
                     }
 
                     itemstack.count -= j;
-                    EntityItem entityitem = new EntityItem(this.world, this.locX + (double) f, this.locY + (double) f1, this.locZ + (double) f2, new ItemStack(itemstack.id, j, itemstack.getData(), itemstack.getEnchantments())); // CraftBukkit - include enchantments in the new itemstack
+                    // CraftBukkit - include enchantments in the new itemstack
+                    EntityItem entityitem = new EntityItem(this.world, this.locX + (double) f, this.locY + (double) f1, this.locZ + (double) f2, new ItemStack(itemstack.id, j, itemstack.getData(), itemstack.getEnchantments()));
                     float f3 = 0.05F;
 
                     entityitem.motX = (double) ((float) this.random.nextGaussian() * f3);
@@ -679,7 +704,7 @@ public class EntityMinecart extends Entity implements IInventory {
                     NBTTagCompound nbttagcompound1 = new NBTTagCompound();
 
                     nbttagcompound1.setByte("Slot", (byte) i);
-                    this.items[i].b(nbttagcompound1);
+                    this.items[i].save(nbttagcompound1);
                     nbttaglist.add(nbttagcompound1);
                 }
             }
@@ -854,7 +879,7 @@ public class EntityMinecart extends Entity implements IInventory {
             }
         } else if (this.type == 1) {
             if (!this.world.isStatic) {
-                entityhuman.a((IInventory) this);
+                entityhuman.openContainer(this);
             }
         } else if (this.type == 2) {
             ItemStack itemstack = entityhuman.inventory.getItemInHand();

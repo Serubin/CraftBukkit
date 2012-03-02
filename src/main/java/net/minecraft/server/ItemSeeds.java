@@ -17,7 +17,7 @@ public class ItemSeeds extends Item {
         this.b = k;
     }
 
-    public boolean a(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
+    public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l) {
         if (l != 1) {
             return false;
         } else if (entityhuman.d(i, j, k) && entityhuman.d(i, j + 1, k)) {
@@ -29,7 +29,7 @@ public class ItemSeeds extends Item {
                 world.setTypeId(i, j + 1, k, this.id);
 
                 // CraftBukkit start - seeds
-                BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, i, j, k, this.id);
+                BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockState, i, j, k);
 
                 if (event.isCancelled() || !event.canBuild()) {
                     event.getBlockPlaced().setTypeId(0);

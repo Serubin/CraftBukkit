@@ -2,13 +2,7 @@ package net.minecraft.server;
 
 import java.util.List;
 
-// CraftBukkit start
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Projectile;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerFishEvent;
-// CraftBukkit end
+import org.bukkit.event.player.PlayerFishEvent; // CraftBukkit
 
 public class EntityFishingHook extends Entity {
 
@@ -157,7 +151,7 @@ public class EntityFishingHook extends Entity {
             vec3d = Vec3D.create(this.locX, this.locY, this.locZ);
             vec3d1 = Vec3D.create(this.locX + this.motX, this.locY + this.motY, this.locZ + this.motZ);
             if (movingobjectposition != null) {
-                vec3d1 = Vec3D.create(movingobjectposition.f.a, movingobjectposition.f.b, movingobjectposition.f.c);
+                vec3d1 = Vec3D.create(movingobjectposition.pos.a, movingobjectposition.pos.b, movingobjectposition.pos.c);
             }
 
             Entity entity = null;
@@ -175,7 +169,7 @@ public class EntityFishingHook extends Entity {
                     MovingObjectPosition movingobjectposition1 = axisalignedbb.a(vec3d, vec3d1);
 
                     if (movingobjectposition1 != null) {
-                        d5 = vec3d.c(movingobjectposition1.f); // CraftBukkit - distance efficiency
+                        d5 = vec3d.distanceSquared(movingobjectposition1.pos); // CraftBukkit - distance efficiency
                         if (d5 < d4 || d4 == 0.0D) {
                             entity = entity1;
                             d4 = d5;
@@ -190,26 +184,8 @@ public class EntityFishingHook extends Entity {
 
             if (movingobjectposition != null) {
                 if (movingobjectposition.entity != null) {
-                    // CraftBukkit start
-                    boolean stick;
-                    if (movingobjectposition.entity instanceof EntityLiving || movingobjectposition.entity instanceof EntityComplexPart) {
-                        org.bukkit.entity.Entity damagee = movingobjectposition.entity.getBukkitEntity();
-                        Projectile projectile = (Projectile) this.getBukkitEntity();
-
-                        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(projectile, damagee, EntityDamageEvent.DamageCause.PROJECTILE, 0);
-                        Bukkit.getPluginManager().callEvent(event);
-
-                        if (event.isCancelled()) {
-                            stick = !projectile.doesBounce();
-                        } else {
-                            // this function returns if the fish should stick in or not, i.e. !bounce
-                            stick = movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.owner), event.getDamage());
-                        }
-                    } else {
-                        stick = movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.owner), 0);
-                    }
-                    if (!stick) {
-                        // CraftBukkit end
+                    // CraftBukkit - entity.damageEntity -> event function
+                    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleProjectileEvent((org.bukkit.entity.Projectile) this.getBukkitEntity(), entity, DamageSource.projectile(this, this.owner), 0)) {
                         this.hooked = movingobjectposition.entity;
                     }
                 } else {

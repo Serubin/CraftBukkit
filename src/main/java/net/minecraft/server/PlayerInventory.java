@@ -1,15 +1,26 @@
 package net.minecraft.server;
 
+// CraftBukkit start
+import java.util.ArrayList;
+import java.util.List;
+
+import org.bukkit.craftbukkit.entity.CraftHumanEntity;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.inventory.InventoryHolder;
+// CraftBukkit end
+
 public class PlayerInventory implements IInventory {
 
     public ItemStack[] items = new ItemStack[36];
     public ItemStack[] armor = new ItemStack[4];
     public int itemInHandIndex = 0;
-    public EntityHuman d;
+    public EntityHuman player;
     private ItemStack f;
     public boolean e = false;
 
     // CraftBukkit start
+    public List<HumanEntity> transaction = new ArrayList<HumanEntity>();
+
     public ItemStack[] getContents() {
         return this.items;
     }
@@ -17,10 +28,26 @@ public class PlayerInventory implements IInventory {
     public ItemStack[] getArmorContents() {
         return this.armor;
     }
+
+    public void onOpen(CraftHumanEntity who) {
+        transaction.add(who);
+    }
+
+    public void onClose(CraftHumanEntity who) {
+        transaction.remove(who);
+    }
+
+    public List<HumanEntity> getViewers() {
+        return transaction;
+    }
+
+    public InventoryHolder getOwner() {
+        return this.player.getBukkitEntity();
+    }
     // CraftBukkit end
 
     public PlayerInventory(EntityHuman entityhuman) {
-        this.d = entityhuman;
+        this.player = entityhuman;
     }
 
     public ItemStack getItemInHand() {
@@ -134,7 +161,7 @@ public class PlayerInventory implements IInventory {
     public void i() {
         for (int i = 0; i < this.items.length; ++i) {
             if (this.items[i] != null) {
-                this.items[i].a(this.d.world, this.d, i, this.itemInHandIndex == i);
+                this.items[i].a(this.player.world, this.player, i, this.itemInHandIndex == i);
             }
         }
     }
@@ -169,7 +196,7 @@ public class PlayerInventory implements IInventory {
                 this.items[i].b = 5;
                 itemstack.count = 0;
                 return true;
-            } else if (this.d.abilities.canInstantlyBuild) {
+            } else if (this.player.abilities.canInstantlyBuild) {
                 itemstack.count = 0;
                 return true;
             } else {
@@ -181,7 +208,7 @@ public class PlayerInventory implements IInventory {
                 itemstack.count = this.e(itemstack);
             } while (itemstack.count > 0 && itemstack.count < i);
 
-            if (itemstack.count == i && this.d.abilities.canInstantlyBuild) {
+            if (itemstack.count == i && this.player.abilities.canInstantlyBuild) {
                 itemstack.count = 0;
                 return true;
             } else {
@@ -247,7 +274,7 @@ public class PlayerInventory implements IInventory {
             if (this.items[i] != null) {
                 nbttagcompound = new NBTTagCompound();
                 nbttagcompound.setByte("Slot", (byte) i);
-                this.items[i].b(nbttagcompound);
+                this.items[i].save(nbttagcompound);
                 nbttaglist.add(nbttagcompound);
             }
         }
@@ -256,7 +283,7 @@ public class PlayerInventory implements IInventory {
             if (this.armor[i] != null) {
                 nbttagcompound = new NBTTagCompound();
                 nbttagcompound.setByte("Slot", (byte) (i + 100));
-                this.armor[i].b(nbttagcompound);
+                this.armor[i].save(nbttagcompound);
                 nbttaglist.add(nbttagcompound);
             }
         }
@@ -321,7 +348,7 @@ public class PlayerInventory implements IInventory {
         }
         // CraftBukkit end
 
-        if (block.material.k()) {
+        if (block.material.isAlwaysDestroyable()) {
             return true;
         } else {
             ItemStack itemstack = this.getItem(this.itemInHandIndex);
@@ -352,9 +379,9 @@ public class PlayerInventory implements IInventory {
 
         for (int j = 0; j < this.armor.length; ++j) {
             if (this.armor[j] != null && this.armor[j].getItem() instanceof ItemArmor) {
-                this.armor[j].damage(i, this.d);
+                this.armor[j].damage(i, this.player);
                 if (this.armor[j].count == 0) {
-                    this.armor[j].a(this.d);
+                    this.armor[j].a(this.player);
                     this.armor[j] = null;
                 }
             }
@@ -366,14 +393,14 @@ public class PlayerInventory implements IInventory {
 
         for (i = 0; i < this.items.length; ++i) {
             if (this.items[i] != null) {
-                this.d.a(this.items[i], true);
+                this.player.a(this.items[i], true);
                 this.items[i] = null;
             }
         }
 
         for (i = 0; i < this.armor.length; ++i) {
             if (this.armor[i] != null) {
-                this.d.a(this.armor[i], true);
+                this.player.a(this.armor[i], true);
                 this.armor[i] = null;
             }
         }
@@ -383,17 +410,17 @@ public class PlayerInventory implements IInventory {
         this.e = true;
     }
 
-    public void b(ItemStack itemstack) {
+    public void setCarried(ItemStack itemstack) {
         this.f = itemstack;
-        this.d.a(itemstack);
+        this.player.carriedChanged(itemstack);
     }
 
-    public ItemStack l() {
+    public ItemStack getCarried() {
         return this.f;
     }
 
     public boolean a(EntityHuman entityhuman) {
-        return this.d.dead ? false : entityhuman.i(this.d) <= 64.0D;
+        return this.player.dead ? false : entityhuman.i(this.player) <= 64.0D;
     }
 
     public boolean c(ItemStack itemstack) {

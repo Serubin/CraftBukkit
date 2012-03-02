@@ -23,6 +23,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.Bukkit;
 // CraftBukkit end
 
@@ -120,7 +121,7 @@ public class ServerConfigurationManager {
 
         // CraftBukkit start
         if (!cserver.useExactLoginLocation()) {
-            while (worldserver.a(entityplayer, entityplayer.boundingBox).size() != 0) {
+            while (worldserver.getCubes(entityplayer, entityplayer.boundingBox).size() != 0) {
                 entityplayer.setPosition(entityplayer.locX, entityplayer.locY + 1.0D, entityplayer.locZ);
             }
         } else {
@@ -135,6 +136,7 @@ public class ServerConfigurationManager {
         if ((joinMessage != null) && (joinMessage.length() > 0)) {
             this.server.serverConfigurationManager.sendAll(new Packet3Chat(joinMessage));
         }
+        this.cserver.onPlayerJoin(playerJoinEvent.getPlayer());
         // CraftBukkit end
 
         worldserver.addEntity(entityplayer);
@@ -295,7 +297,7 @@ public class ServerConfigurationManager {
 
         worldserver.chunkProviderServer.getChunkAt((int) entityplayer1.locX >> 4, (int) entityplayer1.locZ >> 4);
 
-        while (worldserver.a(entityplayer1, entityplayer1.boundingBox).size() != 0) {
+        while (worldserver.getCubes(entityplayer1, entityplayer1.boundingBox).size() != 0) {
             entityplayer1.setPosition(entityplayer1.locX, entityplayer1.locY + 1.0D, entityplayer1.locZ);
         }
 
@@ -350,8 +352,27 @@ public class ServerConfigurationManager {
             }
         }
 
+        TeleportCause cause = TeleportCause.UNKNOWN;
+        int playerEnvironmentId = entityplayer.getBukkitEntity().getWorld().getEnvironment().getId();
+        switch (dimension) {
+            case -1:
+                cause = TeleportCause.NETHER_PORTAL;
+                break;
+            case 0:
+                if (playerEnvironmentId == -1) {
+                    cause = TeleportCause.NETHER_PORTAL;
+                } else if (playerEnvironmentId == 1) {
+                    cause = TeleportCause.END_PORTAL;
+                }
+
+                break;
+            case 1:
+                cause = TeleportCause.END_PORTAL;
+                break;
+        }
+
         org.bukkit.craftbukkit.PortalTravelAgent pta = new org.bukkit.craftbukkit.PortalTravelAgent();
-        PlayerPortalEvent event = new PlayerPortalEvent((Player) entityplayer.getBukkitEntity(), fromLocation, toLocation, pta);
+        PlayerPortalEvent event = new PlayerPortalEvent((Player) entityplayer.getBukkitEntity(), fromLocation, toLocation, pta, cause);
 
         if (entityplayer.dimension == 1) {
             event.useTravelAgent(false);

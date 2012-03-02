@@ -21,12 +21,19 @@ settings:
     update-folder: update
     ping-packet-limit: 100
     use-exact-login-location: false
+    plugin-profiling: false
 ticks-per:
     animal-spawns: 400
     monster-spawns: 1
+auto-updater:
+    enabled: true
+    on-broken: [warn-console, warn-ops]
+    on-update: [warn-console, warn-ops]
+    preferred-channel: rb
+    host: dl.bukkit.org
 aliases:
-    icanhasbukkit:
-    - version
+#    icanhasbukkit:
+#    - version
 database:
     username: bukkit
     isolation: SERIALIZABLE
