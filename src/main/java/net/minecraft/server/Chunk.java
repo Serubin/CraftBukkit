@@ -242,7 +242,7 @@ public class Chunk {
     }
 
     private void h(int i, int j, int k) {
-        int l = this.heightMap[k << 4 | i];
+        int l = this.heightMap[k << 4 | i] & 0xFF; // CraftBukkit
         int i1 = l;
 
         if (j > l) {
@@ -330,12 +330,14 @@ public class Chunk {
     }
 
     public int getTypeId(int i, int j, int k) {
+        if (j >> 4 >= sections.length) return 0; // CraftBukkit - added until next release
         ChunkSection chunksection = this.sections[j >> 4];
 
         return chunksection != null ? chunksection.a(i, j & 15, k) : 0;
     }
 
     public int getData(int i, int j, int k) {
+        if (j >> 4 >= sections.length) return 0; // CraftBukkit - added until next release
         ChunkSection chunksection = this.sections[j >> 4];
 
         return chunksection != null ? chunksection.b(i, j & 15, k) : 0;
@@ -554,7 +556,7 @@ public class Chunk {
     }
 
     public boolean d(int i, int j, int k) {
-        return j > this.heightMap[k << 4 | i];
+        return j >= this.heightMap[k << 4 | i];
     }
 
     public TileEntity e(int i, int j, int k) {

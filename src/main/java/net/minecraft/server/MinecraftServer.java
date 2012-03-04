@@ -119,7 +119,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         System.setErr(new PrintStream(new LoggerOutputStream(log, Level.SEVERE), true));
         // CraftBukkit end
 
-        log.info("Starting minecraft server version 1.2.2");
+        log.info("Starting minecraft server version 1.2.3");
         if (Runtime.getRuntime().maxMemory() / 1024L / 1024L < 512L) {
             log.warning("**** NOT ENOUGH RAM!");
             log.warning("To start the server with more ram, launch it as \"java -Xmx1024M -Xms1024M -jar minecraft_server.jar\"");
@@ -191,7 +191,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
         this.t = MathHelper.a(this.t, 64, 256);
         this.propertyManager.a("max-build-height", Integer.valueOf(this.t));
         log.info("Preparing level \"" + s + "\"");
-        this.a(new WorldLoaderServer(new File(".")), s, j, worldtype);
+        this.a(new WorldLoaderServer(server.getWorldContainer()), s, j, worldtype); // CraftBukkit - world container
 
         // CraftBukkit start - display seconds for the completion time
         long elapsed = System.nanoTime() - i;
@@ -295,6 +295,11 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
                         log.severe("Could not create path for " + newWorld + "!");
                         log.info("---- Migration of old " + worldType + " folder failed ----");
                     }
+                }
+
+                if (convertable.isConvertable(name)) {
+                    log.info("Converting map!");
+                    convertable.convert(name, new ConvertProgressUpdater(this));
                 }
 
                 world = new SecondaryWorldServer(this, new ServerNBTManager(server.getWorldContainer(), name, true), name, dimension, settings, this.worlds.get(0), org.bukkit.World.Environment.getEnvironment(dimension), gen); // CraftBukkit
@@ -729,7 +734,7 @@ public class MinecraftServer implements Runnable, ICommandListener, IMinecraftSe
     }
 
     public String getVersion() {
-        return "1.2.2";
+        return "1.2.3";
     }
 
     public int getPlayerCount() {
