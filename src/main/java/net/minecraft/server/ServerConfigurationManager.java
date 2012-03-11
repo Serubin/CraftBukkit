@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 // CraftBukkit start
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -196,14 +199,14 @@ public class ServerConfigurationManager {
         return playerQuitEvent.getQuitMessage(); // CraftBukkit
     }
 
-    public EntityPlayer attemptLogin(NetLoginHandler netloginhandler, String s) {
+    public EntityPlayer attemptLogin(NetLoginHandler netloginhandler, String s, String hostname) { // CraftBukkit - add hostname parameter
         // CraftBukkit start - note: this entire method needs to be changed
         // Instead of kicking then returning, we need to store the kick reason
         // in the event, check with plugins to see if it's ok, and THEN kick
         // depending on the outcome. Also change any reference to this.e.c to entity.world
         EntityPlayer entity = new EntityPlayer(this.server, this.server.getWorldServer(0), s, new ItemInWorldManager(this.server.getWorldServer(0)));
-        Player player = (entity == null) ? null : (Player) entity.getBukkitEntity();
-        PlayerLoginEvent event = new PlayerLoginEvent(player);
+        Player player = (Player) entity.getBukkitEntity();
+        PlayerLoginEvent event = new PlayerLoginEvent(player, hostname);
 
         String s1 = netloginhandler.networkManager.getSocketAddress().toString();
 
@@ -303,6 +306,8 @@ public class ServerConfigurationManager {
 
         // CraftBukkit start
         byte actualDimension = (byte) (worldserver.getWorld().getEnvironment().getId());
+        // Force the client to refresh their chunk cache.
+        entityplayer1.netServerHandler.sendPacket(new Packet9Respawn((byte) (actualDimension >= 0 ? -1 : 0), (byte) worldserver.difficulty, worldserver.getWorldData().getType(), worldserver.getHeight(), entityplayer.itemInWorldManager.getGameMode()));
         entityplayer1.netServerHandler.sendPacket(new Packet9Respawn(actualDimension, (byte) worldserver.difficulty, worldserver.getWorldData().getType(), worldserver.getHeight(), entityplayer.itemInWorldManager.getGameMode()));
         entityplayer1.spawnIn(worldserver);
         entityplayer1.dead = false;
@@ -320,6 +325,86 @@ public class ServerConfigurationManager {
             Bukkit.getServer().getPluginManager().callEvent(event);
         }
         // CraftBukkit end
+
+        // CraftBukkit start - temporary hacky entity fix.
+        Timer timer = new Timer();
+        final ArrayList<Entity> nearby = new ArrayList<Entity>();
+        final EntityPlayer nmsEntity = entityplayer1;
+        // Start inline nearby entities
+        AxisAlignedBB axisalignedbb = nmsEntity.boundingBox.grow(100, 100, 100);
+        i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
+        int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
+        int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
+        int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
+
+        for (int i1 = i; i1 <= j; ++i1) {
+            for (int j1 = k; j1 <= l; ++j1) {
+                if (nmsEntity.world.chunkProvider.isChunkLoaded(i1, j1)) {
+                    nmsEntity.world.getChunkAt(i1, j1).a(nmsEntity, axisalignedbb, nearby);
+                }
+            }
+        }
+        // End inline nearby entities
+        for (Object entity : nearby) {
+            if (entity instanceof EntityLiving || entity instanceof EntityMinecart || entity instanceof EntityBoat || entity instanceof IAnimal || entity instanceof EntityPainting) {
+                nmsEntity.netServerHandler.sendPacket(new Packet29DestroyEntity(((Entity) entity).id));
+           }
+        }
+
+        timer.schedule(new TimerTask(){
+            public void run() {
+                // Start inline nearby entities
+                nearby.clear();
+                AxisAlignedBB axisalignedbb = nmsEntity.boundingBox.grow(100, 100, 100);
+                int i = MathHelper.floor((axisalignedbb.a - 2.0D) / 16.0D);
+                int j = MathHelper.floor((axisalignedbb.d + 2.0D) / 16.0D);
+                int k = MathHelper.floor((axisalignedbb.c - 2.0D) / 16.0D);
+                int l = MathHelper.floor((axisalignedbb.f + 2.0D) / 16.0D);
+
+                for (int i1 = i; i1 <= j; ++i1) {
+                    for (int j1 = k; j1 <= l; ++j1) {
+                        if (nmsEntity.world.chunkProvider.isChunkLoaded(i1, j1)) {
+                            nmsEntity.world.getChunkAt(i1, j1).a(nmsEntity, axisalignedbb, nearby);
+                        }
+                    }
+                }
+                // End inline nearby entities
+                for (Object entityObject2 : nearby) {
+                    try {
+                        Entity entity = (Entity) entityObject2;
+
+                        if (entity instanceof EntityPlayer) {
+                            nmsEntity.netServerHandler.sendPacket(new Packet20NamedEntitySpawn((EntityHuman) entity));
+                        } else if (entity instanceof EntityMinecart) {
+                            EntityMinecart entityminecart = (EntityMinecart) entity;
+
+                            if (entityminecart.type == 0) {
+                                nmsEntity.netServerHandler.sendPacket(new Packet23VehicleSpawn(entity, 10));
+                            }
+
+                            if (entityminecart.type == 1) {
+                                nmsEntity.netServerHandler.sendPacket(new Packet23VehicleSpawn(entity, 11));
+                            }
+
+                            if (entityminecart.type == 2) {
+                                nmsEntity.netServerHandler.sendPacket(new Packet23VehicleSpawn(entity, 12));
+                            }
+                        } else if (entity instanceof EntityBoat) {
+                            nmsEntity.netServerHandler.sendPacket(new Packet23VehicleSpawn(entity, 1));
+                        } else if (entity instanceof IAnimal) {
+                            nmsEntity.netServerHandler.sendPacket(new Packet24MobSpawn((EntityLiving) entity));
+                        } else if (entity instanceof EntityEnderDragon) {
+                            nmsEntity.netServerHandler.sendPacket(new Packet24MobSpawn((EntityLiving) entity));
+                        } else if (entity instanceof EntityPainting) {
+                            nmsEntity.netServerHandler.sendPacket(new Packet25EntityPainting((EntityPainting) entity));
+                        }
+                    } catch (ClassCastException e) {
+                    }
+                }
+            }
+        }, 5000);
+        // CraftBukkit end
+
         return entityplayer1;
     }
 

@@ -1,12 +1,14 @@
 package org.bukkit.craftbukkit.help;
 
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.MultipleCommandAlias;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.defaults.VanillaCommand;
 import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.help.HelpMap;
-import org.bukkit.help.HelpTopic;
-import org.bukkit.help.HelpTopicFactory;
+import org.bukkit.help.*;
 
 import java.util.*;
 
@@ -21,7 +23,7 @@ public class SimpleHelpMap implements HelpMap {
 
     public SimpleHelpMap() {
         helpTopics = new TreeMap<String, HelpTopic>(new HelpTopicComparator()); // Using a TreeMap for its explicit sorting on key
-        defaultTopic = new DefaultHelpTopic(helpTopics.values());
+        defaultTopic = new IndexHelpTopic("Index", null, null, Collections2.filter(helpTopics.values(), Predicates.not(Predicates.instanceOf(CommandAliasHelpTopic.class))));
         topicFactoryMap = new HashMap<Class, HelpTopicFactory>();
 
         registerHelpTopicFactory(MultipleCommandAlias.class, new MultipleCommandAliasHelpTopicFactory());
@@ -67,15 +69,29 @@ public class SimpleHelpMap implements HelpMap {
      * Processes all the commands registered in the server and creates help topics for them.
      * @param server A reference to the server.
      */
+    @SuppressWarnings("unchecked")
     public synchronized void initializeCommands(CraftServer server) {
         // ** Load topics from highest to lowest priority order **
 
         // Initialize help topics from the server's command map
+        outer: for (Command command : server.getCommandMap().getCommands()) {
+            for (Class c : topicFactoryMap.keySet()) {
+                if (c.isAssignableFrom(command.getClass())) {
+                    addTopic(topicFactoryMap.get(c).createTopic(command));
+                    continue outer;
+                }
+                if (command instanceof PluginCommand && c.isAssignableFrom(((PluginCommand)command).getExecutor().getClass())) {
+                    addTopic(topicFactoryMap.get(c).createTopic(command));
+                    continue outer;
+                }
+            }
+            addTopic(new GenericCommandHelpTopic(command));
+        }
+        
+        // Initialize command alias help topics
         for (Command command : server.getCommandMap().getCommands()) {
-            if (topicFactoryMap.containsKey(command.getClass())) {
-                addTopic(topicFactoryMap.get(command.getClass()).createTopic(command));
-            } else {
-                addTopic(new GenericCommandHelpTopic(command));
+            for (String alias : command.getAliases()) {
+                addTopic(new CommandAliasHelpTopic(alias, command.getLabel(), this));
             }
         }
 
@@ -84,18 +100,24 @@ public class SimpleHelpMap implements HelpMap {
             addTopic(new GenericCommandHelpTopic(command));
         }
 
+        // Add alias sub-index
+        addTopic(new IndexHelpTopic("Aliases", "Lists command aliases", null, Collections2.filter(helpTopics.values(), Predicates.instanceOf(CommandAliasHelpTopic.class))));
+
         // Amend help topics from the help.yml file
         HelpYamlReader reader = new HelpYamlReader(server);
         for (HelpTopicAmendment amendment : reader.getTopicAmendments()) {
             if (helpTopics.containsKey(amendment.getTopicName())) {
                 helpTopics.get(amendment.getTopicName()).amendTopic(amendment.getShortText(), amendment.getFullText());
+                if (amendment.getPermission() != null) {
+                    helpTopics.get(amendment.getTopicName()).amendCanSee(amendment.getPermission());
+                }
             }
         }
     }
 
     public void registerHelpTopicFactory(Class commandClass, HelpTopicFactory factory) {
-        if (!Command.class.isAssignableFrom(commandClass)) {
-            throw new IllegalArgumentException("commandClass must implement Command");
+        if (!Command.class.isAssignableFrom(commandClass) && !CommandExecutor.class.isAssignableFrom(commandClass)) {
+            throw new IllegalArgumentException("commandClass must implement either Command or CommandExecutor!");
         }
         topicFactoryMap.put(commandClass, factory);
     }

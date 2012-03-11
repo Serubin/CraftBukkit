@@ -84,13 +84,13 @@ public class CraftChunk implements Chunk {
         int count = 0, index = 0;
         net.minecraft.server.Chunk chunk = getHandle();
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 16; i++) {
             count += chunk.entitySlices[i].size();
         }
 
         Entity[] entities = new Entity[count];
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 16; i++) {
             for (Object obj : chunk.entitySlices[i].toArray()) {
                 if (!(obj instanceof net.minecraft.server.Entity)) {
                     continue;
@@ -216,7 +216,9 @@ public class CraftChunk implements Chunk {
 
             if (includeBiome) {
                 biome = new BiomeBase[256];
-                wcm.getBiomeBlock(biome, x << 4, z << 4, 16, 16);
+                for (int i = 0; i < 256; i++) {
+                    biome[i] = chunk.a(i & 0xF, i >> 4, wcm);
+                }
             }
 
             if (includeBiomeTempRain) {
@@ -250,7 +252,9 @@ public class CraftChunk implements Chunk {
 
             if (includeBiome) {
                 biome = new BiomeBase[256];
-                wcm.getBiomeBlock(biome, x << 4, z << 4, 16, 16);
+                for (int i = 0; i < 256; i++) {
+                    biome[i] = world.getHandle().getBiome((x << 4) + (i & 0xF), (z << 4) + (i >> 4));
+                }
             }
 
             if (includeBiomeTempRain) {

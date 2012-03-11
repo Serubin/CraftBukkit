@@ -39,6 +39,8 @@ import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.DelegateDeserialization;
 import org.bukkit.conversations.Conversation;
+import org.bukkit.conversations.ConversationAbandonedEvent;
+import org.bukkit.conversations.ManuallyAbandonedConversationCanceller;
 import org.bukkit.craftbukkit.conversations.ConversationTracker;
 import org.bukkit.craftbukkit.CraftEffect;
 import org.bukkit.craftbukkit.CraftOfflinePlayer;
@@ -597,6 +599,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void hidePlayer(Player player) {
+        Validate.notNull(player, "hidden player cannot be null");
+        if (equals(player)) return;
         if (hiddenPlayers.containsKey(player.getName())) return;
         hiddenPlayers.put(player.getName(), player);
 
@@ -613,6 +617,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void showPlayer(Player player) {
+        Validate.notNull(player, "shown player cannot be null");
+        if (equals(player)) return;
         if (!hiddenPlayers.containsKey(player.getName())) return;
         hiddenPlayers.remove(player.getName());
 
@@ -707,7 +713,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void abandonConversation(Conversation conversation) {
-        conversationTracker.abandonConversation(conversation);
+        conversationTracker.abandonConversation(conversation, new ConversationAbandonedEvent(conversation, new ManuallyAbandonedConversationCanceller()));
+    }
+
+    public void abandonConversation(Conversation conversation, ConversationAbandonedEvent details) {
+        conversationTracker.abandonConversation(conversation, details);
     }
 
     public void acceptConversationInput(String input) {

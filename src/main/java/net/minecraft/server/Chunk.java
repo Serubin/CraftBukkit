@@ -384,6 +384,7 @@ public class Chunk {
                 }
             }
 
+            if (chunksection.a(i, j & 15, k) != l) return false; // CraftBukkit - remove next update
             chunksection.b(i, j & 15, k, i1);
             if (flag) {
                 this.initLighting();
