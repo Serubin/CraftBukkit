@@ -104,8 +104,8 @@ public class EntityArrow extends Entity {
         this.k = 0;
     }
 
-    public void G_() {
-        super.G_();
+    public void F_() {
+        super.F_();
         if (this.lastPitch == 0.0F && this.lastYaw == 0.0F) {
             float f = MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ);
 
@@ -211,8 +211,9 @@ public class EntityArrow extends Entity {
                         damagesource = DamageSource.arrow(this, this.shooter);
                     }
 
+                    // CraftBukkit start - moved damage call
+                    if (movingobjectposition.entity.damageEntity(damagesource, l)) {
                     if (this.isBurning() && (!(movingobjectposition.entity instanceof EntityPlayer) || this.world.pvpMode)) { // CraftBukkit - abide by pvp setting if destination is a player.
-                        // CraftBukkit start
                         EntityCombustByEntityEvent combustEvent = new EntityCombustByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), 5);
                         Bukkit.getPluginManager().callEvent(combustEvent);
 
@@ -221,8 +222,8 @@ public class EntityArrow extends Entity {
                         }
                         // CraftBukkit end
                     }
-                    // CraftBukkit - entity.damageEntity -> event function
-                    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleProjectileEvent(projectile, entity, damagesource, l)) {
+
+                    //if (movingobjectposition.entity.damageEntity(damagesource, l)) { // CraftBukkit
                         if (movingobjectposition.entity instanceof EntityLiving) {
                             ++((EntityLiving) movingobjectposition.entity).aI;
                             if (this.n > 0) {
@@ -297,7 +298,7 @@ public class EntityArrow extends Entity {
             float f4 = 0.99F;
 
             f1 = 0.05F;
-            if (this.aT()) {
+            if (this.aU()) {
                 for (int i1 = 0; i1 < 4; ++i1) {
                     float f5 = 0.25F;
 

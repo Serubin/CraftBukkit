@@ -1,5 +1,6 @@
 package net.minecraft.server;
 
+import java.util.ArrayList; // CraftBukkit
 import java.util.Random;
 
 import org.bukkit.event.block.LeavesDecayEvent; // CraftBukkit
@@ -159,13 +160,28 @@ public class BlockLeaves extends BlockTransparant {
     }
 
     public void a(World world, EntityHuman entityhuman, int i, int j, int k, int l) {
-        if (!world.isStatic && entityhuman.T() != null && entityhuman.T().id == Item.SHEARS.id) {
+        if (!world.isStatic && entityhuman.U() != null && entityhuman.U().id == Item.SHEARS.id) {
             entityhuman.a(StatisticList.C[this.id], 1);
+            /* CraftBukkit start - moved this line into calculateDrops
             this.a(world, i, j, k, new ItemStack(Block.LEAVES.id, 1, l & 3));
+            */
+            this.doActualDrop(world, i, j, k);
+            // CraftBukkit end
         } else {
             super.a(world, entityhuman, i, j, k, l);
         }
     }
+
+    // CraftBukkit start - Calculate drops
+    public ArrayList<ItemStack> calculateDrops(World world, EntityHuman entityhuman, int i, int j, int k, int l) {
+        if (!world.isStatic && entityhuman.U() != null && entityhuman.U().id == Item.SHEARS.id) {
+            this.a(world, i, j, k, new ItemStack(Block.LEAVES.id, 1, l & 3));
+            return this.dropList;
+        } else {
+            return super.calculateDrops(world, entityhuman, i, j, k, l);
+        }
+    }
+    // CraftBukkit end
 
     protected int getDropData(int i) {
         return i & 3;

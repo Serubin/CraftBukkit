@@ -1,9 +1,11 @@
 package net.minecraft.server;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // CraftBukkit start
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Vehicle;
 import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -108,10 +110,22 @@ public class EntityBoat extends Entity {
             this.d(-this.m());
             this.c(10);
             this.setDamage(this.getDamage() + i * 10);
-            this.aV();
+            this.aW();
             if (this.getDamage() > 40) {
                 // CraftBukkit start
-                VehicleDestroyEvent destroyEvent = new VehicleDestroyEvent(vehicle, attacker);
+                List<org.bukkit.inventory.ItemStack> drops = new ArrayList<org.bukkit.inventory.ItemStack>();
+
+                int j;
+
+                for (j = 0; j < 3; ++j) {
+                    drops.add(new CraftItemStack(Block.WOOD.id, 1));
+                }
+
+                for (j = 0; j < 2; ++j) {
+                    drops.add(new CraftItemStack(Item.STICK.id,1));
+                }
+
+                VehicleDestroyEvent destroyEvent = new VehicleDestroyEvent(vehicle, attacker, drops);
                 this.world.getServer().getPluginManager().callEvent(destroyEvent);
 
                 if (destroyEvent.isCancelled()) {
@@ -124,6 +138,7 @@ public class EntityBoat extends Entity {
                     this.passenger.mount(this);
                 }
 
+                /* CraftBukkit - This logic has been moved up before the event firing
                 int j;
 
                 for (j = 0; j < 3; ++j) {
@@ -133,8 +148,14 @@ public class EntityBoat extends Entity {
                 for (j = 0; j < 2; ++j) {
                     this.a(Item.STICK.id, 1, 0.0F);
                 }
+                // */
 
                 this.die();
+                // CraftBukkit start
+                for (org.bukkit.inventory.ItemStack stack : drops) {
+                    this.a(CraftItemStack.createNMSItemStack(stack), 0.0f);
+                }
+                // CraftBukkit end
             }
 
             return true;
@@ -147,7 +168,7 @@ public class EntityBoat extends Entity {
         return !this.dead;
     }
 
-    public void G_() {
+    public void F_() {
         // CraftBukkit start
         double prevX = this.locX;
         double prevY = this.locY;
@@ -156,7 +177,7 @@ public class EntityBoat extends Entity {
         float prevPitch = this.pitch;
         // CraftBukkit end
 
-        super.G_();
+        super.F_();
         if (this.l() > 0) {
             this.c(this.l() - 1);
         }
@@ -302,24 +323,38 @@ public class EntityBoat extends Entity {
             if (this.positionChanged && d3 > 0.2D) {
                 if (!this.world.isStatic) {
                     // CraftBukkit start
+                    List<org.bukkit.inventory.ItemStack> drops = new ArrayList<org.bukkit.inventory.ItemStack>();
+                    /* CraftBukkit end
+                    this.die();
+                    // CraftBukkit - deferred to after the event */
+
+                    int k;
+
+                    for (k = 0; k < 3; ++k) {
+                        /* CraftBukkit - add to drop list instead of immediately dropping
+                        this.a(Block.WOOD.id, 1, 0.0F);
+                        // */
+                        drops.add(new CraftItemStack(Block.WOOD.id, 1));
+                    }
+
+                    for (k = 0; k < 2; ++k) {
+                        /* CraftBukkit - add to drop list instead of immediately dropping
+                        this.a(Item.STICK.id, 1, 0.0F);
+                        // */
+                        drops.add(new CraftItemStack(Item.STICK.id,1));
+                    }
+                    // CraftBukkit start
                     Vehicle vehicle = (Vehicle) this.getBukkitEntity();
-                    VehicleDestroyEvent destroyEvent = new VehicleDestroyEvent(vehicle, null);
+                    VehicleDestroyEvent destroyEvent = new VehicleDestroyEvent(vehicle, null, drops);
                     this.world.getServer().getPluginManager().callEvent(destroyEvent);
 
                     if (!destroyEvent.isCancelled()) {
-                    // CraftBukkit end
                         this.die();
-
-                        int k;
-
-                        for (k = 0; k < 3; ++k) {
-                            this.a(Block.WOOD.id, 1, 0.0F);
+                        for (org.bukkit.inventory.ItemStack stack : drops) {
+                            this.a(CraftItemStack.createNMSItemStack(stack), 0.0f);
                         }
-
-                        for (k = 0; k < 2; ++k) {
-                            this.a(Item.STICK.id, 1, 0.0F);
-                        }
-                    } // CraftBukkit
+                    }
+                    // CraftBukkit end
                 }
             } else {
                 this.motX *= 0.9900000095367432D;
@@ -407,7 +442,7 @@ public class EntityBoat extends Entity {
             double d0 = Math.cos((double) this.yaw * 3.141592653589793D / 180.0D) * 0.4D;
             double d1 = Math.sin((double) this.yaw * 3.141592653589793D / 180.0D) * 0.4D;
 
-            this.passenger.setPosition(this.locX + d0, this.locY + this.x_() + this.passenger.V(), this.locZ + d1);
+            this.passenger.setPosition(this.locX + d0, this.locY + this.x_() + this.passenger.W(), this.locZ + d1);
         }
     }
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // CraftBukkit start
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Painting;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.painting.PaintingBreakEvent.RemoveCause;
@@ -120,11 +121,13 @@ public class EntityPainting extends Entity {
         return i == 32 ? 0.5F : (i == 64 ? 0.5F : 0.0F);
     }
 
-    public void G_() {
+    public void F_() {
         if (this.f++ == 100 && !this.world.isStatic) {
             this.f = 0;
-            if (!this.survives()) {
+            if (!this.dead && !this.survives()) {
                 // CraftBukkit start
+                List<org.bukkit.inventory.ItemStack> drops = new ArrayList<org.bukkit.inventory.ItemStack>();
+                drops.add(new CraftItemStack(Item.PAINTING.id, 1));
                 Material material = this.world.getMaterial((int) this.locX, (int) this.locY, (int) this.locZ);
                 RemoveCause cause;
                 if (material.equals(Material.WATER)) {
@@ -135,7 +138,7 @@ public class EntityPainting extends Entity {
                 } else {
                     cause = RemoveCause.PHYSICS;
                 }
-                PaintingBreakEvent event = new PaintingBreakEvent((Painting) this.getBukkitEntity(), cause);
+                PaintingBreakEvent event = new PaintingBreakEvent((Painting) this.getBukkitEntity(), cause, drops);
                 this.world.getServer().getPluginManager().callEvent(event);
 
                 if (event.isCancelled() || dead) {
@@ -144,7 +147,12 @@ public class EntityPainting extends Entity {
                 // CraftBukkit end
 
                 this.die();
-                this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, new ItemStack(Item.PAINTING)));
+                // CraftBukkit start - replace following line with the loop
+                //this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, new ItemStack(Item.PAINTING)));
+                for (org.bukkit.inventory.ItemStack stack : drops) {
+                    this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, CraftItemStack.createNMSItemStack(stack)));
+                }
+                // CraftBukkit end
             }
         }
     }
@@ -214,12 +222,14 @@ public class EntityPainting extends Entity {
     public boolean damageEntity(DamageSource damagesource, int i) {
         if (!this.dead && !this.world.isStatic) {
             // CraftBukkit start
+            List<org.bukkit.inventory.ItemStack> drops = new ArrayList<org.bukkit.inventory.ItemStack>();
+            drops.add(new CraftItemStack(Item.PAINTING.id, 1));
             PaintingBreakEvent event = null;
             if (damagesource.getEntity() != null) {
-                event = new PaintingBreakByEntityEvent((Painting) this.getBukkitEntity(), damagesource.getEntity() == null ? null : damagesource.getEntity().getBukkitEntity());
+                event = new PaintingBreakByEntityEvent((Painting) this.getBukkitEntity(), damagesource.getEntity().getBukkitEntity(), drops);
             } else {
                 if (damagesource == DamageSource.FIRE) {
-                    event = new PaintingBreakEvent((Painting) this.getBukkitEntity(), RemoveCause.FIRE);
+                    event = new PaintingBreakEvent((Painting) this.getBukkitEntity(), RemoveCause.FIRE, drops);
                 }
                 // TODO: Could put other stuff here?
             }
@@ -235,8 +245,13 @@ public class EntityPainting extends Entity {
             // CraftBukkit end
 
             this.die();
-            this.aV();
-            this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, new ItemStack(Item.PAINTING)));
+            this.aW();
+            // CraftBukkit start - replace following line with the loop
+            //this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, new ItemStack(Item.PAINTING)));
+            for (org.bukkit.inventory.ItemStack stack : drops) {
+                this.world.addEntity(new EntityItem(this.world, this.locX, this.locY, this.locZ, CraftItemStack.createNMSItemStack(stack)));
+            }
+            // CraftBukkit end
         }
 
         return true;
@@ -275,7 +290,7 @@ public class EntityPainting extends Entity {
     }
 
     public void move(double d0, double d1, double d2) {
-        if (!this.world.isStatic && d0 * d0 + d1 * d1 + d2 * d2 > 0.0D) {
+        if (!this.world.isStatic && !this.dead && d0 * d0 + d1 * d1 + d2 * d2 > 0.0D) {
             if (dead) return; // CraftBukkit
 
             this.die();

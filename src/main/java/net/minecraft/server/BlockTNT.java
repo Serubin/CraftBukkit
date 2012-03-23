@@ -1,5 +1,6 @@
 package net.minecraft.server;
 
+import java.util.ArrayList; // CraftBukkit
 import java.util.Random;
 
 public class BlockTNT extends Block {
@@ -32,16 +33,20 @@ public class BlockTNT extends Block {
     }
 
     public void wasExploded(World world, int i, int j, int k) {
-        EntityTNTPrimed entitytntprimed = new EntityTNTPrimed(world, (double) ((float) i + 0.5F), (double) ((float) j + 0.5F), (double) ((float) k + 0.5F));
+        if (!world.isStatic) {
+            EntityTNTPrimed entitytntprimed = new EntityTNTPrimed(world, (double) ((float) i + 0.5F), (double) ((float) j + 0.5F), (double) ((float) k + 0.5F));
 
-        entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
-        world.addEntity(entitytntprimed);
+            entitytntprimed.fuseTicks = world.random.nextInt(entitytntprimed.fuseTicks / 4) + entitytntprimed.fuseTicks / 8;
+            world.addEntity(entitytntprimed);
+        }
     }
 
     public void postBreak(World world, int i, int j, int k, int l) {
         if (!world.isStatic) {
             if ((l & 1) == 0) {
+                /* CraftBukkit - Move this earlier so the block break event can see it
                 this.a(world, i, j, k, new ItemStack(Block.TNT.id, 1, 0));
+                // */
             } else {
                 EntityTNTPrimed entitytntprimed = new EntityTNTPrimed(world, (double) ((float) i + 0.5F), (double) ((float) j + 0.5F), (double) ((float) k + 0.5F));
 
@@ -51,8 +56,16 @@ public class BlockTNT extends Block {
         }
     }
 
+    // CraftBukkit start - Calculate drops
+    public ArrayList<ItemStack> calculateDrops(World world, EntityHuman entityhuman, int i, int j, int k, int l) {
+        super.dropList = new ArrayList<ItemStack>();
+        this.a(world, i, j, k, new ItemStack(Block.TNT.id, 1, 0));
+        return super.dropList;
+    }
+    // CraftBukkit end
+
     public void attack(World world, int i, int j, int k, EntityHuman entityhuman) {
-        if (entityhuman.T() != null && entityhuman.T().id == Item.FLINT_AND_STEEL.id) {
+        if (entityhuman.U() != null && entityhuman.U().id == Item.FLINT_AND_STEEL.id) {
             world.setRawData(i, j, k, 1);
         }
 
