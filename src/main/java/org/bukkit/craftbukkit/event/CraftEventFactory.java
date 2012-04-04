@@ -65,6 +65,7 @@ public class CraftEventFactory {
         WorldServer worldServer = world.getHandle();
         int spawnSize = Bukkit.getServer().getSpawnRadius();
 
+        if (world.getHandle().dimension != 0) return true;
         if (spawnSize <= 0) return true;
         if (player.isOp()) return true;
 
@@ -142,7 +143,7 @@ public class CraftEventFactory {
         if (action != Action.LEFT_CLICK_AIR && action != Action.RIGHT_CLICK_AIR) {
             throw new IllegalArgumentException();
         }
-        return callPlayerInteractEvent(who, action, 0, 255, 0, 0, itemstack);
+        return callPlayerInteractEvent(who, action, 0, 256, 0, 0, itemstack);
     }
 
     public static PlayerInteractEvent callPlayerInteractEvent(EntityHuman who, Action action, int clickedX, int clickedY, int clickedZ, int clickedFace, ItemStack itemstack) {
@@ -155,7 +156,7 @@ public class CraftEventFactory {
         Block blockClicked = craftWorld.getBlockAt(clickedX, clickedY, clickedZ);
         BlockFace blockFace = CraftBlock.notchToBlockFace(clickedFace);
 
-        if (clickedY == 255) {
+        if (clickedY > 255) {
             blockClicked = null;
             switch (action) {
             case LEFT_CLICK_BLOCK:
@@ -508,6 +509,12 @@ public class CraftEventFactory {
         ThrownExpBottle bottle = (ThrownExpBottle) entity.getBukkitEntity();
         ExpBottleEvent event = new ExpBottleEvent(bottle, exp);
         Bukkit.getPluginManager().callEvent(event);
+        return event;
+    }
+
+    public static BlockRedstoneEvent callRedstoneChange(World world, int x, int y, int z, int oldCurrent, int newCurrent) {
+        BlockRedstoneEvent event = new BlockRedstoneEvent(world.getWorld().getBlockAt(x, y, z), oldCurrent, newCurrent);
+        world.getServer().getPluginManager().callEvent(event);
         return event;
     }
 }

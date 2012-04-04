@@ -611,8 +611,7 @@ public class EntityEnderDragon extends EntityComplex {
         byte b1 = 4;
 
         // CraftBukkit start - Replace any "this.world" in the following with just "world"!
-        org.bukkit.event.entity.EntityCreatePortalEvent event = new org.bukkit.event.entity.EntityCreatePortalEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), new ArrayList<BlockState>(), org.bukkit.PortalType.ENDER);
-        org.bukkit.craftbukkit.util.BlockStateListPopulator world = new org.bukkit.craftbukkit.util.BlockStateListPopulator(this.world.getWorld(), event.getBlocks());
+        org.bukkit.craftbukkit.util.BlockStateListPopulator world = new org.bukkit.craftbukkit.util.BlockStateListPopulator(this.world.getWorld());
 
         for (int k = b0 - 1; k <= b0 + 32; ++k) {
             for (int l = i - b1; l <= i + b1; ++l) {
@@ -648,11 +647,22 @@ public class EntityEnderDragon extends EntityComplex {
         world.setTypeId(i, b0 + 3, j, Block.BEDROCK.id);
         world.setTypeId(i, b0 + 4, j, Block.DRAGON_EGG.id);
 
+        org.bukkit.event.entity.EntityCreatePortalEvent event = new org.bukkit.event.entity.EntityCreatePortalEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), java.util.Collections.unmodifiableList(world.getList()), org.bukkit.PortalType.ENDER);
         this.world.getServer().getPluginManager().callEvent(event);
 
         if (!event.isCancelled()) {
             for (BlockState state : event.getBlocks()) {
                 state.update(true);
+            }
+        } else {
+            for (BlockState state : event.getBlocks()) {
+                Packet53BlockChange packet = new Packet53BlockChange(state.getX(), state.getY(), state.getZ(), this.world);
+                for (Iterator it = this.world.players.iterator(); it.hasNext();) {
+                    EntityHuman entity = (EntityHuman) it.next();
+                    if (entity instanceof EntityPlayer) {
+                        ((EntityPlayer) entity).netServerHandler.sendPacket(packet);
+                    }
+                }
             }
         }
         // CraftBukkit end

@@ -13,8 +13,8 @@ public class EntityOcelot extends EntityTameableAnimal {
         this.goalSelector.a(2, this.a);
         this.goalSelector.a(3, this.b = new PathfinderGoalTempt(this, 0.18F, Item.RAW_FISH.id, true));
         this.goalSelector.a(4, new PathfinderGoalAvoidPlayer(this, EntityHuman.class, 16.0F, 0.23F, 0.4F));
-        this.goalSelector.a(5, new PathfinderGoalJumpOnBlock(this, 0.4F));
-        this.goalSelector.a(6, new PathfinderGoalFollowOwner(this, 0.3F, 10.0F, 5.0F));
+        this.goalSelector.a(5, new PathfinderGoalFollowOwner(this, 0.3F, 10.0F, 5.0F));
+        this.goalSelector.a(6, new PathfinderGoalJumpOnBlock(this, 0.4F));
         this.goalSelector.a(7, new PathfinderGoalLeapAtTarget(this, 0.3F));
         this.goalSelector.a(8, new PathfinderGoalOzelotAttack(this));
         this.goalSelector.a(9, new PathfinderGoalBreed(this, 0.23F));
@@ -110,7 +110,7 @@ public class EntityOcelot extends EntityTameableAnimal {
 
         if (!this.isTamed()) {
             if (this.b.f() && itemstack != null && itemstack.id == Item.RAW_FISH.id && entityhuman.j(this) < 9.0D) {
-                --itemstack.count;
+                if (!entityhuman.abilities.canInstantlyBuild) --itemstack.count; // CraftBukkit - if the player can instantly build, don't decrement the item stack
                 if (itemstack.count <= 0) {
                     entityhuman.inventory.setItem(entityhuman.inventory.itemInHandIndex, (ItemStack) null);
                 }
