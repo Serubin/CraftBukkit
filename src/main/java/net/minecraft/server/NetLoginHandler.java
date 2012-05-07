@@ -102,7 +102,7 @@ public class NetLoginHandler extends NetHandler {
         EntityPlayer entityplayer = this.server.serverConfigurationManager.attemptLogin(this, packet1login.name, this.hostname); // CraftBukkit - add hostname parameter
 
         if (entityplayer != null) {
-            this.server.serverConfigurationManager.b(entityplayer);
+            //this.server.serverConfigurationManager.b(entityplayer); // CraftBukkit - Moved to attemptLogin
             // entityplayer.a((World) this.server.a(entityplayer.dimension)); // CraftBukkit - set by Entity
             entityplayer.itemInWorldManager.a((WorldServer) entityplayer.world);
             // CraftBukkit - add world and location to 'logged in' message.
@@ -157,9 +157,10 @@ public class NetLoginHandler extends NetHandler {
             String s = pingEvent.getMotd() + "\u00A7" + this.server.serverConfigurationManager.getPlayerCount() + "\u00A7" + pingEvent.getMaxPlayers();
             // CraftBukkit end
 
+            this.server.networkListenThread.a(this.networkManager.getSocket()); // CraftBukkit - cleanup before killing connection
             this.networkManager.queue(new Packet255KickDisconnect(s));
             this.networkManager.d();
-            this.server.networkListenThread.a(this.networkManager.getSocket());
+            // this.server.networkListenThread.a(this.networkManager.getSocket()); // CraftBukkit - moved up
             this.c = true;
         } catch (Exception exception) {
             exception.printStackTrace();

@@ -20,6 +20,7 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.craftbukkit.util.UnsafeList;
 import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockFormEvent;
@@ -40,7 +41,7 @@ public class World implements IBlockAccess {
     private List J = new ArrayList();
     private List K = new ArrayList();
     public List players = new ArrayList();
-    public List e = new ArrayList();
+    public UnsafeList e = new UnsafeList(); // CraftBukkit - use UnsafeList
     private long L = 16777215L;
     public int f = 0;
     protected int g = (new Random()).nextInt();
@@ -868,7 +869,7 @@ public class World implements IBlockAccess {
 
     // CraftBukkit start - used for entities other than creatures
     public boolean addEntity(Entity entity) {
-        return this.addEntity(entity, SpawnReason.CUSTOM); // Set reason as Custom by default
+        return this.addEntity(entity, SpawnReason.DEFAULT); // Set reason as DEFAULT
     }
 
     public boolean addEntity(Entity entity, SpawnReason spawnReason) { // Changed signature, added SpawnReason
@@ -889,7 +890,7 @@ public class World implements IBlockAccess {
             boolean isAnimal = entity instanceof EntityAnimal || entity instanceof EntityWaterAnimal || entity instanceof EntityGolem;
             boolean isMonster = entity instanceof EntityMonster || entity instanceof EntityGhast || entity instanceof EntitySlime;
 
-            if (spawnReason == SpawnReason.NATURAL || spawnReason == SpawnReason.CHUNK_GEN || spawnReason == SpawnReason.JOCKEY || spawnReason == SpawnReason.SPAWNER || spawnReason == SpawnReason.BED || spawnReason == SpawnReason.EGG || spawnReason == SpawnReason.VILLAGE_INVASION || spawnReason == SpawnReason.VILLAGE_DEFENSE || spawnReason == SpawnReason.BUILD_SNOWMAN || spawnReason == SpawnReason.BUILD_IRONGOLEM) {
+            if (spawnReason != SpawnReason.CUSTOM) {
                 if (isAnimal && !allowAnimals || isMonster && !allowMonsters)  {
                     entity.dead = true;
                     return false;
@@ -1111,7 +1112,7 @@ public class World implements IBlockAccess {
         Entity entity;
 
         for (i = 0; i < this.e.size(); ++i) {
-            entity = (Entity) this.e.get(i);
+            entity = (Entity) this.e.unsafeGet(i); // CraftBukkit - use unsafeGet
             // CraftBukkit start - fixed an NPE
             if (entity == null) {
                 continue;

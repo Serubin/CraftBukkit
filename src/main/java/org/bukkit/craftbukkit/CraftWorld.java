@@ -1,23 +1,19 @@
 package org.bukkit.craftbukkit;
 
-import com.google.common.collect.MapMaker;
 import java.io.File;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import org.apache.commons.lang.Validate;
 
 import org.bukkit.craftbukkit.entity.*;
 import org.bukkit.craftbukkit.metadata.BlockMetadataStore;
 import org.bukkit.entity.*;
 import org.bukkit.entity.Entity;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 import net.minecraft.server.*;
 
@@ -58,10 +54,12 @@ public class CraftWorld implements World {
     private final WorldServer world;
     private Environment environment;
     private final CraftServer server = (CraftServer) Bukkit.getServer();
-    private ConcurrentMap<Integer, CraftChunk> unloadedChunks = new MapMaker().weakValues().makeMap();
     private final ChunkGenerator generator;
     private final List<BlockPopulator> populators = new ArrayList<BlockPopulator>();
     private final BlockMetadataStore blockMetadata = new BlockMetadataStore(this);
+    private int monsterSpawn = -1;
+    private int animalSpawn = -1;
+    private int waterAnimalSpawn = -1;
 
     private static final Random rand = new Random();
 
@@ -70,15 +68,6 @@ public class CraftWorld implements World {
         this.generator = gen;
 
         environment = env;
-    }
-
-    public void preserveChunk(CraftChunk chunk) {
-        chunk.breakLink();
-        unloadedChunks.put((chunk.getX() << 16) + chunk.getZ(), chunk);
-    }
-
-    public Chunk popPreservedChunk(int x, int z) {
-        return unloadedChunks.remove((x << 16) + z);
     }
 
     public Block getBlockAt(int x, int y, int z) {
@@ -193,7 +182,6 @@ public class CraftWorld implements World {
             world.chunkProviderServer.saveChunkNOP(chunk);
         }
 
-        preserveChunk((CraftChunk) chunk.bukkitChunk);
         world.chunkProviderServer.unloadQueue.remove(x, z);
         world.chunkProviderServer.chunks.remove(x, z);
         world.chunkProviderServer.chunkList.remove(chunk);
@@ -1133,5 +1121,41 @@ public class CraftWorld implements World {
 
     public void removeMetadata(String metadataKey, Plugin owningPlugin) {
         server.getWorldMetadata().removeMetadata(this, metadataKey, owningPlugin);
+    }
+
+    public int getMonsterSpawnLimit() {
+        if (monsterSpawn < 0) {
+            return server.getMonsterSpawnLimit();
+        }
+
+        return monsterSpawn;
+    }
+
+    public void setMonsterSpawnLimit(int limit) {
+        monsterSpawn = limit;
+    }
+
+    public int getAnimalSpawnLimit() {
+        if (animalSpawn < 0) {
+            return server.getAnimalSpawnLimit();
+        }
+
+        return animalSpawn;
+    }
+
+    public void setAnimalSpawnLimit(int limit) {
+        animalSpawn = limit;
+    }
+
+    public int getWaterAnimalSpawnLimit() {
+        if (waterAnimalSpawn < 0) {
+            return server.getWaterAnimalSpawnLimit();
+        }
+
+        return waterAnimalSpawn;
+    }
+
+    public void setWaterAnimalSpawnLimit(int limit) {
+        waterAnimalSpawn = limit;
     }
 }

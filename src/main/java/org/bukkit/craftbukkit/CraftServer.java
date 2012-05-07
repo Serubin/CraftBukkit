@@ -142,6 +142,9 @@ public final class CraftServer implements Server {
     private final EntityMetadataStore entityMetadata = new EntityMetadataStore();
     private final PlayerMetadataStore playerMetadata = new PlayerMetadataStore();
     private final WorldMetadataStore worldMetadata = new WorldMetadataStore();
+    private int monsterSpawn = -1;
+    private int animalSpawn = -1;
+    private int waterAnimalSpawn = -1;
 
     static {
         ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
@@ -172,6 +175,9 @@ public final class CraftServer implements Server {
         configuration.setDefaults(YamlConfiguration.loadConfiguration(getClass().getClassLoader().getResourceAsStream("configurations/bukkit.yml")));
         saveConfig();
         ((SimplePluginManager) pluginManager).useTimings(configuration.getBoolean("settings.plugin-profiling"));
+        monsterSpawn = configuration.getInt("spawn-limits.monsters");
+        animalSpawn = configuration.getInt("spawn-limits.animals");
+        waterAnimalSpawn = configuration.getInt("spawn-limits.water-animals");
 
         updater = new AutoUpdater(new BukkitDLUpdaterService(configuration.getString("auto-updater.host")), getLogger(), configuration.getString("auto-updater.preferred-channel"));
         updater.setEnabled(configuration.getBoolean("auto-updater.enabled"));
@@ -493,6 +499,9 @@ public final class CraftServer implements Server {
         console.spawnAnimals = config.getBoolean("spawn-animals", console.spawnAnimals);
         console.pvpMode = config.getBoolean("pvp", console.pvpMode);
         console.allowFlight = config.getBoolean("allow-flight", console.allowFlight);
+        monsterSpawn = configuration.getInt("spawn-limits.monsters");
+        animalSpawn = configuration.getInt("spawn-limits.animals");
+        waterAnimalSpawn = configuration.getInt("spawn-limits.water-animals");
 
         for (WorldServer world : console.worlds) {
             world.difficulty = difficulty;
@@ -579,13 +588,13 @@ public final class CraftServer implements Server {
             return;
         }
 
-        Set<String> keys = perms.keySet();
+        List<Permission> permsList = Permission.loadPermissions(perms, "Permission node '%s' in " + file + " is invalid", Permission.DEFAULT_PERMISSION);
 
-        for (String name : keys) {
+        for (Permission perm : permsList) {
             try {
-                pluginManager.addPermission(Permission.loadPermission(name, perms.get(name)));
-            } catch (Throwable ex) {
-                Bukkit.getServer().getLogger().log(Level.SEVERE, "Permission node '" + name + "' in server config is invalid", ex);
+                pluginManager.addPermission(perm);
+            } catch (IllegalArgumentException ex) {
+                getLogger().log(Level.SEVERE, "Permission in " + file + " was already defined", ex);
             }
         }
     }
@@ -1160,5 +1169,17 @@ public final class CraftServer implements Server {
 
     public SimpleCommandMap getCommandMap() {
         return commandMap;
+    }
+
+    public int getMonsterSpawnLimit() {
+        return monsterSpawn;
+    }
+
+    public int getAnimalSpawnLimit() {
+        return animalSpawn;
+    }
+
+    public int getWaterAnimalSpawnLimit() {
+        return waterAnimalSpawn;
     }
 }

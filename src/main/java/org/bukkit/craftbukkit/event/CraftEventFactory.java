@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit.event;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -287,6 +288,10 @@ public class CraftEventFactory {
         return event;
     }
 
+    public static EntityDeathEvent callEntityDeathEvent(EntityLiving victim) {
+        return callEntityDeathEvent(victim, new ArrayList<org.bukkit.inventory.ItemStack>(0));
+    }
+
     public static EntityDeathEvent callEntityDeathEvent(EntityLiving victim, List<org.bukkit.inventory.ItemStack> drops) {
         CraftLivingEntity entity = (CraftLivingEntity) victim.getBukkitEntity();
         EntityDeathEvent event = new EntityDeathEvent(entity, drops, victim.getExpReward());
@@ -316,7 +321,6 @@ public class CraftEventFactory {
         org.bukkit.World world = entity.getWorld();
         Bukkit.getServer().getPluginManager().callEvent(event);
 
-        // TODO: Possibly a way to persist this incase of disconnect
         victim.keepLevel = event.getKeepLevel();
         victim.newLevel = event.getNewLevel();
         victim.newTotalExp = event.getNewTotalExp();
@@ -329,8 +333,7 @@ public class CraftEventFactory {
             if (stack instanceof CraftItemStack) {
                 // Use the internal item to preserve possible data.
                 victim.a(((CraftItemStack) stack).getHandle(), 0.0f);
-            }
-            else {
+            } else {
                 world.dropItemNaturally(entity.getLocation(), stack);
             }
         }
