@@ -6,6 +6,9 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 
 public class EntityEnderDragon extends EntityComplex {
 
@@ -453,6 +456,13 @@ public class EntityEnderDragon extends EntityComplex {
         this.p = false;
         if (this.random.nextInt(2) == 0 && this.world.players.size() > 0) {
             this.u = (Entity) this.world.players.get(this.random.nextInt(this.world.players.size()));
+            if (this.u == null) {
+                return;
+            }
+            EntityTargetLivingEntityEvent event = CraftEventFactory.callEntityTargetLivingEvent(this, (EntityPlayer) this.u, EntityTargetEvent.TargetReason.RANDOM_TARGET);
+            if (event.isCancelled()) {
+                this.u = null;
+            }
         } else {
             boolean flag = false;
 
@@ -687,4 +697,11 @@ public class EntityEnderDragon extends EntityComplex {
         return 20000;
     }
     // CraftBukkit end
+
+    public void move(double d0, double d1, double d2) {
+	super.move(d0,d1,d2);
+	if (locX > 150 || locX < -150 || locZ > 150 || locZ < -150) {
+	    setPosition(0, 80, 0);
+	}
+    }
 }
