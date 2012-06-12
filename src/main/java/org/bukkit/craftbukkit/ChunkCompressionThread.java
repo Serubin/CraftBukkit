@@ -1,6 +1,7 @@
 package org.bukkit.craftbukkit;
 
 import java.util.HashMap;
+import java.util.Vector; // Tyr
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.Deflater;
@@ -25,6 +26,13 @@ public final class ChunkCompressionThread implements Runnable {
 
     private final Deflater deflater = new Deflater();
     private byte[] deflateBuffer = new byte[CHUNK_SIZE + 100];
+
+    // begin Tyr
+    public static boolean disableforops = false;
+    public static boolean usemultiworldconfigs = false;
+
+    public static Vector<int[]> worldconfigurationsdata = new Vector();
+    // end Tyr
 
     public static void startThread() {
         if (!isRunning) {
@@ -60,6 +68,50 @@ public final class ChunkCompressionThread implements Runnable {
         if (packet.buffer != null) {
             return;
         }
+
+        // begin Tyr
+        if (packet.world != null) {
+            if (usemultiworldconfigs)
+            {
+                boolean foundconfig = false;
+                CraftWorld world = packet.world.getWorld();
+
+                for (int i = 0; i < worldconfigurationsdata.size(); i++) {
+                    if (((int[])worldconfigurationsdata.get(i))[0] != world.hashCode())
+                        continue;
+                    if (disableforops) {
+                        if (!queuedPacket.player.getBukkitEntity().isOp())
+                            packet.obfuscateandcompressPacket51MapChunk(packet.world, (int[])worldconfigurationsdata.get(i));
+                    }
+                    else {
+                        packet.obfuscateandcompressPacket51MapChunk(packet.world, (int[])worldconfigurationsdata.get(i));
+                    }
+                    foundconfig = true;
+                    break;
+                }
+
+                if (!foundconfig) {
+                    if (disableforops) {
+                        if (!queuedPacket.player.getBukkitEntity().isOp())
+                            packet.obfuscateandcompressPacket51MapChunk(packet.world, null);
+                    }
+                    else {
+                        packet.obfuscateandcompressPacket51MapChunk(packet.world, null);
+                    }
+                }
+
+            }
+            else if (disableforops) {
+                if (!queuedPacket.player.getBukkitEntity().isOp()) {
+                    packet.obfuscateandcompressPacket51MapChunk(packet.world, null);
+                }
+
+            } else {
+                packet.obfuscateandcompressPacket51MapChunk(packet.world, null);
+            }
+
+        }
+        // end Tyr
 
         int dataSize = packet.rawData.length;
         if (deflateBuffer.length < dataSize + 100) {
