@@ -1,9 +1,8 @@
 package net.minecraft.server;
 
 import java.util.List;
+
 // CraftBukkit start
-import org.bukkit.block.BlockState;
-import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.event.block.EntityBlockFormEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 // CraftBukkit end
@@ -33,24 +32,30 @@ public class EntitySnowman extends EntityGolem {
     public void e() {
         super.e();
         if (this.aT()) {
+            // CraftBukkit start
             EntityDamageEvent event = new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.DROWNING, 1);
             this.world.getServer().getPluginManager().callEvent(event);
 
             if (!event.isCancelled()) {
+                event.getEntity().setLastDamageCause(event);
                 this.damageEntity(DamageSource.DROWN, event.getDamage());
             }
+            // CraftBukkit end
         }
 
         int i = MathHelper.floor(this.locX);
         int j = MathHelper.floor(this.locZ);
 
         if (this.world.getBiome(i, j).i() > 1.0F) {
+            // CraftBukkit start
             EntityDamageEvent event = new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.MELTING, 1);
             this.world.getServer().getPluginManager().callEvent(event);
 
             if (!event.isCancelled()) {
+                event.getEntity().setLastDamageCause(event);
                 this.damageEntity(DamageSource.BURN, event.getDamage());
             }
+            // CraftBukkit end
         }
 
         for (i = 0; i < 4; ++i) {
@@ -60,7 +65,7 @@ public class EntitySnowman extends EntityGolem {
 
             if (this.world.getTypeId(j, k, l) == 0 && this.world.getBiome(j, l).i() < 0.8F && Block.SNOW.canPlace(this.world, j, k, l)) {
                 // CraftBukkit start
-                BlockState blockState = this.world.getWorld().getBlockAt(j, k, l).getState();
+                org.bukkit.block.BlockState blockState = this.world.getWorld().getBlockAt(j, k, l).getState();
                 blockState.setTypeId(Block.SNOW.id);
 
                 EntityBlockFormEvent event = new EntityBlockFormEvent(this.getBukkitEntity(), blockState.getBlock(), blockState);
@@ -95,7 +100,7 @@ public class EntitySnowman extends EntityGolem {
             loot.add(new org.bukkit.inventory.ItemStack(Item.SNOW_BALL.id, j));
         }
 
-        CraftEventFactory.callEntityDeathEvent(this, loot);
+        org.bukkit.craftbukkit.event.CraftEventFactory.callEntityDeathEvent(this, loot);
         // CraftBukkit end
     }
 }

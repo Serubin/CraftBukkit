@@ -78,10 +78,10 @@ public class BlockFlowing extends BlockFluids {
                 }
             }
 
-            if (this.material == Material.LAVA && l < 8 && i1 < 8 && i1 > l && random.nextInt(4) != 0) {
-                i1 = l;
-                flag = false;
-            }
+//            if (this.material == Material.LAVA && l < 8 && i1 < 8 && i1 > l && random.nextInt(4) != 0) {
+//                i1 = l;
+//                flag = false;
+//            }
 
             if (i1 != l) {
                 l = i1;

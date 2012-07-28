@@ -10,10 +10,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 // CraftBukkit start
-import java.util.UUID;
-
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.craftbukkit.util.LongHash;
 import org.bukkit.craftbukkit.util.LongHashset;
 import org.bukkit.generator.ChunkGenerator;
@@ -190,7 +187,7 @@ public class World implements IBlockAccess {
             // CraftBukkit start
             if (this.generator != null) {
                 Random rand = new Random(this.getSeed());
-                Location spawn = this.generator.getFixedSpawnLocation(((WorldServer) this).getWorld(), rand);
+                org.bukkit.Location spawn = this.generator.getFixedSpawnLocation(((WorldServer) this).getWorld(), rand);
 
                 if (spawn != null) {
                     if (spawn.getWorld() != ((WorldServer) this).getWorld()) {
@@ -936,6 +933,8 @@ public class World implements IBlockAccess {
         for (int i = 0; i < this.u.size(); ++i) {
             ((IWorldAccess) this.u.get(i)).b(entity);
         }
+
+        entity.valid = false; // CraftBukkit
     }
 
     public void kill(Entity entity) {
@@ -2933,7 +2932,7 @@ public class World implements IBlockAccess {
     }
 
     // CraftBukkit start
-    public UUID getUUID() {
+    public java.util.UUID getUUID() {
         return this.dataManager.getUUID();
     }
     // CraftBukkit end

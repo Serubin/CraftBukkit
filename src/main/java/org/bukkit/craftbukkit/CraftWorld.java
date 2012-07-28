@@ -217,18 +217,14 @@ public class CraftWorld implements World {
         int px = x << 4;
         int pz = z << 4;
 
-        // If there are more than 64 updates to a chunk at once, it carries out the update as a cuboid
-        // This flags 64 blocks along the bottom for update and then flags a block at the opposite corner at the top
-        // The cuboid that contains these 65 blocks covers the entire chunk
-        // The server will compress the chunk and send it to all clients
-
-        for (int xx = px; xx < (px + 16); xx++) {
-            world.notify(xx, 0, pz);
-            world.notify(xx, 1, pz);
-            world.notify(xx, 2, pz);
-            world.notify(xx, 3, pz);
+        // If there are more than 64 updates to a chunk at once, it will update all 'touched' sections within the chunk
+        // And will include biome data if all sections have been 'touched'
+        // This flags 65 blocks distributed across all the sections of the chunk, so that everything is sent, including biomes
+        int height = getMaxHeight() / 16;
+        for (int idx = 0; idx < 64; idx++) {
+            world.notify(px + (idx / height), ((idx % height) * 16), pz);
         }
-        world.notify(px, 255, pz + 15);
+        world.notify(px + 15, (height * 16) - 1, pz + 15);
 
         return true;
     }
@@ -345,14 +341,14 @@ public class CraftWorld implements World {
         return spawnCreature(loc, creatureType.toEntityType());
     }
 
+    @Deprecated
     public LivingEntity spawnCreature(Location loc, EntityType creatureType) {
-        Entity result = spawn(loc, creatureType.getEntityClass());
+        Validate.isTrue(creatureType.isAlive(), "EntityType not instance of LivingEntity");
+        return (LivingEntity) spawnEntity(loc, creatureType);
+    }
 
-        if (result == null) {
-            return null;
-        }
-
-        return (LivingEntity) result;
+    public Entity spawnEntity(Location loc, EntityType entityType) {
+        return spawn(loc, entityType.getEntityClass());
     }
 
     public LightningStrike strikeLightning(Location loc) {
@@ -777,6 +773,9 @@ public class CraftWorld implements World {
     }
 
     public void playEffect(Location location, Effect effect, int data, int radius) {
+        Validate.notNull(location, "Location cannot be null");
+        Validate.notNull(effect, "Effect cannot be null");
+        Validate.notNull(location.getWorld(), "World cannot be null");
         int packetData = effect.getId();
         Packet61WorldEvent packet = new Packet61WorldEvent(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data);
         int distance;
@@ -784,6 +783,7 @@ public class CraftWorld implements World {
 
         for (Player player : getPlayers()) {
             if (((CraftPlayer) player).getHandle().netServerHandler == null) continue;
+            if (!location.getWorld().equals(player.getWorld())) continue;
 
             distance = (int) player.getLocation().distanceSquared(location);
             if (distance <= radius) {

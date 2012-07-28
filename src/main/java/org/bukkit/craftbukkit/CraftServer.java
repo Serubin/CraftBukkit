@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -399,6 +400,10 @@ public final class CraftServer implements Server {
         return this.configuration.getBoolean("settings.warn-on-overload");
     }
 
+    public boolean getQueryPlugins() {
+        return this.configuration.getBoolean("settings.query-plugins");
+    }
+
     public boolean hasWhitelist() {
         return this.getConfigBoolean("white-list", false);
     }
@@ -499,6 +504,7 @@ public final class CraftServer implements Server {
         console.spawnAnimals = config.getBoolean("spawn-animals", console.spawnAnimals);
         console.pvpMode = config.getBoolean("pvp", console.pvpMode);
         console.allowFlight = config.getBoolean("allow-flight", console.allowFlight);
+        console.motd = config.getString("motd", console.motd);
         monsterSpawn = configuration.getInt("spawn-limits.monsters");
         animalSpawn = configuration.getInt("spawn-limits.animals");
         waterAnimalSpawn = configuration.getInt("spawn-limits.water-animals");
@@ -1025,9 +1031,12 @@ public final class CraftServer implements Server {
     }
 
     public Set<OfflinePlayer> getWhitelistedPlayers() {
-        Set<OfflinePlayer> result = new HashSet<OfflinePlayer>();
+        Set<OfflinePlayer> result = new LinkedHashSet<OfflinePlayer>();
 
         for (Object name : server.getWhitelisted()) {
+            if (((String)name).length() == 0 || ((String)name).startsWith("#")) {
+                continue;
+            }
             result.add(getOfflinePlayer((String) name));
         }
 
@@ -1181,5 +1190,13 @@ public final class CraftServer implements Server {
 
     public int getWaterAnimalSpawnLimit() {
         return waterAnimalSpawn;
+    }
+
+    public boolean isPrimaryThread() {
+        return Thread.currentThread().equals(console.primaryThread);
+    }
+
+    public String getMotd() {
+        return console.motd;
     }
 }
