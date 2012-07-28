@@ -4,8 +4,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.bukkit.Bukkit;
+// CraftBukkit start
 import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.util.BlockStateListPopulator;
+import org.bukkit.event.entity.EntityCreatePortalEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
@@ -322,7 +328,7 @@ public class EntityEnderDragon extends EntityComplex {
                 this.C();
             }
 
-            if (!this.world.isStatic && this.at == 0) {
+            if (!this.world.isStatic && this.hurtTicks == 0) { // CraftBukkit
                 this.a(this.world.getEntities(this, this.l.boundingBox.grow(4.0D, 2.0D, 4.0D).d(0.0D, -2.0D, 0.0D)));
                 this.a(this.world.getEntities(this, this.m.boundingBox.grow(4.0D, 2.0D, 4.0D).d(0.0D, -2.0D, 0.0D)));
                 this.b(this.world.getEntities(this, this.g.boundingBox.grow(1.0D, 1.0D, 1.0D)));
@@ -379,7 +385,7 @@ public class EntityEnderDragon extends EntityComplex {
                 this.s = null;
             } else if (this.ticksLived % 10 == 0 && this.health < this.t) {
                 // CraftBukkit start
-                org.bukkit.event.entity.EntityRegainHealthEvent event = new org.bukkit.event.entity.EntityRegainHealthEvent(this.getBukkitEntity(), 1, org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL);
+                EntityRegainHealthEvent event = new EntityRegainHealthEvent(this.getBukkitEntity(), 1, EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL);
                 this.world.getServer().getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
@@ -438,10 +444,11 @@ public class EntityEnderDragon extends EntityComplex {
                 // CraftBukkit start - throw damage events when the dragon attacks
                 // The EntityHuman case is handled in EntityHuman, so don't throw it here
                 if (!(entity instanceof EntityHuman)) {
-                    org.bukkit.event.entity.EntityDamageByEntityEvent damageEvent = new org.bukkit.event.entity.EntityDamageByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
+                    EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
                     Bukkit.getPluginManager().callEvent(damageEvent);
 
                     if (!damageEvent.isCancelled()) {
+                        entity.getBukkitEntity().setLastDamageCause(damageEvent);
                         entity.damageEntity(DamageSource.mobAttack(this), damageEvent.getDamage());
                     }
                 } else {
@@ -506,7 +513,7 @@ public class EntityEnderDragon extends EntityComplex {
         boolean flag1 = false;
 
         // CraftBukkit start - create a list to hold all the destroyed blocks
-        List<org.bukkit.block.Block> destroyedBlocks = new ArrayList<org.bukkit.block.Block>();
+        List<org.bukkit.block.Block> destroyedBlocks = new java.util.ArrayList<org.bukkit.block.Block>();
         org.bukkit.craftbukkit.CraftWorld craftWorld = this.world.getWorld();
         // CraftBukkit end
         for (int k1 = i; k1 <= l; ++k1) {
@@ -532,7 +539,7 @@ public class EntityEnderDragon extends EntityComplex {
         if (flag1) {
             // CraftBukkit start - set off an EntityExplodeEvent for the dragon exploding all these blocks
             org.bukkit.entity.Entity bukkitEntity = this.getBukkitEntity();
-            org.bukkit.event.entity.EntityExplodeEvent event = new org.bukkit.event.entity.EntityExplodeEvent(bukkitEntity, bukkitEntity.getLocation(), destroyedBlocks, 0F);
+            EntityExplodeEvent event = new EntityExplodeEvent(bukkitEntity, bukkitEntity.getLocation(), destroyedBlocks, 0F);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled()) {
                 // this flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will cause the dragon to slow down.
@@ -621,7 +628,7 @@ public class EntityEnderDragon extends EntityComplex {
         byte b1 = 4;
 
         // CraftBukkit start - Replace any "this.world" in the following with just "world"!
-        org.bukkit.craftbukkit.util.BlockStateListPopulator world = new org.bukkit.craftbukkit.util.BlockStateListPopulator(this.world.getWorld());
+        BlockStateListPopulator world = new BlockStateListPopulator(this.world.getWorld());
 
         for (int k = b0 - 1; k <= b0 + 32; ++k) {
             for (int l = i - b1; l <= i + b1; ++l) {
@@ -657,7 +664,7 @@ public class EntityEnderDragon extends EntityComplex {
         world.setTypeId(i, b0 + 3, j, Block.BEDROCK.id);
         world.setTypeId(i, b0 + 4, j, Block.DRAGON_EGG.id);
 
-        org.bukkit.event.entity.EntityCreatePortalEvent event = new org.bukkit.event.entity.EntityCreatePortalEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), java.util.Collections.unmodifiableList(world.getList()), org.bukkit.PortalType.ENDER);
+        EntityCreatePortalEvent event = new EntityCreatePortalEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), java.util.Collections.unmodifiableList(world.getList()), org.bukkit.PortalType.ENDER);
         this.world.getServer().getPluginManager().callEvent(event);
 
         if (!event.isCancelled()) {

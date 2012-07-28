@@ -360,7 +360,12 @@ public class CraftEventFactory {
         } else {
             event = new EntityDamageEvent(damagee.getBukkitEntity(), cause, damage);
         }
-        Bukkit.getPluginManager().callEvent(event);
+
+        callEvent(event);
+
+        if (!event.isCancelled()) {
+            event.getEntity().setLastDamageCause(event);
+        }
 
         return event;
     }
@@ -441,6 +446,13 @@ public class CraftEventFactory {
         return event;
     }
 
+    public static EntityChangeBlockEvent callEntityChangeBlockEvent(Entity entity, int x, int y, int z, int type) {
+        Block block = entity.world.getWorld().getBlockAt(x, y, z);
+        Material material = Material.getMaterial(type);
+
+        return callEntityChangeBlockEvent(entity, block, material);
+    }
+
     public static CreeperPowerEvent callCreeperPowerEvent(Entity creeper, Entity lightning, CreeperPowerEvent.PowerCause cause) {
         CreeperPowerEvent event = new CreeperPowerEvent((Creeper) creeper.getBukkitEntity(), (LightningStrike) lightning.getBukkitEntity(), cause);
         creeper.getBukkitEntity().getServer().getPluginManager().callEvent(event);
@@ -519,5 +531,17 @@ public class CraftEventFactory {
         BlockRedstoneEvent event = new BlockRedstoneEvent(world.getWorld().getBlockAt(x, y, z), oldCurrent, newCurrent);
         world.getServer().getPluginManager().callEvent(event);
         return event;
+    }
+
+    public static NotePlayEvent callNotePlayEvent(World world, int x, int y, int z, byte instrument, byte note) {
+        NotePlayEvent event = new NotePlayEvent(world.getWorld().getBlockAt(x, y, z), org.bukkit.Instrument.getByType(instrument), new org.bukkit.Note(note));
+        world.getServer().getPluginManager().callEvent(event);
+        return event;
+    }
+
+    public static void callPlayerItemBreakEvent(EntityHuman human, ItemStack brokenItem) {
+        CraftItemStack item = new CraftItemStack(brokenItem);
+        PlayerItemBreakEvent event = new PlayerItemBreakEvent((Player) human.getBukkitEntity(), item);
+        Bukkit.getPluginManager().callEvent(event);
     }
 }

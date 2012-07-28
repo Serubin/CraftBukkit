@@ -8,7 +8,6 @@ import java.util.Set;
 
 // CraftBukkit start
 import org.bukkit.Bukkit;
-import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -108,17 +107,26 @@ public class Explosion {
 
         for (int k2 = 0; k2 < list.size(); ++k2) {
             Entity entity = (Entity) list.get(k2);
-            double d7 = entity.f(this.posX, this.posY, this.posZ) / (double) this.size;
+            // CraftBukkit start
+            d0 = entity.locX - this.posX;
+            d1 = entity.locY - this.posY;
+            d2 = entity.locZ - this.posZ;
+            double d8 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
+
+            double d7 = d8 / this.size; // Don't call sub-method and sqrt again
 
             if (d7 <= 1.0D) {
-                d0 = entity.locX - this.posX;
-                d1 = entity.locY - this.posY;
-                d2 = entity.locZ - this.posZ;
-                double d8 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2); // CraftBukkit
-
-                d0 /= d8;
-                d1 /= d8;
-                d2 /= d8;
+                // Moved calculations up
+                if (d8 != 0) {
+                    d0 /= d8;
+                    d1 /= d8;
+                    d2 /= d8;
+                } else { // Compensate for underflow
+                    d0 = 0d;
+                    d1 = 0d;
+                    d2 = 0d;
+                }
+                // CraftBukkit end
                 double d9 = (double) this.world.a(vec3d, entity.boundingBox);
                 double d10 = (1.0D - d7) * d9;
 
@@ -128,13 +136,12 @@ public class Explosion {
 
                 if (damagee == null) {
                     // nothing was hurt
-                } else if (this.source == null) { // Block explosion
-                    // TODO: get the x/y/z of the tnt block?
-                    // does this even get called ever? @see EntityTNTPrimed - not BlockTNT or whatever
+                } else if (this.source == null) { // Block explosion (without an entity source; bed etc.)
                     EntityDamageByBlockEvent event = new EntityDamageByBlockEvent(null, damagee, EntityDamageEvent.DamageCause.BLOCK_EXPLOSION, damageDone);
                     Bukkit.getPluginManager().callEvent(event);
 
                     if (!event.isCancelled()) {
+                        damagee.setLastDamageCause(event);
                         entity.damageEntity(DamageSource.EXPLOSION, event.getDamage());
                         entity.motX += d0 * d10;
                         entity.motY += d1 * d10;
@@ -143,7 +150,7 @@ public class Explosion {
                 } else {
                     final org.bukkit.entity.Entity damager = this.source.getBukkitEntity();
                     final EntityDamageEvent.DamageCause damageCause;
-                    if (damager instanceof TNTPrimed) {
+                    if (damager instanceof org.bukkit.entity.TNTPrimed) {
                         damageCause = EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
                     } else {
                         damageCause = EntityDamageEvent.DamageCause.ENTITY_EXPLOSION;
@@ -152,6 +159,7 @@ public class Explosion {
                     Bukkit.getPluginManager().callEvent(event);
 
                     if (!event.isCancelled()) {
+                        entity.getBukkitEntity().setLastDamageCause(event);
                         entity.damageEntity(DamageSource.EXPLOSION, event.getDamage());
 
                         entity.motX += d0 * d10;

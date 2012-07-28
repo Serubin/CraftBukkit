@@ -8,6 +8,7 @@ import java.util.List;
 
 import net.minecraft.server.DamageSource;
 import net.minecraft.server.EntityArrow;
+import net.minecraft.server.EntityComplex;
 import net.minecraft.server.EntityEgg;
 import net.minecraft.server.EntityEnderPearl;
 import net.minecraft.server.EntityFireball;
@@ -25,6 +26,7 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Egg;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.EnderPearl;
@@ -146,7 +148,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     public void damage(int amount) {
-        entity.damageEntity(DamageSource.GENERIC, amount);
+        damage(amount, null);
     }
 
     public void damage(int amount, org.bukkit.entity.Entity source) {
@@ -158,7 +160,11 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
             reason = DamageSource.mobAttack(((CraftLivingEntity) source).getHandle());
         }
 
-        entity.damageEntity(reason, amount);
+        if (entity instanceof EntityComplex) {
+            ((EntityComplex) entity).dealDamage(reason, amount);
+        } else {
+            entity.damageEntity(reason, amount);
+        }
     }
 
     public Location getEyeLocation() {
@@ -291,5 +297,9 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     public EntityType getType() {
         return EntityType.UNKNOWN;
+    }
+
+    public boolean hasLineOfSight(Entity other) {
+        return getHandle().am().canSee(((CraftEntity) other).getHandle()); // am should be getEntitySenses
     }
 }
