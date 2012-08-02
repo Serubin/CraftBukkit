@@ -1,12 +1,8 @@
 package net.minecraft.server;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class AxisAlignedBB
 {
-  private static List g = new ArrayList();
-  private static int h = 0;
+  private static final ThreadLocal g = new AABBPoolThreadLocal();
   public double a;
   public double b;
   public double c;
@@ -19,19 +15,11 @@ public class AxisAlignedBB
     return new AxisAlignedBB(paramDouble1, paramDouble2, paramDouble3, paramDouble4, paramDouble5, paramDouble6);
   }
 
-  public static void a()
-  {
-    h = 0;
+  public static AABBPool a() {
+    return (AABBPool)g.get();
   }
 
-  public synchronized static AxisAlignedBB b(double paramDouble1, double paramDouble2, double paramDouble3, double paramDouble4, double paramDouble5, double paramDouble6) {
-    if (h >= g.size()) {
-      g.add(a(0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D));
-    }
-    return ((AxisAlignedBB)g.get(h++)).c(paramDouble1, paramDouble2, paramDouble3, paramDouble4, paramDouble5, paramDouble6);
-  }
-
-  private AxisAlignedBB(double paramDouble1, double paramDouble2, double paramDouble3, double paramDouble4, double paramDouble5, double paramDouble6)
+  protected AxisAlignedBB(double paramDouble1, double paramDouble2, double paramDouble3, double paramDouble4, double paramDouble5, double paramDouble6)
   {
     this.a = paramDouble1;
     this.b = paramDouble2;
@@ -41,7 +29,7 @@ public class AxisAlignedBB
     this.f = paramDouble6;
   }
 
-  public AxisAlignedBB c(double paramDouble1, double paramDouble2, double paramDouble3, double paramDouble4, double paramDouble5, double paramDouble6) {
+  public AxisAlignedBB b(double paramDouble1, double paramDouble2, double paramDouble3, double paramDouble4, double paramDouble5, double paramDouble6) {
     this.a = paramDouble1;
     this.b = paramDouble2;
     this.c = paramDouble3;
@@ -68,7 +56,7 @@ public class AxisAlignedBB
     if (paramDouble3 < 0.0D) d3 += paramDouble3;
     if (paramDouble3 > 0.0D) d6 += paramDouble3;
 
-    return b(d1, d2, d3, d4, d5, d6);
+    return a().a(d1, d2, d3, d4, d5, d6);
   }
 
   public AxisAlignedBB grow(double paramDouble1, double paramDouble2, double paramDouble3) {
@@ -79,11 +67,11 @@ public class AxisAlignedBB
     double d5 = this.e + paramDouble2;
     double d6 = this.f + paramDouble3;
 
-    return b(d1, d2, d3, d4, d5, d6);
+    return a().a(d1, d2, d3, d4, d5, d6);
   }
 
   public AxisAlignedBB c(double paramDouble1, double paramDouble2, double paramDouble3) {
-    return b(this.a + paramDouble1, this.b + paramDouble2, this.c + paramDouble3, this.d + paramDouble1, this.e + paramDouble2, this.f + paramDouble3);
+    return a().a(this.a + paramDouble1, this.b + paramDouble2, this.c + paramDouble3, this.d + paramDouble1, this.e + paramDouble2, this.f + paramDouble3);
   }
 
   public double a(AxisAlignedBB paramAxisAlignedBB, double paramDouble) {
@@ -167,22 +155,22 @@ public class AxisAlignedBB
     double d5 = this.e - paramDouble2;
     double d6 = this.f - paramDouble3;
 
-    return b(d1, d2, d3, d4, d5, d6);
+    return a().a(d1, d2, d3, d4, d5, d6);
   }
 
   public AxisAlignedBB clone() {
-    return b(this.a, this.b, this.c, this.d, this.e, this.f);
+    return a().a(this.a, this.b, this.c, this.d, this.e, this.f);
   }
 
   public MovingObjectPosition a(Vec3D paramVec3D1, Vec3D paramVec3D2) {
-    Vec3D localVec3D1 = paramVec3D1.a(paramVec3D2, this.a);
-    Vec3D localVec3D2 = paramVec3D1.a(paramVec3D2, this.d);
+    Vec3D localVec3D1 = paramVec3D1.b(paramVec3D2, this.a);
+    Vec3D localVec3D2 = paramVec3D1.b(paramVec3D2, this.d);
 
-    Vec3D localVec3D3 = paramVec3D1.b(paramVec3D2, this.b);
-    Vec3D localVec3D4 = paramVec3D1.b(paramVec3D2, this.e);
+    Vec3D localVec3D3 = paramVec3D1.c(paramVec3D2, this.b);
+    Vec3D localVec3D4 = paramVec3D1.c(paramVec3D2, this.e);
 
-    Vec3D localVec3D5 = paramVec3D1.c(paramVec3D2, this.c);
-    Vec3D localVec3D6 = paramVec3D1.c(paramVec3D2, this.f);
+    Vec3D localVec3D5 = paramVec3D1.d(paramVec3D2, this.c);
+    Vec3D localVec3D6 = paramVec3D1.d(paramVec3D2, this.f);
 
     if (!b(localVec3D1)) localVec3D1 = null;
     if (!b(localVec3D2)) localVec3D2 = null;
@@ -229,7 +217,7 @@ public class AxisAlignedBB
     return (paramVec3D.a >= this.a) && (paramVec3D.a <= this.d) && (paramVec3D.b >= this.b) && (paramVec3D.b <= this.e);
   }
 
-  public void b(AxisAlignedBB paramAxisAlignedBB) {
+  public void c(AxisAlignedBB paramAxisAlignedBB) {
     this.a = paramAxisAlignedBB.a;
     this.b = paramAxisAlignedBB.b;
     this.c = paramAxisAlignedBB.c;

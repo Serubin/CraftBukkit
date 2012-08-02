@@ -271,7 +271,6 @@ public class CraftWorld implements World {
             world.chunkProviderServer.chunks.put(x, z, chunk);
             world.chunkProviderServer.chunkList.add(chunk);
 
-            chunk.loadNOP();
             chunk.addEntities();
 
             if (!chunk.done && world.chunkProviderServer.isChunkLoaded(x + 1, z + 1) && world.chunkProviderServer.isChunkLoaded(x, z + 1) && world.chunkProviderServer.isChunkLoaded(x + 1, z)) {
@@ -352,13 +351,13 @@ public class CraftWorld implements World {
     }
 
     public LightningStrike strikeLightning(Location loc) {
-        EntityWeatherLighting lightning = new EntityWeatherLighting(world, loc.getX(), loc.getY(), loc.getZ());
+        EntityLightning lightning = new EntityLightning(world, loc.getX(), loc.getY(), loc.getZ());
         world.strikeLightning(lightning);
         return new CraftLightningStrike(server, lightning);
     }
 
     public LightningStrike strikeLightningEffect(Location loc) {
-        EntityWeatherLighting lightning = new EntityWeatherLighting(world, loc.getX(), loc.getY(), loc.getZ(), true);
+        EntityLightning lightning = new EntityLightning(world, loc.getX(), loc.getY(), loc.getZ(), true);
         world.strikeLightning(lightning);
         return new CraftLightningStrike(server, lightning);
     }
@@ -414,7 +413,7 @@ public class CraftWorld implements World {
     }
 
     public String getName() {
-        return world.worldData.name;
+        return world.worldData.getName();
     }
 
     @Deprecated
@@ -423,7 +422,7 @@ public class CraftWorld implements World {
     }
 
     public UUID getUID() {
-        return world.getUUID();
+        return world.getDataManager().getUUID();
     }
 
     @Override
@@ -528,18 +527,18 @@ public class CraftWorld implements World {
             net.minecraft.server.Chunk chunk = this.world.getChunkAtWorldCoords(x, z);
 
             if (chunk != null) {
-                byte[] biomevals = chunk.l();
+                byte[] biomevals = chunk.m();
                 biomevals[((z & 0xF) << 4) | (x & 0xF)] = (byte)bb.id;
             }
         }
     }
 
     public double getTemperature(int x, int z) {
-        return this.world.getBiome(x, z).F;
+        return this.world.getBiome(x, z).temperature;
     }
 
     public double getHumidity(int x, int z) {
-        return this.world.getBiome(x, z).G;
+        return this.world.getBiome(x, z).humidity;
     }
 
     public List<Entity> getEntities() {
@@ -650,12 +649,16 @@ public class CraftWorld implements World {
     }
 
     public void save() {
-        boolean oldSave = world.savingDisabled;
+        try {
+            boolean oldSave = world.savingDisabled;
 
-        world.savingDisabled = false;
-        world.save(true, null);
+            world.savingDisabled = false;
+            world.save(true, null);
 
-        world.savingDisabled = oldSave;
+            world.savingDisabled = oldSave;
+        } catch (ExceptionWorldConflict ex) {
+            ex.printStackTrace();
+        }
     }
 
     public boolean isAutoSave() {
@@ -820,8 +823,6 @@ public class CraftWorld implements World {
                 entity = new EntitySnowball(world, x, y, z);
             } else if (Egg.class.isAssignableFrom(clazz)) {
                 entity = new EntityEgg(world, x, y, z);
-            } else if (EnderPearl.class.isAssignableFrom(clazz)) {
-                entity = new EntityEnderPearl(world, x, y, z);
             } else if (Arrow.class.isAssignableFrom(clazz)) {
                 entity = new EntityArrow(world);
                 entity.setPositionRotation(x, y, z, 0, 0);
@@ -960,7 +961,7 @@ public class CraftWorld implements World {
             entity = new EntityExperienceOrb(world, x, y, z, 0);
         } else if (Weather.class.isAssignableFrom(clazz)) {
             // not sure what this can do
-            entity = new EntityWeatherLighting(world, x, y, z);
+            entity = new EntityLightning(world, x, y, z);
         } else if (LightningStrike.class.isAssignableFrom(clazz)) {
             // what is this, I don't even
         } else if (Fish.class.isAssignableFrom(clazz)) {
