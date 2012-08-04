@@ -21,6 +21,7 @@ import joptsimple.OptionSet;
 import org.bukkit.World.Environment;
 import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.event.world.WorldSaveEvent;
+import org.bukkit.event.player.PlayerChatEvent;
 // CraftBukkit end
 
 public abstract class MinecraftServer implements Runnable, IMojangStatistics, ICommandListener {
@@ -86,6 +87,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
     public ConsoleReader reader;
     public static int currentTick;
     public final Thread primaryThread;
+    public java.util.Queue<PlayerChatEvent> chatQueue = new java.util.concurrent.ConcurrentLinkedQueue<PlayerChatEvent>();
     // CraftBukkit end
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - signature file -> OptionSet
@@ -519,6 +521,28 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
         this.server.getScheduler().mainThreadHeartbeat(this.ticks);
 
         long time;
+
+        // Fix for old plugins still using deprecated event
+        while (!chatQueue.isEmpty()) {
+            PlayerChatEvent event = chatQueue.remove();
+            org.bukkit.Bukkit.getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                continue;
+            }
+
+            String message = String.format(event.getFormat(), event.getPlayer().getDisplayName(), event.getMessage());
+            console.sendMessage(message);
+            if (((org.bukkit.craftbukkit.util.LazyPlayerSet) event.getRecipients()).isLazy()) {
+                for (Object player : getServerConfigurationManager().players) {
+                    ((EntityPlayer) player).sendMessage(message);
+                }
+            } else {
+                for (org.bukkit.entity.Player player : event.getRecipients()) {
+                    player.sendMessage(message);
+                }
+            }
+        }
 
         // Send timeupdates to everyone, it will get the right time from the world the player is in.
         if (this.ticks % 20 == 0) {

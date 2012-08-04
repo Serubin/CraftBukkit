@@ -14,14 +14,17 @@ import java.util.logging.Level;
 import java.util.HashSet;
 
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.inventory.CraftInventoryView;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.util.LazyPlayerSet;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -34,6 +37,7 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.inventory.InventoryType.SlotType;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.InventoryView;
@@ -801,39 +805,52 @@ public class NetServerHandler extends NetHandler {
                     return;
                 }
 
-                this.chat(s);
+                this.chat(s, packet3chat.a_());
             }
         }
     }
 
-    public boolean chat(String s) {
+    public void chat(String s, boolean async) {
         if (!this.player.dead) {
             if (s.length() == 0) {
                 logger.warning(this.player.name + " tried to send an empty message");
-                return false;
+                return;
             }
 
             if (getPlayer().isConversing()) {
                 getPlayer().acceptConversationInput(s);
-                return true;
+                return;
             }
 
             if (s.startsWith("/")) {
                 this.handleCommand(s);
-                return true;
+                return;
             } else {
                 Player player = this.getPlayer();
-                PlayerChatEvent event = new PlayerChatEvent(player, s);
+                AsyncPlayerChatEvent event = new AsyncPlayerChatEvent(async, player, s, new LazyPlayerSet());
                 this.server.getPluginManager().callEvent(event);
 
-                if (event.isCancelled()) {
-                    return true;
-                }
+                if (PlayerChatEvent.getHandlerList().getRegisteredListeners().length != 0) {
+                    // Evil plugins still listening to deprecated event
+                    PlayerChatEvent queueEvent = new PlayerChatEvent(player, event.getMessage(), event.getFormat(), event.getRecipients());
+                    queueEvent.setCancelled(event.isCancelled());
+                    minecraftServer.chatQueue.add(queueEvent);
+                } else {
+                    if (event.isCancelled()) {
+                        return;
+                    }
 
-                s = String.format(event.getFormat(), event.getPlayer().getDisplayName(), event.getMessage());
-                minecraftServer.console.sendMessage(s);
-                for (Player recipient : event.getRecipients()) {
-                    recipient.sendMessage(s);
+                    s = String.format(event.getFormat(), event.getPlayer().getDisplayName(), event.getMessage());
+                    minecraftServer.console.sendMessage(s);
+                    if (((LazyPlayerSet) event.getRecipients()).isLazy()) {
+                        for (Object recipient : minecraftServer.getServerConfigurationManager().players) {
+                            ((EntityPlayer) recipient).sendMessage(s);
+                        }
+                    } else {
+                        for (org.bukkit.entity.Player recipient : event.getRecipients()) {
+                            recipient.sendMessage(s);
+                        }
+                    }
                 }
             }
 
@@ -843,7 +860,7 @@ public class NetServerHandler extends NetHandler {
             }
         }
 
-        return false;
+        return;
     }
     // CraftBukkit end
 
@@ -851,7 +868,7 @@ public class NetServerHandler extends NetHandler {
         // CraftBukkit start
         CraftPlayer player = this.getPlayer();
 
-        PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, s);
+        PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, s, new LazyPlayerSet());
         this.server.getPluginManager().callEvent(event);
 
         if (event.isCancelled()) {
@@ -859,7 +876,7 @@ public class NetServerHandler extends NetHandler {
         }
 
         try {
-            if (this.server.dispatchCommand(player, event.getMessage().substring(1))) {
+            if (this.server.dispatchCommand(event.getPlayer(), event.getMessage().substring(1))) {
                 return;
             }
         } catch (org.bukkit.command.CommandException ex) {
@@ -1015,7 +1032,26 @@ public class NetServerHandler extends NetHandler {
     public void a(Packet205ClientCommand packet205clientcommand) {
         if (packet205clientcommand.a == 1) {
             if (this.player.viewingCredits) {
-                this.player = this.minecraftServer.getServerConfigurationManager().moveToWorld(this.player, 0, true);
+                // CraftBukkit start
+                org.bukkit.craftbukkit.PortalTravelAgent pta = new org.bukkit.craftbukkit.PortalTravelAgent();
+                Location toLocation;
+
+                if (this.player.getBukkitEntity().getBedSpawnLocation() == null) {
+                    CraftWorld cworld = (CraftWorld) this.server.getWorlds().get(0);
+                    ChunkCoordinates chunkcoordinates = cworld.getHandle().getSpawn();
+                    toLocation = new Location(cworld, chunkcoordinates.x + 0.5, chunkcoordinates.y, chunkcoordinates.z + 0.5);
+                    this.player.netServerHandler.sendPacket(new Packet70Bed(0, 0));
+                } else {
+                    toLocation = this.player.getBukkitEntity().getBedSpawnLocation();
+                    toLocation = new Location(toLocation.getWorld(), toLocation.getX() + 0.5, toLocation.getY(), toLocation.getZ() + 0.5);
+                }
+
+                PlayerPortalEvent event = new PlayerPortalEvent(this.player.getBukkitEntity(), this.player.getBukkitEntity().getLocation(), toLocation, pta, PlayerPortalEvent.TeleportCause.END_PORTAL);
+                event.useTravelAgent(false);
+
+                org.bukkit.Bukkit.getServer().getPluginManager().callEvent(event);
+                this.player = this.minecraftServer.getServerConfigurationManager().moveToWorld(this.player, 0, true, event.getTo());
+                // CraftBukkit end
             } else if (this.player.q().getWorldData().isHardcore()) {
                 if (this.minecraftServer.H() && this.player.name.equals(this.minecraftServer.G())) {
                     this.player.netServerHandler.disconnect("You have died. Game over, man, it\'s game over!");
