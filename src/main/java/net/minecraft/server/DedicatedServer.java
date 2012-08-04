@@ -13,6 +13,8 @@ import java.util.logging.Level;
 // CraftBukkit start
 import java.io.PrintStream;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.craftbukkit.LoggerOutputStream;
 import org.bukkit.event.server.ServerCommandEvent;
 // CraftBukkit end
@@ -141,7 +143,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         long i1 = System.nanoTime() - j;
         String s2 = String.format("%.3fs", new Object[] { Double.valueOf((double) i1 / 1.0E9D)});
 
-        log.info("Done (" + s2 + ")! For help, type \"help\" or \"?\"");
+        Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "Done (" + s2 + ")! For help, type \"help\" or \"?\"");
         if (this.propertyManager.getBoolean("enable-query", false)) {
             log.info("Starting GS4 status listener");
             this.m = new RemoteStatusListener(this);
