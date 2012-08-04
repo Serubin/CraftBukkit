@@ -202,17 +202,17 @@ public class Packet51MapChunk extends Packet {
 
             int s = (int)(q / 4096);
             int section = sections[s];
-            int sectionY = (int)(q / 256);
-            int y = sectionY + (section * 16);
+            int sectionY = (int)(q / 256)-s*16;
+            int y = sectionY + (s * 16);
             int z = (int)(((q % 4096) % 256) / 16);
             int x = (int)(((q % 4096) % 256) % 16);
 
             // check down, ignore y = 0
             if (y > 0) {
                 // don't check under bottom section
-                if (section > 0) {
+                if (sectionY == 0) {
                     // if nonexisting section below, it's air - no disguise
-                    if ((section - 1) == sections[s - 1]) {
+                    if (s >= 1 && (section - 1) != sections[s - 1]) {
                         continue;
                     }
                 }
@@ -226,7 +226,7 @@ public class Packet51MapChunk extends Packet {
             // check up, ignore y = 255
             if (y < 255) {
                 // don't check over top section
-                if (section < 15) {
+                if (section == 15) {
                     // if last section, then air above - no disguise
                     if (s == (numSections - 1)) {
                         continue;
@@ -245,10 +245,10 @@ public class Packet51MapChunk extends Packet {
 
             // check north block
             byte northId;
-            if (z == 0) {
+            if (x == 0) {
                 // at northern edge of chunk
                 // note: adjacent z is 15
-                northId = getAdjacentId(chunk.world, chunk.x, chunk.z - 1, section, sectionY, 15, x);
+                northId = getAdjacentId(chunk.world, chunk.x - 1, chunk.z, section, sectionY, z, 15);
                 if (northId == 0) {
                     // no section, so it's air - no disguise
                     continue;
@@ -264,10 +264,10 @@ public class Packet51MapChunk extends Packet {
 
             // check south block
             byte southId;
-            if (z == 15) {
+            if (x == 15) {
                 // at southern edge of chunk
                 // note: adjacent z is 0
-                southId = getAdjacentId(chunk.world, chunk.x, chunk.z + 1, section, sectionY, 0, x);
+                southId = getAdjacentId(chunk.world, chunk.x + 1, chunk.z, section, sectionY, z, 0);
                 if (southId == 0) {
                     // no section, so it's air - no disguise
                     continue;
@@ -283,10 +283,10 @@ public class Packet51MapChunk extends Packet {
 
             // check west block
             byte westId;
-            if (x == 15) {
+            if (z == 15) {
                 // at western edge of chunk
                 // note: adjacent x is 0
-                westId = getAdjacentId(chunk.world, chunk.x - 1, chunk.z, section, sectionY, z, 0);
+                westId = getAdjacentId(chunk.world, chunk.x, chunk.z + 1, section, sectionY, 0, x);
                 if (westId == 0) {
                     // no section, so it's air - no disguise
                     continue;
@@ -302,10 +302,10 @@ public class Packet51MapChunk extends Packet {
 
             // check east block
             byte eastId;
-            if (x == 0) {
+            if (z == 0) {
                 // at eastern edge of chunk
                 // note: adjacent x is 15
-                eastId = getAdjacentId(chunk.world, chunk.x + 1, chunk.z, section, sectionY, z, 15);
+                eastId = getAdjacentId(chunk.world, chunk.x, chunk.z - 1, section, sectionY, 15, x);
                 if (eastId == 0) {
                     // no section, so it's air - no disguise
                     continue;
@@ -329,7 +329,7 @@ public class Packet51MapChunk extends Packet {
 
     // get section from adjacent chunk
     private static byte getAdjacentId(World world, int worldX, int worldZ, int section, int y, int z, int x) {
-        Chunk adjChunk = new Chunk(world, worldX, worldZ);
+        Chunk adjChunk = world.getChunkAt(worldX, worldZ);
         ChunkSection[] adjSections = adjChunk.i();
         ChunkSection adjSection = adjSections[section];
 
