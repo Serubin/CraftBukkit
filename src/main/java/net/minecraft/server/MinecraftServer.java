@@ -573,29 +573,33 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 onTicktime += (System.currentTimeMillis()-time);
                 // this.methodProfiler.c("lights"); // CraftBukkit - not in production code
 
-                time = System.currentTimeMillis();
                 while (true) {
                     if (!worldserver.updateLights()) {
                         // this.methodProfiler.b(); // CraftBukkit - not in production code
                         if (true || !worldserver.players.isEmpty()) { // CraftBukkit - this prevents entity cleanup, other issue on servers with no players
+                            time = System.currentTimeMillis();
                             worldserver.tickEntities();
+                            onEntitytime += (System.currentTimeMillis()-time);
                         }
 
                         // this.methodProfiler.a("tracker"); // CraftBukkit - not in production code
+                        time = System.currentTimeMillis();
                         worldserver.getTracker().updatePlayers();
+                        onPlayerupdatetime += (System.currentTimeMillis()-time);
                         // this.methodProfiler.b(); // CraftBukkit - not in production code
                         // this.methodProfiler.b(); // CraftBukkit - not in production code
                         break;
                     }
                 }
-                onEntitytime += (System.currentTimeMillis()-time);
             // } // CraftBukkit
 
             // this.k[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
         }
 
         // this.methodProfiler.c("connection"); // CraftBukkit - not in production code
+        time = System.currentTimeMillis();
         this.ac().b();
+        onNetworktime += (System.currentTimeMillis()-time);
         // this.methodProfiler.c("players"); // CraftBukkit - not in production code
         this.t.tick();
         // this.methodProfiler.c("tickables"); // CraftBukkit - not in production code
@@ -605,36 +609,36 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             IUpdatePlayerListBox iupdateplayerlistbox = (IUpdatePlayerListBox) iterator.next();
 
             iupdateplayerlistbox.a();
-            tickDuration += System.currentTimeMillis() - tickDuration_tmp;
-            int loggingTick = 1200;
-            String logPrefix = "[Performance Log]";
-            if(this.ticks%loggingTick == 0) {
-                log.log(Level.INFO, logPrefix + ((float)onTicktime/(loggingTick)) + " ms on tick() " + ((float)onEntitytime/(loggingTick)) + " ms on updateEntities(). " + ((float)onNetworktime/(loggingTick)) + " ms on Network. " + ((float)onPlayerupdatetime/(loggingTick)) + " ms on Playerupdate. " + Math.min(((float)1000/((float)(tickDuration)/loggingTick)),20) + " TPS. " + t.players.size() + " Players. " + ((float)1000/((float)(tickDuration)/loggingTick)) + " potential TPS.");
-                onTicktime = 0;
-                onEntitytime = 0;
-                onNetworktime = 0;
-                onPlayerupdatetime = 0;
-                tickDuration = 0;
+        }
+        tickDuration += System.currentTimeMillis() - tickDuration_tmp;
+        int loggingTick = 1200;
+        String logPrefix = "[Performance Log]";
+        if(this.ticks%loggingTick == 0) {
+            log.log(Level.INFO, logPrefix + ((float)onTicktime/(loggingTick)) + " ms on tick() " + ((float)onEntitytime/(loggingTick)) + " ms on updateEntities(). " + ((float)onNetworktime/(loggingTick)) + " ms on Network. " + ((float)onPlayerupdatetime/(loggingTick)) + " ms on Playerupdate. " + Math.min(((float)1000/((float)(tickDuration)/loggingTick)),20) + " TPS. " + t.players.size() + " Players. " + ((float)1000/((float)(tickDuration)/loggingTick)) + " potential TPS.");
+            onTicktime = 0;
+            onEntitytime = 0;
+            onNetworktime = 0;
+            onPlayerupdatetime = 0;
+            tickDuration = 0;
 
-                HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
-                Set<String> keys = times.keySet();
-                long totaltime = 0;
-                for (String pluginName : keys) {
-                    totaltime += times.get(pluginName);
-                }
-    			float timeSummary = (float)totaltime/(loggingTick*1000*1000);
+            HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
+            Set<String> keys = times.keySet();
+            long totaltime = 0;
+            for (String pluginName : keys) {
+                totaltime += times.get(pluginName);
+            }
+			float timeSummary = (float)totaltime/(loggingTick*1000*1000);
 
-                log.log(Level.INFO, logPrefix + "callEvent() times");
-                log.log(Level.INFO, logPrefix + "Sum: " + timeSummary+ " ms.");
-                for (String pluginName : keys) {
-                    time = times.get(pluginName);
-                    if (time == 0) {
-                	continue;
-                    }
-                    float timeOnPlugin = (float)time/(loggingTick*1000*1000);
-                    log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
-                    times.put(pluginName, 0L);
+            log.log(Level.INFO, logPrefix + "callEvent() times");
+            log.log(Level.INFO, logPrefix + "Sum: " + timeSummary+ " ms.");
+            for (String pluginName : keys) {
+                time = times.get(pluginName);
+                if (time == 0) {
+                    continue;
                 }
+                float timeOnPlugin = (float)time/(loggingTick*1000*1000);
+                log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
+                times.put(pluginName, 0L);
             }
         }
         // this.methodProfiler.b(); // CraftBukkit - not in production code
