@@ -169,7 +169,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             String name = (dimension == 0) ? s : s + "_" + worldType;
 
             org.bukkit.generator.ChunkGenerator gen = this.server.getGenerator(name);
-            WorldSettings worldsettings = new WorldSettings(i, this.getGamemode(), this.getGenerateStructures(), false, worldtype);
+            WorldSettings worldsettings = new WorldSettings(i, this.getGamemode(), this.getGenerateStructures(), this.isHardcore(), worldtype);
 
             if (j == 0) {
                 if (this.L()) { // Strip out DEMO?
@@ -313,18 +313,16 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 if (worldserver != null) {
                     if (!flag) {
                         log.info("Saving chunks for level \'" + worldserver.getWorldData().getName() + "\'/" + worldserver.worldProvider);
+                        worldserver.save(true, (IProgressUpdate) null); // Perform a full save
+                    } else {
+                        worldserver.save(false, (IProgressUpdate) null); // Queue chunk saving
                     }
 
-                    worldserver.save(true, (IProgressUpdate) null);
                     worldserver.saveLevel();
 
                     WorldSaveEvent event = new WorldSaveEvent(worldserver.getWorld());
                     this.server.getPluginManager().callEvent(event);
                 }
-            }
-
-            if (!this.worlds.get(0).savingDisabled) {
-                this.getServerConfigurationManager().savePlayers();
             }
             // CraftBukkit end
         }
