@@ -70,6 +70,7 @@ public class Chunk {
     }
 
     public org.bukkit.Chunk bukkitChunk;
+    public boolean mustSave;
     // CraftBukkit end
 
     public Chunk(World world, byte[] abyte, int i, int j) {
@@ -417,7 +418,11 @@ public class Chunk {
 
                 if (l != 0) {
                     if (!this.world.isStatic) {
-                        Block.byId[l].onPlace(this.world, j2, j, k2);
+                        // CraftBukkit start - Don't extend piston until data is set
+                        if (!(Block.byId[l] instanceof BlockPiston) || i2 != 0) {
+                            Block.byId[l].onPlace(this.world, j2, j, k2);
+                        }
+                        // CraftBukkit end
                     }
 
                     if (Block.byId[l] instanceof BlockContainer) {
