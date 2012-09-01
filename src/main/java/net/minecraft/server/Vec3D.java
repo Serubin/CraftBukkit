@@ -1,144 +1,155 @@
 package net.minecraft.server;
 
-public class Vec3D
-{
-  private static final ThreadLocal d = new Vec3DPoolThreadLocal();
-  public double a;
-  public double b;
-  public double c;
+public class Vec3D {
 
-  public static Vec3D a(double paramDouble1, double paramDouble2, double paramDouble3)
-  {
-    return new Vec3D(paramDouble1, paramDouble2, paramDouble3);
-  }
+    private static final ThreadLocal d = new Vec3DPoolThreadLocal();
+    public double a;
+    public double b;
+    public double c;
+    public Vec3D next; // CraftBukkit
 
-  public static Vec3DPool a() {
-    return (Vec3DPool)d.get();
-  }
+    public static Vec3D a(double d0, double d1, double d2) {
+        return new Vec3D(d0, d1, d2);
+    }
 
-  protected Vec3D(double paramDouble1, double paramDouble2, double paramDouble3)
-  {
-    if (paramDouble1 == -0.0D) paramDouble1 = 0.0D;
-    if (paramDouble2 == -0.0D) paramDouble2 = 0.0D;
-    if (paramDouble3 == -0.0D) paramDouble3 = 0.0D;
-    this.a = paramDouble1;
-    this.b = paramDouble2;
-    this.c = paramDouble3;
-  }
+    public static Vec3DPool a() {
+        return (Vec3DPool) d.get();
+    }
 
-  protected Vec3D b(double paramDouble1, double paramDouble2, double paramDouble3) {
-    this.a = paramDouble1;
-    this.b = paramDouble2;
-    this.c = paramDouble3;
-    return this;
-  }
+    protected Vec3D(double d0, double d1, double d2) {
+        if (d0 == -0.0D) {
+            d0 = 0.0D;
+        }
 
-  public Vec3D b()
-  {
-    double d1 = MathHelper.sqrt(this.a * this.a + this.b * this.b + this.c * this.c);
-    if (d1 < 0.0001D) return a().create(0.0D, 0.0D, 0.0D);
-    return a().create(this.a / d1, this.b / d1, this.c / d1);
-  }
+        if (d1 == -0.0D) {
+            d1 = 0.0D;
+        }
 
-  public double b(Vec3D paramVec3D) {
-    return this.a * paramVec3D.a + this.b * paramVec3D.b + this.c * paramVec3D.c;
-  }
+        if (d2 == -0.0D) {
+            d2 = 0.0D;
+        }
 
-  public Vec3D add(double paramDouble1, double paramDouble2, double paramDouble3)
-  {
-    return a().create(this.a + paramDouble1, this.b + paramDouble2, this.c + paramDouble3);
-  }
+        this.a = d0;
+        this.b = d1;
+        this.c = d2;
+    }
 
-  public double d(Vec3D paramVec3D) {
-    double d1 = paramVec3D.a - this.a;
-    double d2 = paramVec3D.b - this.b;
-    double d3 = paramVec3D.c - this.c;
-    return MathHelper.sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-  }
+    protected Vec3D b(double d0, double d1, double d2) {
+        this.a = d0;
+        this.b = d1;
+        this.c = d2;
+        return this;
+    }
 
-  public double distanceSquared(Vec3D paramVec3D) {
-    double d1 = paramVec3D.a - this.a;
-    double d2 = paramVec3D.b - this.b;
-    double d3 = paramVec3D.c - this.c;
-    return d1 * d1 + d2 * d2 + d3 * d3;
-  }
+    public Vec3D b() {
+        double d0 = (double) MathHelper.sqrt(this.a * this.a + this.b * this.b + this.c * this.c);
 
-  public double d(double paramDouble1, double paramDouble2, double paramDouble3) {
-    double d1 = paramDouble1 - this.a;
-    double d2 = paramDouble2 - this.b;
-    double d3 = paramDouble3 - this.c;
-    return d1 * d1 + d2 * d2 + d3 * d3;
-  }
+        return d0 < 1.0E-4D ? a().create(0.0D, 0.0D, 0.0D) : a().create(this.a / d0, this.b / d0, this.c / d0);
+    }
 
-  public double c()
-  {
-    return MathHelper.sqrt(this.a * this.a + this.b * this.b + this.c * this.c);
-  }
+    public double b(Vec3D vec3d) {
+        return this.a * vec3d.a + this.b * vec3d.b + this.c * vec3d.c;
+    }
 
-  public Vec3D b(Vec3D paramVec3D, double paramDouble) {
-    double d1 = paramVec3D.a - this.a;
-    double d2 = paramVec3D.b - this.b;
-    double d3 = paramVec3D.c - this.c;
+    public Vec3D add(double d0, double d1, double d2) {
+        return a().create(this.a + d0, this.b + d1, this.c + d2);
+    }
 
-    if (d1 * d1 < 1.000000011686097E-07D) return null;
+    public double d(Vec3D vec3d) {
+        double d0 = vec3d.a - this.a;
+        double d1 = vec3d.b - this.b;
+        double d2 = vec3d.c - this.c;
 
-    double d4 = (paramDouble - this.a) / d1;
-    if ((d4 < 0.0D) || (d4 > 1.0D)) return null;
-    return a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4);
-  }
+        return (double) MathHelper.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
+    }
 
-  public Vec3D c(Vec3D paramVec3D, double paramDouble) {
-    double d1 = paramVec3D.a - this.a;
-    double d2 = paramVec3D.b - this.b;
-    double d3 = paramVec3D.c - this.c;
+    public double distanceSquared(Vec3D vec3d) {
+        double d0 = vec3d.a - this.a;
+        double d1 = vec3d.b - this.b;
+        double d2 = vec3d.c - this.c;
 
-    if (d2 * d2 < 1.000000011686097E-07D) return null;
+        return d0 * d0 + d1 * d1 + d2 * d2;
+    }
 
-    double d4 = (paramDouble - this.b) / d2;
-    if ((d4 < 0.0D) || (d4 > 1.0D)) return null;
-    return a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4);
-  }
+    public double d(double d0, double d1, double d2) {
+        double d3 = d0 - this.a;
+        double d4 = d1 - this.b;
+        double d5 = d2 - this.c;
 
-  public Vec3D d(Vec3D paramVec3D, double paramDouble) {
-    double d1 = paramVec3D.a - this.a;
-    double d2 = paramVec3D.b - this.b;
-    double d3 = paramVec3D.c - this.c;
+        return d3 * d3 + d4 * d4 + d5 * d5;
+    }
 
-    if (d3 * d3 < 1.000000011686097E-07D) return null;
+    public double c() {
+        return (double) MathHelper.sqrt(this.a * this.a + this.b * this.b + this.c * this.c);
+    }
 
-    double d4 = (paramDouble - this.c) / d3;
-    if ((d4 < 0.0D) || (d4 > 1.0D)) return null;
-    return a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4);
-  }
+    public Vec3D b(Vec3D vec3d, double d0) {
+        double d1 = vec3d.a - this.a;
+        double d2 = vec3d.b - this.b;
+        double d3 = vec3d.c - this.c;
 
-  public String toString() {
-    return "(" + this.a + ", " + this.b + ", " + this.c + ")";
-  }
+        if (d1 * d1 < 1.0000000116860974E-7D) {
+            return null;
+        } else {
+            double d4 = (d0 - this.a) / d1;
 
-  public void a(float paramFloat)
-  {
-    float f1 = MathHelper.cos(paramFloat);
-    float f2 = MathHelper.sin(paramFloat);
+            return d4 >= 0.0D && d4 <= 1.0D ? a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4) : null;
+        }
+    }
 
-    double d1 = this.a;
-    double d2 = this.b * f1 + this.c * f2;
-    double d3 = this.c * f1 - this.b * f2;
+    public Vec3D c(Vec3D vec3d, double d0) {
+        double d1 = vec3d.a - this.a;
+        double d2 = vec3d.b - this.b;
+        double d3 = vec3d.c - this.c;
 
-    this.a = d1;
-    this.b = d2;
-    this.c = d3;
-  }
+        if (d2 * d2 < 1.0000000116860974E-7D) {
+            return null;
+        } else {
+            double d4 = (d0 - this.b) / d2;
 
-  public void b(float paramFloat) {
-    float f1 = MathHelper.cos(paramFloat);
-    float f2 = MathHelper.sin(paramFloat);
+            return d4 >= 0.0D && d4 <= 1.0D ? a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4) : null;
+        }
+    }
 
-    double d1 = this.a * f1 + this.c * f2;
-    double d2 = this.b;
-    double d3 = this.c * f1 - this.a * f2;
+    public Vec3D d(Vec3D vec3d, double d0) {
+        double d1 = vec3d.a - this.a;
+        double d2 = vec3d.b - this.b;
+        double d3 = vec3d.c - this.c;
 
-    this.a = d1;
-    this.b = d2;
-    this.c = d3;
-  }
+        if (d3 * d3 < 1.0000000116860974E-7D) {
+            return null;
+        } else {
+            double d4 = (d0 - this.c) / d3;
+
+            return d4 >= 0.0D && d4 <= 1.0D ? a().create(this.a + d1 * d4, this.b + d2 * d4, this.c + d3 * d4) : null;
+        }
+    }
+
+    public String toString() {
+        return "(" + this.a + ", " + this.b + ", " + this.c + ")";
+    }
+
+    public void a(float f) {
+        float f1 = MathHelper.cos(f);
+        float f2 = MathHelper.sin(f);
+        double d0 = this.a;
+        double d1 = this.b * (double) f1 + this.c * (double) f2;
+        double d2 = this.c * (double) f1 - this.b * (double) f2;
+
+        this.a = d0;
+        this.b = d1;
+        this.c = d2;
+    }
+
+    public void b(float f) {
+        float f1 = MathHelper.cos(f);
+        float f2 = MathHelper.sin(f);
+        double d0 = this.a * (double) f1 + this.c * (double) f2;
+        double d1 = this.b;
+        double d2 = this.c * (double) f1 - this.a * (double) f2;
+
+        this.a = d0;
+        this.b = d1;
+        this.c = d2;
+    }
 }

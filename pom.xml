@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.1-R2.0-hydrox-tulon</version>
+  <version>1.3.2-R0.2-hydrox-tulon-SNAPSHOT</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -51,14 +51,14 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.3.1-R2.0-hydrox</version>
+      <version>1.3.2-R0.2-hydrox-SNAPSHOT</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>minecraft-server</artifactId>
-      <version>1.3.1</version>
+      <version>1.3.2</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
@@ -222,6 +222,46 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>org.bouncycastle</pattern>
+                  <shadedPattern>net.minecraft.org.bouncycastle</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>joptsimple</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.joptsimple</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>jline</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.jline</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.ibex</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.org.ibex</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.gjt</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.org.gjt</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.google.gson</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.com.google.gson</shadedPattern>
+                </relocation>
+                <!-- These contain native libraries, and cannot be properly relocated
+                <relocation>
+                  <pattern>org.fusesource</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.org.fusesource</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.sqlite</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.org.sqlite</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.mysql</pattern>
+                  <shadedPattern>org.bukkit.craftbukkit.libs.com.mysql</shadedPattern>
+                </relocation>
+                !-->
+              </relocations>
               <artifactSet>
                 <excludes>
                   <exclude>junit:junit</exclude>

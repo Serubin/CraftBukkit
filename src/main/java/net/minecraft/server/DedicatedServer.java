@@ -49,7 +49,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         System.setErr(new PrintStream(new LoggerOutputStream(log, Level.SEVERE), true));
         // CraftBukkit end
 
-        log.info("Starting minecraft server version 1.3.1");
+        log.info("Starting minecraft server version 1.3.2");
         if (Runtime.getRuntime().maxMemory() / 1024L / 1024L < 512L) {
             log.warning("To start the server with more ram, launch it as \"java -Xmx1024M -Xms1024M -jar minecraft_server.jar\"");
         }
@@ -191,7 +191,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
 
     protected void a(CrashReport crashreport) {
         while (this.isRunning()) {
-            this.ah();
+            this.ai();
 
             try {
                 Thread.sleep(10L);
@@ -202,8 +202,9 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
     }
 
     public CrashReport b(CrashReport crashreport) {
+        crashreport = super.b(crashreport);
         crashreport.a("Type", (Callable) (new CrashReportType(this)));
-        return super.b(crashreport);
+        return crashreport;
     }
 
     protected void o() {
@@ -212,7 +213,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
 
     public void q() {
         super.q();
-        this.ah();
+        this.ai();
     }
 
     public boolean getAllowNether() {
@@ -224,8 +225,8 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
     }
 
     public void a(MojangStatisticsGenerator mojangstatisticsgenerator) {
-        mojangstatisticsgenerator.a("whitelist_enabled", Boolean.valueOf(this.ai().getHasWhitelist()));
-        mojangstatisticsgenerator.a("whitelist_count", Integer.valueOf(this.ai().getWhitelisted().size()));
+        mojangstatisticsgenerator.a("whitelist_enabled", Boolean.valueOf(this.aj().getHasWhitelist()));
+        mojangstatisticsgenerator.a("whitelist_count", Integer.valueOf(this.aj().getWhitelisted().size()));
         super.a(mojangstatisticsgenerator);
     }
 
@@ -237,7 +238,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         this.l.add(new ServerCommand(s, icommandlistener));
     }
 
-    public void ah() {
+    public void ai() {
         while (!this.l.isEmpty()) {
             ServerCommand servercommand = (ServerCommand) this.l.remove(0);
 
@@ -256,7 +257,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         return true;
     }
 
-    public ServerConfigurationManager ai() {
+    public ServerConfigurationManager aj() {
         return (ServerConfigurationManager) super.getServerConfigurationManager();
     }
 
@@ -290,7 +291,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         return file1 != null ? file1.getAbsolutePath() : "No settings file";
     }
 
-    public void aj() {
+    public void ak() {
         ServerGUI.a(this);
         this.s = true;
     }
@@ -304,6 +305,6 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
     }
 
     public ServerConfigurationManagerAbstract getServerConfigurationManager() {
-        return this.ai();
+        return this.aj();
     }
 }
