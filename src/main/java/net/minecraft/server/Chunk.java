@@ -57,7 +57,7 @@ public class Chunk {
         this.heightMap = new int[256];
 
         for (int k = 0; k < this.entitySlices.length; ++k) {
-            this.entitySlices[k] = new ArrayList();
+            this.entitySlices[k] = new org.bukkit.craftbukkit.util.UnsafeList(); // CraftBukkit - ArrayList -> UnsafeList
         }
 
         Arrays.fill(this.b, -999);
@@ -255,7 +255,7 @@ public class Chunk {
         }
 
         if (i1 != l) {
-            this.world.g(i, k, i1, l);
+            this.world.g(i + this.x * 16, k + this.z * 16, i1, l);
             this.heightMap[k << 4 | i] = i1;
             int j1 = this.x * 16 + i;
             int k1 = this.z * 16 + k;

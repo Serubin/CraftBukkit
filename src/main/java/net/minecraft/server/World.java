@@ -9,7 +9,8 @@ import java.util.concurrent.Callable;
 
 // CraftBukkit start
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.util.LongHashset;
+import org.bukkit.craftbukkit.util.LongHashSet;
+import org.bukkit.craftbukkit.util.UnsafeList;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -54,12 +55,12 @@ public abstract class World implements IBlockAccess {
     public final VillageCollection villages = new VillageCollection(this);
     protected final VillageSiege siegeManager = new VillageSiege(this);
     public final MethodProfiler methodProfiler;
-    private ArrayList d = new ArrayList();
+    private UnsafeList d = new UnsafeList(); // CraftBukkit - ArrayList -> UnsafeList
     private boolean L;
     // CraftBukkit start - public, longhashset
     public boolean allowMonsters = true;
     public boolean allowAnimals = true;
-    protected LongHashset chunkTickList = new LongHashset();
+    protected LongHashSet chunkTickList = new LongHashSet();
     public long ticksPerAnimalSpawns;
     public long ticksPerMonsterSpawns;
     // CraftBukkit end
@@ -112,7 +113,7 @@ public abstract class World implements IBlockAccess {
 
         this.M = this.random.nextInt(12000);
         this.J = new int['\u8000'];
-        this.N = new ArrayList();
+        this.N = new UnsafeList(); // CraftBukkit - ArrayList -> UnsafeList
         this.isStatic = false;
         this.dataManager = idatamanager;
         this.methodProfiler = methodprofiler;
@@ -133,7 +134,7 @@ public abstract class World implements IBlockAccess {
         }
 
         this.worldProvider.a(this);
-        this.chunkProvider = this.h();
+        this.chunkProvider = this.i();
         if (!this.worldData.isInitialized()) {
             this.a(worldsettings);
             this.worldData.d(true);
@@ -145,7 +146,7 @@ public abstract class World implements IBlockAccess {
         this.getServer().addWorld(this.world); // CraftBukkit
     }
 
-    protected abstract IChunkProvider h();
+    protected abstract IChunkProvider i();
 
     protected void a(WorldSettings worldsettings) {
         this.worldData.d(true);
@@ -200,7 +201,8 @@ public abstract class World implements IBlockAccess {
 
             for (int k1 = i; k1 <= l; ++k1) {
                 for (int l1 = k; l1 <= j1; ++l1) {
-                    if (!this.isChunkLoaded(k1, l1)) {
+                    // CraftBukkit - check unload queue too so we don't leak a chunk
+                    if (!this.isChunkLoaded(k1, l1) || ((WorldServer) this).chunkProviderServer.unloadQueue.contains(k1, l1)) {
                         return false;
                     }
                 }
@@ -591,7 +593,7 @@ public abstract class World implements IBlockAccess {
         return this.worldProvider.f[this.getLightLevel(i, j, k)];
     }
 
-    public boolean r() {
+    public boolean s() {
         return this.k < 4;
     }
 
@@ -748,9 +750,11 @@ public abstract class World implements IBlockAccess {
                         MovingObjectPosition movingobjectposition1 = block1.a(this, l, i1, j1, vec3d, vec3d1);
 
                         if (movingobjectposition1 != null) {
+                            Vec3D.a().release(vec3d2); // CraftBukkit
                             return movingobjectposition1;
                         }
                     }
+                    Vec3D.a().release(vec3d2); // CraftBukkit
                 }
 
                 return null;
@@ -881,6 +885,8 @@ public abstract class World implements IBlockAccess {
 
             iworldaccess.a(entity);
         }
+
+        entity.valid = true; // CraftBukkit
     }
 
     protected void b(Entity entity) {
@@ -1061,12 +1067,12 @@ public abstract class World implements IBlockAccess {
         for (i = 0; i < this.j.size(); ++i) {
             entity = (Entity) this.j.get(i);
             // CraftBukkit start - fixed an NPE, don't process entities in chunks queued for unload
-            ChunkProviderServer chunkProviderServer = ((WorldServer) entity.world).chunkProviderServer;
-            if (chunkProviderServer.unloadQueue.containsKey(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
+            if (entity == null) {
                 continue;
             }
 
-            if (entity == null) {
+            ChunkProviderServer chunkProviderServer = ((WorldServer) entity.world).chunkProviderServer;
+            if (chunkProviderServer.unloadQueue.contains(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
                 continue;
             }
             // CraftBukkit end
@@ -1107,7 +1113,7 @@ public abstract class World implements IBlockAccess {
 
             // CraftBukkit start - don't tick entities in chunks queued for unload
             ChunkProviderServer chunkProviderServer = ((WorldServer) entity.world).chunkProviderServer;
-            if (chunkProviderServer.unloadQueue.containsKey(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
+            if (chunkProviderServer.unloadQueue.contains(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
                 continue;
             }
             // CraftBukkit end
@@ -1151,7 +1157,7 @@ public abstract class World implements IBlockAccess {
 
             // CraftBukkit start - don't tick entities in chunks queued for unload
             ChunkProviderServer chunkProviderServer = ((WorldServer) tileentity.world).chunkProviderServer;
-            if (chunkProviderServer.unloadQueue.containsKey(tileentity.x >> 4, tileentity.z >> 4)) {
+            if (chunkProviderServer.unloadQueue.contains(tileentity.x >> 4, tileentity.z >> 4)) {
                 continue;
             }
             // CraftBukkit end
@@ -1452,6 +1458,7 @@ public abstract class World implements IBlockAccess {
                 entity.motY += vec3d.b * d1;
                 entity.motZ += vec3d.c * d1;
             }
+            Vec3D.a().release(vec3d); // CraftBukkit - pop it - we're done
 
             return flag;
         }
@@ -1532,6 +1539,7 @@ public abstract class World implements IBlockAccess {
         int i = 0;
         int j = 0;
 
+        Vec3D vec3d2 = Vec3D.a().create(0, 0, 0); // CraftBukkit
         for (float f = 0.0F; f <= 1.0F; f = (float) ((double) f + d0)) {
             for (float f1 = 0.0F; f1 <= 1.0F; f1 = (float) ((double) f1 + d1)) {
                 for (float f2 = 0.0F; f2 <= 1.0F; f2 = (float) ((double) f2 + d2)) {
@@ -1539,7 +1547,7 @@ public abstract class World implements IBlockAccess {
                     double d4 = axisalignedbb.b + (axisalignedbb.e - axisalignedbb.b) * (double) f1;
                     double d5 = axisalignedbb.c + (axisalignedbb.f - axisalignedbb.c) * (double) f2;
 
-                    if (this.a(Vec3D.a().create(d3, d4, d5), vec3d) == null) {
+                    if (this.a(vec3d2.b(d3, d4, d5), vec3d) == null) { // CraftBukkit
                         ++i;
                     }
 
@@ -1547,6 +1555,7 @@ public abstract class World implements IBlockAccess {
                 }
             }
         }
+        Vec3D.a().release(vec3d2); // CraftBukkit
 
         return (float) i / (float) j;
     }
@@ -1702,7 +1711,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public void doTick() {
-        this.l();
+        this.m();
     }
 
     private void a() {
@@ -1714,7 +1723,7 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    protected void l() {
+    protected void m() {
         if (!this.worldProvider.e) {
             if (this.r > 0) {
                 --this.r;
@@ -1820,7 +1829,7 @@ public abstract class World implements IBlockAccess {
                 for (int i1 = -b0; i1 <= b0; ++i1) {
                     // CraftBukkit start - don't tick chunks queued for unload
                     ChunkProviderServer chunkProviderServer = ((WorldServer) entityhuman.world).chunkProviderServer;
-                    if (chunkProviderServer.unloadQueue.containsKey(l + j, i1 + k)) {
+                    if (chunkProviderServer.unloadQueue.contains(l + j, i1 + k)) {
                         continue;
                     }
                     // CraftBukkit end

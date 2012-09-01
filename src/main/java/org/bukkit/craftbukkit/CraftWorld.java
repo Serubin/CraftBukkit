@@ -41,6 +41,7 @@ import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.Difficulty;
+import org.bukkit.Sound;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.plugin.messaging.StandardMessenger;
@@ -178,7 +179,9 @@ public class CraftWorld implements World {
         if (chunk.mustSave) {   // If chunk had previously been queued to save, must do save to avoid loss of that data
             save = true;
         }
+
         chunk.removeEntities(); // Always remove entities - even if discarding, need to get them out of world table
+
         if (save && !(chunk instanceof EmptyChunk)) {
             world.chunkProviderServer.saveChunk(chunk);
             world.chunkProviderServer.saveChunkNOP(chunk);
@@ -186,7 +189,6 @@ public class CraftWorld implements World {
 
         world.chunkProviderServer.unloadQueue.remove(x, z);
         world.chunkProviderServer.chunks.remove(x, z);
-        world.chunkProviderServer.chunkList.remove(chunk);
 
         return true;
     }
@@ -256,7 +258,6 @@ public class CraftWorld implements World {
     private void chunkLoadPostProcess(net.minecraft.server.Chunk chunk, int x, int z) {
         if (chunk != null) {
             world.chunkProviderServer.chunks.put(x, z, chunk);
-            world.chunkProviderServer.chunkList.add(chunk);
 
             chunk.addEntities();
 
@@ -1174,5 +1175,15 @@ public class CraftWorld implements World {
 
     public void setWaterAnimalSpawnLimit(int limit) {
         waterAnimalSpawn = limit;
+    }
+
+    public void playSound(Location loc, Sound sound, float volume, float pitch) {
+        if (loc == null || sound == null) return;
+
+        double x = loc.getX();
+        double y = loc.getY();
+        double z = loc.getZ();
+
+        getHandle().makeSound(x, y, z, sound.getSound(), volume, pitch);
     }
 }

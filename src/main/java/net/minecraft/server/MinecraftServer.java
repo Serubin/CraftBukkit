@@ -312,7 +312,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
 
                 if (worldserver != null) {
                     if (!flag) {
-                        log.info("Saving chunks for level \'" + worldserver.getWorldData().getName() + "\'/" + worldserver.worldProvider);
+                        log.info("Saving chunks for level \'" + worldserver.getWorldData().getName() + "\'/" + worldserver.worldProvider.getName());
                         worldserver.save(true, (IProgressUpdate) null); // Perform a full save
                     } else {
                         worldserver.save(false, (IProgressUpdate) null); // Queue chunk saving
@@ -574,12 +574,9 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 while (true) {
                     if (!worldserver.updateLights()) {
                         // this.methodProfiler.b(); // CraftBukkit - not in production code
-                        if (true || !worldserver.players.isEmpty()) { // CraftBukkit - this prevents entity cleanup, other issue on servers with no players
-                            time = System.currentTimeMillis();
-                            worldserver.tickEntities();
-                            onEntitytime += (System.currentTimeMillis()-time);
-                        }
-
+                        time = System.currentTimeMillis();
+                        worldserver.tickEntities();
+                        onEntitytime += (System.currentTimeMillis()-time);
                         // this.methodProfiler.a("tracker"); // CraftBukkit - not in production code
                         time = System.currentTimeMillis();
                         worldserver.getTracker().updatePlayers();
@@ -740,7 +737,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             }
 
             if (flag) {
-                dedicatedserver.aj();
+                dedicatedserver.ak();
             }
             */
 
@@ -793,7 +790,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
     }
 
     public String getVersion() {
-        return "1.3.1";
+        return "1.3.2";
     }
 
     public int x() {
