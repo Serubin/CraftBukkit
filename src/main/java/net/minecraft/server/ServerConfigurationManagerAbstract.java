@@ -395,6 +395,7 @@ public abstract class ServerConfigurationManagerAbstract {
         this.players.add(entityplayer1);
         // CraftBukkit start - added from changeDimension
         this.updateClient(entityplayer1); // CraftBukkit
+        entityplayer1.updateAbilities();
         Iterator iterator = entityplayer1.getEffects().iterator();
 
         while (iterator.hasNext()) {
@@ -499,12 +500,8 @@ public abstract class ServerConfigurationManagerAbstract {
     }
 
     public void sendAll(Packet packet) {
-        Iterator iterator = this.players.iterator();
-
-        while (iterator.hasNext()) {
-            EntityPlayer entityplayer = (EntityPlayer) iterator.next();
-
-            entityplayer.netServerHandler.sendPacket(packet);
+        for (int i = 0; i < this.players.size(); ++i) {
+            ((EntityPlayer) this.players.get(i)).netServerHandler.sendPacket(packet);
         }
     }
 
