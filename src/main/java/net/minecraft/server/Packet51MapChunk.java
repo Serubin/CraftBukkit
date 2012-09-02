@@ -183,16 +183,6 @@ public class Packet51MapChunk extends Packet {
             }
         }
 
-        // CraftBukkit start - Hackiest hack to have ever hacked.
-        // First of all, check to see if we flagged it to send, and all data is "0"
-        // This means that it's an "EmptyChunk," HOWEVER... It's not a physical EmptyChunk on the server, there is simply no data present
-        if (flag && i == 0xffff && j == 0 && chunkmap.b == 0 && chunkmap.c == 0) {
-            chunkmap.b = 1;
-            j = 10240;
-            java.util.Arrays.fill(abyte, 0, j, (byte) 0);
-        }
-        // CraftBukkit end
-
         if (flag) {
             byte[] abyte2 = chunk.m();
 
@@ -369,7 +359,7 @@ public class Packet51MapChunk extends Packet {
     // check if block is transparent or partly see thru
     private static boolean isSeeThru(byte id) {
         // to get the byte for ids 128 and above, substract 256
-        byte[] ids = { 0, 8, 9, 18, 20, 26, 27, 28, 30, 31, 32, 34, 37, 38, 39, 40, 44, 50, 51, 53, 55, 59, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 75, 76, 77, 78, 79, 83, 85, 90, 92, 93, 94, 96, 101, 102, 104, 105, 106, 107, 109, 111, 113, 114, 115, 117, 118, 119, 122, 126, 127, -128, -125, -124, -122, -121, -120 };
+        byte[] ids = { 0, 8, 9, 18, 20, 26, 27, 28, 30, 31, 32, 34, 37, 38, 39, 40, 44, 50, 51, 53, 54, 55, 59, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 75, 76, 77, 78, 79, 83, 85, 90, 92, 93, 94, 96, 101, 102, 104, 105, 106, 107, 109, 111, 113, 114, 115, 117, 118, 119, 122, 126, 127, -128, -125, -124, -122, -121, -120 };
 
         for (int i = 0; i < ids.length; i++) {
             if (id == ids[i]) {
