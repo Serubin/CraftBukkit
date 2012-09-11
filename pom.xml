@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.2-R0.2-hydrox-tulon-1-SNAPSHOT</version>
+  <version>1.3.2-R0.2-hydrox-tulon-2-SNAPSHOT</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -34,6 +34,10 @@
   </distributionManagement>
 
   <repositories>
+    <repository>
+      <id>ec-repo</id>
+      <url>http://dev.escapecraft.com/maven</url>
+    </repository>
     <repository>
       <id>repobo-snap</id>
       <url>http://repo.bukkit.org/content/groups/public</url>
