@@ -105,9 +105,9 @@ public class NetServerHandler extends NetHandler {
     public void d() {
         this.h = false;
         ++this.f;
-        // this.minecraftServer.methodProfiler.a("packetflow"); // CraftBukkit - not in production code
+        this.minecraftServer.methodProfiler.a("packetflow");
         this.networkManager.b();
-        // this.minecraftServer.methodProfiler.c("keepAlive"); // CraftBukkit - not in production code
+        this.minecraftServer.methodProfiler.c("keepAlive");
         if ((long) this.f - this.l > 20L) {
             this.l = (long) this.f;
             this.j = System.nanoTime() / 1000000L;
@@ -123,7 +123,7 @@ public class NetServerHandler extends NetHandler {
             --this.x;
         }
 
-        // this.minecraftServer.methodProfiler.c("playerTick"); // CraftBukkit - not in production code
+        this.minecraftServer.methodProfiler.c("playerTick");
         if (!this.h && !this.player.viewingCredits) {
             this.player.g();
             if (this.player.vehicle == null) {
@@ -131,7 +131,7 @@ public class NetServerHandler extends NetHandler {
             }
         }
 
-        // this.minecraftServer.methodProfiler.b(); // CraftBukkit - not in production code
+        this.minecraftServer.methodProfiler.b();
     }
 
     public void disconnect(String s) {
@@ -847,7 +847,7 @@ public class NetServerHandler extends NetHandler {
                             ((EntityPlayer) recipient).sendMessage(s);
                         }
                     } else {
-                        for (org.bukkit.entity.Player recipient : event.getRecipients()) {
+                        for (Player recipient : event.getRecipients()) {
                             recipient.sendMessage(s);
                         }
                     }
