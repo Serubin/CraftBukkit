@@ -88,6 +88,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
     public static int currentTick;
     public final Thread primaryThread;
     public java.util.Queue<PlayerChatEvent> chatQueue = new java.util.concurrent.ConcurrentLinkedQueue<PlayerChatEvent>();
+    public int autosavePeriod;
     // CraftBukkit end
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - signature file -> OptionSet
@@ -177,7 +178,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                     world = new DemoWorldServer(this, new ServerNBTManager(server.getWorldContainer(), s1, true), s1, dimension, this.methodProfiler);
                 } else {
                     // CraftBukkit
-                    world = new WorldServer(this, new ServerNBTManager(server.getWorldContainer(), s1, true), s1, dimension, worldsettings, this.methodProfiler, org.bukkit.World.Environment.getEnvironment(dimension), gen);
+                    world = new WorldServer(this, new ServerNBTManager(server.getWorldContainer(), s1, true), s1, dimension, worldsettings, this.methodProfiler, Environment.getEnvironment(dimension), gen);
                 }
             } else {
                 String dim = "DIM" + dimension;
@@ -211,7 +212,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 this.c(name);
 
                 // CraftBukkit
-                world = new SecondaryWorldServer(this, new ServerNBTManager(server.getWorldContainer(), name, true), name, dimension, worldsettings, this.worlds.get(0), this.methodProfiler, org.bukkit.World.Environment.getEnvironment(dimension), gen);
+                world = new SecondaryWorldServer(this, new ServerNBTManager(server.getWorldContainer(), name, true), name, dimension, worldsettings, this.worlds.get(0), this.methodProfiler, Environment.getEnvironment(dimension), gen);
             }
 
             if (gen != null) {
@@ -313,11 +314,9 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 if (worldserver != null) {
                     if (!flag) {
                         log.info("Saving chunks for level \'" + worldserver.getWorldData().getName() + "\'/" + worldserver.worldProvider.getName());
-                        worldserver.save(true, (IProgressUpdate) null); // Perform a full save
-                    } else {
-                        worldserver.save(false, (IProgressUpdate) null); // Queue chunk saving
                     }
 
+                    worldserver.save(true, (IProgressUpdate) null);
                     worldserver.saveLevel();
 
                     WorldSaveEvent event = new WorldSaveEvent(worldserver.getWorld());
@@ -474,20 +473,20 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
         ++this.ticks;
         if (this.T) {
             this.T = false;
-            // this.methodProfiler.a = true; // CraftBukkit - not in production code
-            // this.methodProfiler.a(); // CraftBukkit - not in production code
+            this.methodProfiler.a = true;
+            this.methodProfiler.a();
         }
 
-        // this.methodProfiler.a("root"); // CraftBukkit - not in production code
+        this.methodProfiler.a("root");
         this.q();
-        if (this.ticks % 900 == 0) {
-            // this.methodProfiler.a("save"); // CraftBukkit - not in production code
+        if ((this.autosavePeriod > 0) && ((this.ticks % this.autosavePeriod) == 0)) { // CraftBukkit
+            this.methodProfiler.a("save");
             this.t.savePlayers();
             this.saveChunks(true);
-            // this.methodProfiler.b(); // CraftBukkit - not in production code
+            this.methodProfiler.b();
         }
 
-        // this.methodProfiler.a("tallying"); // CraftBukkit - not in production code
+        this.methodProfiler.a("tallying");
         this.j[this.ticks % 100] = System.nanoTime() - i;
         this.f[this.ticks % 100] = Packet.p - this.E;
         this.E = Packet.p;
@@ -497,8 +496,8 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
         this.G = Packet.n;
         this.i[this.ticks % 100] = Packet.o - this.H;
         this.H = Packet.o;
-        // this.methodProfiler.b(); // CraftBukkit - not in production code
-        // this.methodProfiler.a("snooper"); // CraftBukkit - not in production code
+        this.methodProfiler.b();
+        this.methodProfiler.a("snooper");
         if (!this.n.d() && this.ticks > 100) {
             this.n.a();
         }
@@ -507,13 +506,13 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             this.n.b();
         }
 
-        // this.methodProfiler.b(); // CraftBukkit - not in production code
-        // this.methodProfiler.b(); // CraftBukkit - not in production code
+        this.methodProfiler.b();
+        this.methodProfiler.b();
     }
 
     public void q() {
         long tickDuration_tmp = System.currentTimeMillis();
-        // this.methodProfiler.a("levels"); // CraftBukkit - not in production code
+        this.methodProfiler.a("levels");
 
         // CraftBukkit start - only send timeupdates to the people in that world
         this.server.getScheduler().mainThreadHeartbeat(this.ticks);
@@ -565,24 +564,24 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 }
                 // CraftBukkit end */
 
-                // this.methodProfiler.a("tick"); // CraftBukkit - not in production code
+                this.methodProfiler.a("tick");
                 time = System.currentTimeMillis();
                 worldserver.doTick();
                 onTicktime += (System.currentTimeMillis()-time);
-                // this.methodProfiler.c("lights"); // CraftBukkit - not in production code
+                this.methodProfiler.c("lights");
 
                 while (true) {
                     if (!worldserver.updateLights()) {
-                        // this.methodProfiler.b(); // CraftBukkit - not in production code
+                        this.methodProfiler.b();
                         time = System.currentTimeMillis();
                         worldserver.tickEntities();
                         onEntitytime += (System.currentTimeMillis()-time);
-                        // this.methodProfiler.a("tracker"); // CraftBukkit - not in production code
+                        this.methodProfiler.a("tracker");
                         time = System.currentTimeMillis();
                         worldserver.getTracker().updatePlayers();
                         onPlayerupdatetime += (System.currentTimeMillis()-time);
-                        // this.methodProfiler.b(); // CraftBukkit - not in production code
-                        // this.methodProfiler.b(); // CraftBukkit - not in production code
+                        this.methodProfiler.b();
+                        this.methodProfiler.b();
                         break;
                     }
                 }
@@ -591,13 +590,13 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             // this.k[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
         }
 
-        // this.methodProfiler.c("connection"); // CraftBukkit - not in production code
+        this.methodProfiler.c("connection");
         time = System.currentTimeMillis();
         this.ac().b();
         onNetworktime += (System.currentTimeMillis()-time);
-        // this.methodProfiler.c("players"); // CraftBukkit - not in production code
+        this.methodProfiler.c("players");
         this.t.tick();
-        // this.methodProfiler.c("tickables"); // CraftBukkit - not in production code
+        this.methodProfiler.c("tickables");
         Iterator iterator = this.p.iterator();
 
         while (iterator.hasNext()) {
@@ -636,7 +635,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 times.put(pluginName, 0L);
             }
         }
-        // this.methodProfiler.b(); // CraftBukkit - not in production code
+        this.methodProfiler.b();
     }
 
     public boolean getAllowNether() {
