@@ -4,13 +4,14 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.2-R0.2-hydrox-tulon-2-SNAPSHOT</version>
+  <version>1.3.2-R0.2-hydrox-tulon-3-SNAPSHOT</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <api.version>unknown</api.version>
+    <api.version>1.3.2-R0.2-hydrox-SNAPSHOT</api.version>
+    <protocol.version>39</protocol.version>
     <junit.version>4.10</junit.version>
   </properties>
 
@@ -160,7 +161,7 @@
         <artifactId>gitdescribe-maven-plugin</artifactId>
         <version>1.3</version>
         <configuration>
-          <outputPrefix>git-Bukkit-</outputPrefix>
+          <outputPrefix>git-CraftBukkit-</outputPrefix>
           <outputPostfix></outputPostfix>
         </configuration>
         <executions>
@@ -181,11 +182,12 @@
             <manifestEntries>
               <Main-Class>org.bukkit.craftbukkit.Main</Main-Class>
               <Implementation-Title>CraftBukkit</Implementation-Title>
+              <Implementation-Vendor>Bukkit Team, EC Team</Implementation-Vendor>
               <Implementation-Version>${describe}</Implementation-Version>
-              <Implementation-Vendor>Bukkit Team</Implementation-Vendor>
               <Specification-Title>Bukkit</Specification-Title>
+              <Specification-Vendor>Bukkit Team, EC Team</Specification-Vendor>
               <Specification-Version>${api.version}</Specification-Version>
-              <Specification-Vendor>Bukkit Team</Specification-Vendor>
+              <Protocol-Version>${protocol.version}</Protocol-Version>
               <Sealed>true</Sealed>
             </manifestEntries>
             <manifestSections>
