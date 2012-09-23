@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.3.2-R0.2-hydrox-tulon-3-SNAPSHOT</version>
+  <version>1.3.2-R0.2-hydrox-tulon-4-SNAPSHOT</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
