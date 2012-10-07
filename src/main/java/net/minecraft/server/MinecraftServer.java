@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 // CraftBukkit start
@@ -19,6 +20,7 @@ import jline.console.ConsoleReader;
 import joptsimple.OptionSet;
 
 import org.bukkit.World.Environment;
+import org.bukkit.craftbukkit.util.LongObjectHashMap;
 import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.event.player.PlayerChatEvent;
@@ -634,6 +636,10 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
                 log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
                 times.put(pluginName, 0L);
             }
+
+            for (WorldServer world : this.worlds) {
+		log.log(Level.INFO, logPrefix + "loaded Chunks for " + world.getWorld().getName() + ": " + world.chunkProviderServer.getLoadedChunks());
+	    }
         }
         this.methodProfiler.b();
     }
