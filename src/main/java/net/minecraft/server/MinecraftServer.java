@@ -620,21 +620,35 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
             Set<String> keys = times.keySet();
             long totaltime = 0;
+            String[] topArray = new String[6];
             for (String pluginName : keys) {
-                totaltime += times.get(pluginName);
+                Long pluginTime = times.get(pluginName);
+                totaltime += pluginTime;
+                for (int i=4; i>=0; i--) {
+                    if (times.get(topArray[i]) != null && pluginTime >= times.get(topArray[i])) {
+                        topArray[i+1] = topArray[i];
+                        topArray[i] = pluginName;
+                    } else if (i==0 && topArray[i] == null) {
+                        topArray[i] = pluginName;
+                    }
+                }
             }
 			float timeSummary = (float)totaltime/(loggingTick*1000*1000);
 
             log.log(Level.INFO, logPrefix + "callEvent() times");
             log.log(Level.INFO, logPrefix + "Sum: " + timeSummary+ " ms.");
-            for (String pluginName : keys) {
-                time = times.get(pluginName);
+            for (int i=0; i<5; i++) {
+                if (topArray[i] == null) {
+                    continue;
+                }
+
+                time = times.get(topArray[i]);
                 if (time == 0) {
                     continue;
                 }
                 float timeOnPlugin = (float)time/(loggingTick*1000*1000);
-                log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
-                times.put(pluginName, 0L);
+                log.log(Level.INFO, logPrefix + topArray[i] + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
+                times.put(topArray[i], 0L);
             }
 
             for (WorldServer world : this.worlds) {
