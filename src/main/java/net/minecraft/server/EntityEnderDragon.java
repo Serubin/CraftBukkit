@@ -40,7 +40,7 @@ public class EntityEnderDragon extends EntityComplex {
     public EntityEnderDragon(World world) {
         super(world);
         this.children = new EntityComplexPart[] { this.h = new EntityComplexPart(this, "head", 6.0F, 6.0F), this.i = new EntityComplexPart(this, "body", 8.0F, 8.0F), this.j = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.by = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.bz = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.bA = new EntityComplexPart(this, "wing", 4.0F, 4.0F), this.bB = new EntityComplexPart(this, "wing", 4.0F, 4.0F)};
-        this.a = 400;
+        this.a = 200;
         this.setHealth(this.a);
         this.texture = "/mob/enderdragon/ender.png";
         this.a(16.0F, 8.0F);
