@@ -16,14 +16,14 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 // CraftBukkit start
+import java.util.concurrent.ExecutionException;
 import jline.console.ConsoleReader;
 import joptsimple.OptionSet;
 
 import org.bukkit.World.Environment;
-import org.bukkit.craftbukkit.util.LongObjectHashMap;
+import org.bukkit.craftbukkit.util.Waitable;
 import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.event.world.WorldSaveEvent;
-import org.bukkit.event.player.PlayerChatEvent;
 // CraftBukkit end
 
 public abstract class MinecraftServer implements Runnable, IMojangStatistics, ICommandListener {
@@ -89,7 +89,7 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
     public ConsoleReader reader;
     public static int currentTick;
     public final Thread primaryThread;
-    public java.util.Queue<PlayerChatEvent> chatQueue = new java.util.concurrent.ConcurrentLinkedQueue<PlayerChatEvent>();
+    public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
     public int autosavePeriod;
     // CraftBukkit end
 
@@ -521,26 +521,9 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
 
         long time;
 
-        // Fix for old plugins still using deprecated event
-        while (!chatQueue.isEmpty()) {
-            PlayerChatEvent event = chatQueue.remove();
-            org.bukkit.Bukkit.getPluginManager().callEvent(event);
-
-            if (event.isCancelled()) {
-                continue;
-            }
-
-            String message = String.format(event.getFormat(), event.getPlayer().getDisplayName(), event.getMessage());
-            console.sendMessage(message);
-            if (((org.bukkit.craftbukkit.util.LazyPlayerSet) event.getRecipients()).isLazy()) {
-                for (Object player : getServerConfigurationManager().players) {
-                    ((EntityPlayer) player).sendMessage(message);
-                }
-            } else {
-                for (org.bukkit.entity.Player player : event.getRecipients()) {
-                    player.sendMessage(message);
-                }
-            }
+        // Run tasks that are waiting on processing
+        while (!processQueue.isEmpty()) {
+            processQueue.remove().run();
         }
 
         // Send timeupdates to everyone, it will get the right time from the world the player is in.
@@ -620,21 +603,35 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
             HashMap<String, Long> times = this.server.getPluginManager().getEventTime();
             Set<String> keys = times.keySet();
             long totaltime = 0;
+            String[] topArray = new String[6];
             for (String pluginName : keys) {
-                totaltime += times.get(pluginName);
+                Long pluginTime = times.get(pluginName);
+                totaltime += pluginTime;
+                for (int i=4; i>=0; i--) {
+                    if (times.get(topArray[i]) != null && pluginTime >= times.get(topArray[i])) {
+                        topArray[i+1] = topArray[i];
+                        topArray[i] = pluginName;
+                    } else if (i==0 && topArray[i] == null) {
+                        topArray[i] = pluginName;
+                    }
+                }
             }
 			float timeSummary = (float)totaltime/(loggingTick*1000*1000);
 
             log.log(Level.INFO, logPrefix + "callEvent() times");
             log.log(Level.INFO, logPrefix + "Sum: " + timeSummary+ " ms.");
-            for (String pluginName : keys) {
-                time = times.get(pluginName);
+            for (int i=0; i<5; i++) {
+                if (topArray[i] == null) {
+                    continue;
+                }
+
+                time = times.get(topArray[i]);
                 if (time == 0) {
                     continue;
                 }
                 float timeOnPlugin = (float)time/(loggingTick*1000*1000);
-                log.log(Level.INFO, logPrefix + pluginName + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
-                times.put(pluginName, 0L);
+                log.log(Level.INFO, logPrefix + topArray[i] + ": " + timeOnPlugin + " ms. (" + (timeOnPlugin/timeSummary)*100 + "%)");
+                times.put(topArray[i], 0L);
             }
 
             for (WorldServer world : this.worlds) {
@@ -837,16 +834,31 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
         // CraftBukkit end
     }
 
-    public String i(String s) {
-        RemoteControlCommandListener.instance.b();
-        // CraftBukkit start
-        RemoteServerCommandEvent event = new RemoteServerCommandEvent(this.remoteConsole, s);
-        this.server.getPluginManager().callEvent(event);
-        ServerCommand servercommand = new ServerCommand(event.getCommand(), RemoteControlCommandListener.instance);
-        // this.q.a(RemoteControlCommandListener.instance, s);
-        this.server.dispatchServerCommand(this.remoteConsole, servercommand); // CraftBukkit
+    // CraftBukkit start
+    public String i(final String s) { // CraftBukkit - final parameter
+        Waitable<String> waitable = new Waitable<String>() {
+            @Override
+            protected String evaluate() {
+                RemoteControlCommandListener.instance.b();
+                // Event changes start
+                RemoteServerCommandEvent event = new RemoteServerCommandEvent(MinecraftServer.this.remoteConsole, s);
+                MinecraftServer.this.server.getPluginManager().callEvent(event);
+                // Event changes end
+                ServerCommand servercommand = new ServerCommand(event.getCommand(), RemoteControlCommandListener.instance);
+                // this.q.a(RemoteControlCommandListener.instance, s);
+                MinecraftServer.this.server.dispatchServerCommand(MinecraftServer.this.remoteConsole, servercommand); // CraftBukkit
+                return RemoteControlCommandListener.instance.c();
+            }};
+        processQueue.add(waitable);
+        try {
+            return waitable.get();
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Exception processing rcon command " + s, e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Maintain interrupted state
+            throw new RuntimeException("Interrupted processing rcon command " + s, e);
+        }
         // CraftBukkit end
-        return RemoteControlCommandListener.instance.c();
     }
 
     public boolean isDebugging() {
@@ -890,6 +902,8 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
     }
 
     public List a(ICommandListener icommandlistener, String s) {
+        // CraftBukkit start - Allow tab-completion of Bukkit commands
+        /*
         ArrayList arraylist = new ArrayList();
 
         if (s.startsWith("/")) {
@@ -928,6 +942,9 @@ public abstract class MinecraftServer implements Runnable, IMojangStatistics, IC
 
             return arraylist;
         }
+        */
+        return this.server.tabComplete(icommandlistener, s);
+        // CraftBukkit end
     }
 
     public static MinecraftServer getServer() {
