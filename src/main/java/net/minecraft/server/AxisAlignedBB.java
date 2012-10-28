@@ -141,9 +141,9 @@ public class AxisAlignedBB
 
   public boolean a(Vec3D paramVec3D)
   {
-    if ((paramVec3D.a <= this.a) || (paramVec3D.a >= this.d)) return false;
-    if ((paramVec3D.b <= this.b) || (paramVec3D.b >= this.e)) return false;
-    return (paramVec3D.c > this.c) && (paramVec3D.c < this.f);
+    if ((paramVec3D.c <= this.a) || (paramVec3D.c >= this.d)) return false;
+    if ((paramVec3D.d <= this.b) || (paramVec3D.d >= this.e)) return false;
+    return (paramVec3D.e > this.c) && (paramVec3D.e < this.f);
   }
 
   public AxisAlignedBB shrink(double paramDouble1, double paramDouble2, double paramDouble3)
@@ -204,17 +204,17 @@ public class AxisAlignedBB
 
   private boolean b(Vec3D paramVec3D) {
     if (paramVec3D == null) return false;
-    return (paramVec3D.b >= this.b) && (paramVec3D.b <= this.e) && (paramVec3D.c >= this.c) && (paramVec3D.c <= this.f);
+    return (paramVec3D.d >= this.b) && (paramVec3D.d <= this.e) && (paramVec3D.e >= this.c) && (paramVec3D.e <= this.f);
   }
 
   private boolean c(Vec3D paramVec3D) {
     if (paramVec3D == null) return false;
-    return (paramVec3D.a >= this.a) && (paramVec3D.a <= this.d) && (paramVec3D.c >= this.c) && (paramVec3D.c <= this.f);
+    return (paramVec3D.c >= this.a) && (paramVec3D.c <= this.d) && (paramVec3D.e >= this.c) && (paramVec3D.e <= this.f);
   }
 
   private boolean d(Vec3D paramVec3D) {
     if (paramVec3D == null) return false;
-    return (paramVec3D.a >= this.a) && (paramVec3D.a <= this.d) && (paramVec3D.b >= this.b) && (paramVec3D.b <= this.e);
+    return (paramVec3D.c >= this.a) && (paramVec3D.c <= this.d) && (paramVec3D.d >= this.b) && (paramVec3D.d <= this.e);
   }
 
   public void c(AxisAlignedBB paramAxisAlignedBB) {

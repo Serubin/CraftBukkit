@@ -731,10 +731,6 @@ public final class CraftServer implements Server {
 
                     ChunkCoordinates chunkcoordinates = internal.getSpawn();
                     internal.chunkProviderServer.getChunkAt(chunkcoordinates.x + j >> 4, chunkcoordinates.z + k >> 4);
-
-                    while (internal.updateLights()) {
-                        ;
-                    }
                 }
             }
         }
@@ -924,8 +920,17 @@ public final class CraftServer implements Server {
         return result;
     }
 
+    public void removeBukkitSpawnRadius() {
+        configuration.set("settings.spawn-radius", null);
+        saveConfig();
+    }
+
+    public int getBukkitSpawnRadius() {
+        return configuration.getInt("settings.spawn-radius", -1);
+    }
+
     public int getSpawnRadius() {
-        return configuration.getInt("settings.spawn-radius", 16);
+        return ((DedicatedServer) console).propertyManager.getInt("spawn-protection", 16);
     }
 
     public void setSpawnRadius(int value) {

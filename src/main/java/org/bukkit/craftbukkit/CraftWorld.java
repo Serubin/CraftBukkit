@@ -443,16 +443,20 @@ public class CraftWorld implements World {
             CraftPlayer cp = (CraftPlayer) p;
             if (cp.getHandle().netServerHandler == null) continue;
 
-            cp.getHandle().netServerHandler.sendPacket(new Packet4UpdateTime(cp.getHandle().getPlayerTime()));
+            cp.getHandle().netServerHandler.sendPacket(new Packet4UpdateTime(cp.getHandle().getPlayerTime(), cp.getHandle().world.F()));
         }
     }
 
     public boolean createExplosion(double x, double y, double z, float power) {
-        return createExplosion(x, y, z, power, false);
+        return createExplosion(x, y, z, power, false, true);
     }
 
     public boolean createExplosion(double x, double y, double z, float power, boolean setFire) {
-        return !world.createExplosion(null, x, y, z, power, setFire).wasCanceled;
+        return createExplosion(x, y, z, power, setFire, true);
+    }
+
+    public boolean createExplosion(double x, double y, double z, float power, boolean setFire, boolean breakBlocks) {
+        return !world.createExplosion(null, x, y, z, power, setFire, breakBlocks).wasCanceled;
     }
 
     public boolean createExplosion(Location loc, float power) {
@@ -769,7 +773,7 @@ public class CraftWorld implements World {
         Validate.notNull(effect, "Effect cannot be null");
         Validate.notNull(location.getWorld(), "World cannot be null");
         int packetData = effect.getId();
-        Packet61WorldEvent packet = new Packet61WorldEvent(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data);
+        Packet61WorldEvent packet = new Packet61WorldEvent(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data, false);
         int distance;
         radius *= radius;
 
@@ -847,8 +851,10 @@ public class CraftWorld implements World {
             } else if (Fireball.class.isAssignableFrom(clazz)) {
                 if (SmallFireball.class.isAssignableFrom(clazz)) {
                     entity = new EntitySmallFireball(world);
+                } else if (WitherSkull.class.isAssignableFrom(clazz)) {
+                    entity = new EntityWitherSkull(world);
                 } else {
-                    entity = new EntityFireball(world);
+                    entity = new EntityLargeFireball(world);
                 }
                 ((EntityFireball) entity).setPositionRotation(x, y, z, yaw, pitch);
                 Vector direction = location.getDirection().multiply(10);
@@ -928,16 +934,24 @@ public class CraftWorld implements World {
                 entity = new EntityBlaze(world);
             } else if (Villager.class.isAssignableFrom(clazz)) {
                 entity = new EntityVillager(world);
+            } else if (Witch.class.isAssignableFrom(clazz)) {
+                entity = new EntityWitch(world);
+            } else if (Wither.class.isAssignableFrom(clazz)) {
+                entity = new EntityWither(world);
             } else if (ComplexLivingEntity.class.isAssignableFrom(clazz)) {
                 if (EnderDragon.class.isAssignableFrom(clazz)) {
                     entity = new EntityEnderDragon(world);
+                }
+            } else if (Ambient.class.isAssignableFrom(clazz)) {
+                if (Bat.class.isAssignableFrom(clazz)) {
+                    entity = new EntityBat(world);
                 }
             }
 
             if (entity != null) {
                 entity.setLocation(x, y, z, pitch, yaw);
             }
-        } else if (Painting.class.isAssignableFrom(clazz)) {
+        } else if (Hanging.class.isAssignableFrom(clazz)) {
             Block block = getBlockAt(location);
             BlockFace face = BlockFace.SELF;
             if (block.getRelative(BlockFace.EAST).getTypeId() == 0) {
@@ -965,8 +979,14 @@ public class CraftWorld implements World {
                 dir = 3;
                 break;
             }
-            entity = new EntityPainting(world, (int) x, (int) y, (int) z, dir);
-            if (!((EntityPainting) entity).survives()) {
+
+            if (Painting.class.isAssignableFrom(clazz)) {
+                entity = new EntityPainting(world, (int) x, (int) y, (int) z, dir);
+            } else if (ItemFrame.class.isAssignableFrom(clazz)) {
+                entity = new EntityItemFrame(world, (int) x, (int) y, (int) z, dir);
+            }
+
+            if (entity != null && !((EntityHanging) entity).survives()) {
                 entity = null;
             }
         } else if (TNTPrimed.class.isAssignableFrom(clazz)) {
