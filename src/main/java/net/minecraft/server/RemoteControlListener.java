@@ -26,7 +26,7 @@ public class RemoteControlListener extends RemoteConnectionThread
     this.g = paramIMinecraftServer.a("rcon.port", 0);
     this.k = paramIMinecraftServer.a("rcon.password", "");
     this.i = paramIMinecraftServer.a("rcon.ip", "");
-    this.h = paramIMinecraftServer.u();
+    this.h = paramIMinecraftServer.v();
     if (0 == this.g)
     {
       this.g = (this.h + 10);
@@ -90,12 +90,12 @@ public class RemoteControlListener extends RemoteConnectionThread
   public void a()
   {
     if (0 == this.k.length()) {
-      warning("No rcon password set in '" + this.server.c() + "', rcon disabled!");
+      warning("No rcon password set in '" + this.server.b_() + "', rcon disabled!");
       return;
     }
 
     if ((0 >= this.g) || (65535 < this.g)) {
-      warning("Invalid rcon port " + this.g + " found in '" + this.server.c() + "', rcon disabled!");
+      warning("Invalid rcon port " + this.g + " found in '" + this.server.b_() + "', rcon disabled!");
       return;
     }
 
