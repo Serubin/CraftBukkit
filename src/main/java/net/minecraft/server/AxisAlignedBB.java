@@ -146,8 +146,15 @@ public class AxisAlignedBB
     return (paramVec3D.e > this.c) && (paramVec3D.e < this.f);
   }
 
-  public AxisAlignedBB shrink(double paramDouble1, double paramDouble2, double paramDouble3)
+  public double b()
   {
+    double d1 = this.d - this.a;
+    double d2 = this.e - this.b;
+    double d3 = this.f - this.c;
+    return (d1 + d2 + d3) / 3.0D;
+  }
+
+  public AxisAlignedBB shrink(double paramDouble1, double paramDouble2, double paramDouble3) {
     double d1 = this.a + paramDouble1;
     double d2 = this.b + paramDouble2;
     double d3 = this.c + paramDouble3;
