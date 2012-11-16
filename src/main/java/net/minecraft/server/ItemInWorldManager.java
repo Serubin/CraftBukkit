@@ -118,6 +118,11 @@ public class ItemInWorldManager {
             if (event.isCancelled()) {
                 // Let the client know the block still exists
                 ((EntityPlayer) this.player).netServerHandler.sendPacket(new Packet53BlockChange(i, j, k, this.world));
+                // Update any tile entity data for this block
+                TileEntity tileentity = this.world.getTileEntity(i, j, k);
+                if (tileentity != null) {
+                    this.player.netServerHandler.sendPacket(tileentity.getUpdatePacket());
+                }
                 return;
             }
             // CraftBukkit end
@@ -279,6 +284,11 @@ public class ItemInWorldManager {
             if (event.isCancelled()) {
                 // Let the client know the block still exists
                 ((EntityPlayer) this.player).netServerHandler.sendPacket(new Packet53BlockChange(i, j, k, this.world));
+                // Update any tile entity data for this block
+                TileEntity tileentity = this.world.getTileEntity(i, j, k);
+                if (tileentity != null) {
+                    this.player.netServerHandler.sendPacket(tileentity.getUpdatePacket());
+                }
                 return false;
             }
         }
@@ -290,9 +300,11 @@ public class ItemInWorldManager {
             int l = this.world.getTypeId(i, j, k);
             if (Block.byId[l] == null) return false; // CraftBukkit - a plugin set block to air without cancelling
             int i1 = this.world.getData(i, j, k);
+
             // CraftBukkit start - special case skulls, their item data comes from a tile entity
-            if (l == Block.SKULL.id) {
-                i1 = Block.SKULL.getDropData(world, i, j, k);
+            if (l == Block.SKULL.id && !this.isCreative()) {
+                Block.SKULL.dropNaturally(world, i, j, k, i1, 1.0F, 0);
+                return this.d(i, j, k);
             }
             // CraftBukkit end
 
