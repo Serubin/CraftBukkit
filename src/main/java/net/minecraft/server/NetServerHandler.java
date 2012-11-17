@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 // CraftBukkit start
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.logging.Level;
 import java.util.HashSet;
@@ -542,8 +543,13 @@ public class NetServerHandler extends NetHandler {
                 // CraftBukkit start
                 if (i1 < this.server.getSpawnRadius() && !flag) {
                     CraftEventFactory.callPlayerInteractEvent(this.player, Action.LEFT_CLICK_BLOCK, i, j, k, l, this.player.inventory.getItemInHand());
-                    // CraftBukkit end
                     this.player.netServerHandler.sendPacket(new Packet53BlockChange(i, j, k, worldserver));
+                    // Update any tile entity data for this block
+                    TileEntity tileentity = worldserver.getTileEntity(i, j, k);
+                    if (tileentity != null) {
+                        this.player.netServerHandler.sendPacket(tileentity.getUpdatePacket());
+                    }
+                    // CraftBukkit end
                 } else {
                     this.player.itemInWorldManager.dig(i, j, k, packet14blockdig.face);
                 }
@@ -787,13 +793,49 @@ public class NetServerHandler extends NetHandler {
             String s = packet3chat.message;
 
             if (s.length() > 100) {
-                this.networkManager.a("Chat message too long"); // CraftBukkit disconnect client asynchronously
+                // CraftBukkit start
+                Waitable waitable = new Waitable() {
+                    @Override
+                    protected Object evaluate() {
+                        NetServerHandler.this.disconnect("Chat message too long");
+                        return null;
+                    }
+                };
+
+                this.minecraftServer.processQueue.add(waitable);
+
+                try {
+                    waitable.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+                // CraftBukkit end
             } else {
                 s = s.trim();
 
                 for (int i = 0; i < s.length(); ++i) {
                     if (!SharedConstants.isAllowedChatCharacter(s.charAt(i))) {
-                        this.networkManager.a("Illegal characters in chat"); // CraftBukkit disconnect client asynchronously
+                        // CraftBukkit start
+                        Waitable waitable = new Waitable() {
+                            @Override
+                            protected Object evaluate() {
+                                NetServerHandler.this.disconnect("Illegal characters in chat");
+                                return null;
+                            }
+                        };
+
+                        this.minecraftServer.processQueue.add(waitable);
+
+                        try {
+                            waitable.get();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } catch (ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                        // CraftBukkit end
                         return;
                     }
                 }
@@ -808,7 +850,25 @@ public class NetServerHandler extends NetHandler {
 
                 // This section stays because it is only applicable to packets
                 if (chatSpamField.addAndGet(this, 20) > 200 && !this.minecraftServer.getServerConfigurationManager().isOp(this.player.name)) { // CraftBukkit use thread-safe spam
-                    this.networkManager.a("disconnect.spam"); // CraftBukkit disconnect client asynchronously
+                    // CraftBukkit start
+                    Waitable waitable = new Waitable() {
+                        @Override
+                        protected Object evaluate() {
+                            NetServerHandler.this.disconnect("disconnect.spam");
+                            return null;
+                        }
+                    };
+
+                    this.minecraftServer.processQueue.add(waitable);
+
+                    try {
+                        waitable.get();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                    // CraftBukkit end
                 }
             }
         }
@@ -869,7 +929,7 @@ public class NetServerHandler extends NetHandler {
                         waitable.get();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt(); // This is proper habit for java. If we aren't handling it, pass it on!
-                    } catch (java.util.concurrent.ExecutionException e) {
+                    } catch (ExecutionException e) {
                         throw new RuntimeException("Exception processing chat event", e.getCause());
                     }
                 } else {
@@ -1397,6 +1457,12 @@ public class NetServerHandler extends NetHandler {
         DataInputStream datainputstream;
         ItemStack itemstack;
         ItemStack itemstack1;
+
+        // CraftBukkit start - ignore empty payloads
+        if (packet250custompayload.length <= 0) {
+            return;
+        }
+        // CraftBukkit end
 
         if ("MC|BEdit".equals(packet250custompayload.tag)) {
             try {
