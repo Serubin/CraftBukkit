@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.4.5-R0.1-hydrox-tulon-3-SNAPSHOT</version>
+  <version>1.4.5-R0.1-hydrox-tulon-4</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -56,7 +56,7 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.4.5-R0.1-hydrox-SNAPSHOT</version>
+      <version>1.4.5-R0.1-hydrox</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
@@ -220,7 +220,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.4</version>
+        <version>2.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -228,6 +228,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <relocations>
                 <relocation>
                   <pattern>org.bouncycastle</pattern>
