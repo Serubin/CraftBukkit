@@ -207,7 +207,9 @@ public class EntitySheep extends EntityAnimal {
 
         this.e.getItem(0).setData(i);
         this.e.getItem(1).setData(j);
-        ItemStack itemstack = CraftingManager.getInstance().craft(this.e, ((EntitySheep) entityanimal).world);
+        // removed using CraftingManager for EntitySheep, was giving an NPE
+        //ItemStack itemstack = CraftingManager.getInstance().craft(this.e, ((EntitySheep) entityanimal).world);
+        ItemStack itemstack = null;
         int k;
 
         if (itemstack != null && itemstack.getItem().id == Item.INK_SACK.id) {
