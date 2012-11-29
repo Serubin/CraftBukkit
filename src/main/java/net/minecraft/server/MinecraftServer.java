@@ -666,7 +666,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
             }
 
             for (WorldServer world : this.worlds) {
-		log.log(Level.INFO, logPrefix + "loaded Chunks for " + world.getWorld().getName() + ": " + world.chunkProviderServer.getLoadedChunks());
+		log.log(Level.INFO, logPrefix + "loaded Chunks/Entities for " + world.getWorld().getName() + ": " + world.chunkProviderServer.getLoadedChunks() + "/" + world.entityList.size());
 	    }
         }
         this.methodProfiler.b();
