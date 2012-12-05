@@ -33,7 +33,7 @@ public abstract class World implements IBlockAccess {
     public List tileEntityList = new ArrayList();
     private List a = new ArrayList();
     private List b = new ArrayList();
-    public List players = new ArrayList();
+    public List players = new CopyOnWriteArrayList();
     public List i = new ArrayList();
     private long c = 16777215L;
     public int j = 0;
