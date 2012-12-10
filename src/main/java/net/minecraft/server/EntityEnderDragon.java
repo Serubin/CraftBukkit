@@ -638,7 +638,7 @@ public class EntityEnderDragon extends EntityLiving implements IComplex {
 
     public void move(double d0, double d1, double d2) {
 	super.move(d0,d1,d2);
-	if (locX > 150 || locX < -150 || locZ > 150 || locZ < -150) {
+	if (locX > 100 || locX < -100 || locZ > 100 || locZ < -100) {
 	    setPosition(0, 80, 0);
 	}
     }
