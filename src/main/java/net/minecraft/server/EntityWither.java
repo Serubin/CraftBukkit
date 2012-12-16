@@ -174,7 +174,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
                 this.world.getServer().getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
-                    this.world.createExplosion(this, this.locX, this.locY + (double) this.getHeadHeight(), this.locZ, event.getRadius(), event.getFire(), this.world.getGameRules().getBoolean("mobGriefing"));
+                    this.world.createExplosion(this, this.locX, this.locY + (double) this.getHeadHeight(), this.locZ, event.getRadius(), event.getFire(), false);
                 }
                 // CraftBukkit end
 
@@ -252,7 +252,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
 
             if (this.j > 0) {
                 --this.j;
-                if (this.j == 0 && this.world.getGameRules().getBoolean("mobGriefing")) {
+                if (this.j == 0 && false) {
                     i = MathHelper.floor(this.locY);
                     j = MathHelper.floor(this.locX);
                     int j1 = MathHelper.floor(this.locZ);
