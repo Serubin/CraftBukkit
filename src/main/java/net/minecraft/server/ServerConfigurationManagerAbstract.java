@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.chunkio.ChunkIOExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -149,6 +150,7 @@ public abstract class ServerConfigurationManagerAbstract {
         this.players.add(entityplayer);
         WorldServer worldserver = this.server.getWorldServer(entityplayer.dimension);
 
+        // CraftBukkit start
         PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(this.cserver.getPlayer(entityplayer), "\u00A7e" + entityplayer.name + " joined the game.");
         this.cserver.getPluginManager().callEvent(playerJoinEvent);
 
@@ -158,6 +160,8 @@ public abstract class ServerConfigurationManagerAbstract {
             this.server.getServerConfigurationManager().sendAll(new Packet3Chat(joinMessage));
         }
         this.cserver.onPlayerJoin(playerJoinEvent.getPlayer());
+
+        ChunkIOExecutor.adjustPoolSize(this.getPlayerCount());
         // CraftBukkit end
 
         // CraftBukkit start - only add if the player wasn't moved in the event
@@ -207,6 +211,7 @@ public abstract class ServerConfigurationManagerAbstract {
         worldserver.kill(entityplayer);
         worldserver.getPlayerManager().removePlayer(entityplayer);
         this.players.remove(entityplayer);
+        ChunkIOExecutor.adjustPoolSize(this.getPlayerCount()); // CraftBukkit
 
         // CraftBukkit start - .name -> .listName, replace sendAll with loop
         Packet201PlayerInfo packet = new Packet201PlayerInfo(entityplayer.listName, false, 9999);
@@ -695,25 +700,15 @@ public abstract class ServerConfigurationManagerAbstract {
     }
 
     public void sendPacketNearby(double d0, double d1, double d2, double d3, int i, Packet packet) {
-        this.sendPacketNearby(d0, d1, d2, d3, i, packet, null); // CraftBukkit
+        this.sendPacketNearby((EntityHuman) null, d0, d1, d2, d3, i, packet);
     }
 
-    // CraftBukkit start - Add support for entity who caused the packet
     public void sendPacketNearby(EntityHuman entityhuman, double d0, double d1, double d2, double d3, int i, Packet packet) {
-        this.sendPacketNearby(entityhuman, d0, d1, d2, d3, i, packet, null);
-    }
-
-    public void sendPacketNearby(double d0, double d1, double d2, double d3, int i, Packet packet, Entity sourceentity) {
-        this.sendPacketNearby(null, d0, d1, d2, d3, i, packet, sourceentity);
-    }
-    // CraftBukkit end
-
-    public void sendPacketNearby(EntityHuman entityhuman, double d0, double d1, double d2, double d3, int i, Packet packet, Entity sourceentity) { // CraftBukkit - added sourceentity
         for (int j = 0; j < this.players.size(); ++j) {
             EntityPlayer entityplayer = (EntityPlayer) this.players.get(j);
 
             // CraftBukkit start - Test if player receiving packet can see the source of the packet
-            if (sourceentity != null && sourceentity instanceof EntityPlayer && !entityplayer.getBukkitEntity().canSee(((EntityPlayer)sourceentity).getBukkitEntity())) {
+            if (entityhuman != null && entityhuman instanceof EntityPlayer && !entityplayer.getBukkitEntity().canSee(((EntityPlayer) entityhuman).getBukkitEntity())) {
                 continue;
             }
             // CraftBukkit end
@@ -824,7 +819,7 @@ public abstract class ServerConfigurationManagerAbstract {
 
     public void r() {
         while (!this.players.isEmpty()) {
-            ((EntityPlayer) this.players.get(0)).netServerHandler.disconnect("Server closed");
+            ((EntityPlayer) this.players.get(0)).netServerHandler.disconnect(this.server.server.getShutdownMessage()); // CraftBukkit - add custom shutdown message
         }
     }
 }
