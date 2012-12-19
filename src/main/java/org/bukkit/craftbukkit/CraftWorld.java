@@ -297,8 +297,7 @@ public class CraftWorld implements World {
     public org.bukkit.entity.Item dropItem(Location loc, ItemStack item) {
         Validate.notNull(item, "Cannot drop a Null item.");
         Validate.isTrue(item.getTypeId() != 0, "Cannot drop AIR.");
-        CraftItemStack clone = new CraftItemStack(item);
-        EntityItem entity = new EntityItem(world, loc.getX(), loc.getY(), loc.getZ(), clone.getHandle());
+        EntityItem entity = new EntityItem(world, loc.getX(), loc.getY(), loc.getZ(), CraftItemStack.asNMSCopy(item));
         entity.pickupDelay = 10;
         world.addEntity(entity);
         // TODO this is inconsistent with how Entity.getBukkitEntity() works.
@@ -318,10 +317,13 @@ public class CraftWorld implements World {
     }
 
     public Arrow spawnArrow(Location loc, Vector velocity, float speed, float spread) {
+        Validate.notNull(loc, "Can not spawn arrow with a null location");
+        Validate.notNull(velocity, "Can not spawn arrow with a null velocity");
+
         EntityArrow arrow = new EntityArrow(world);
-        arrow.setPositionRotation(loc.getX(), loc.getY(), loc.getZ(), 0, 0);
-        world.addEntity(arrow);
+        arrow.setPositionRotation(loc.getX(), loc.getY(), loc.getZ(), loc.getPitch(), loc.getYaw());
         arrow.shoot(velocity.getX(), velocity.getY(), velocity.getZ(), speed, spread);
+        world.addEntity(arrow);
         return (Arrow) arrow.getBukkitEntity();
     }
 
@@ -966,17 +968,17 @@ public class CraftWorld implements World {
             }
             int dir;
             switch (face) {
-            case EAST:
+            case SOUTH:
             default:
                 dir = 0;
                 break;
-            case NORTH:
+            case WEST:
                 dir = 1;
                 break;
-            case WEST:
+            case NORTH:
                 dir = 2;
                 break;
-            case SOUTH:
+            case EAST:
                 dir = 3;
                 break;
             }
