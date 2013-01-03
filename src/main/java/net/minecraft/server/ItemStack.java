@@ -95,7 +95,7 @@ public final class ItemStack {
         nbttagcompound.setByte("Count", (byte) this.count);
         nbttagcompound.setShort("Damage", (short) this.damage);
         if (this.tag != null) {
-            nbttagcompound.set("tag", this.tag);
+            nbttagcompound.set("tag", this.tag.clone()); // CraftBukkit - make defensive copy, data is going to another thread
         }
 
         return nbttagcompound;
@@ -106,7 +106,8 @@ public final class ItemStack {
         this.count = nbttagcompound.getByte("Count");
         this.damage = nbttagcompound.getShort("Damage");
         if (nbttagcompound.hasKey("tag")) {
-            this.tag = nbttagcompound.getCompound("tag");
+            // CraftBukkit - clear name from compound and make defensive copy as this data may be coming from the save thread
+            this.tag = (NBTTagCompound) nbttagcompound.getCompound("tag").clone().setName("");
         }
     }
 
@@ -149,9 +150,17 @@ public final class ItemStack {
     public void damage(int i, EntityLiving entityliving) {
         if (this.f()) {
             if (i > 0 && entityliving instanceof EntityHuman) {
-                int j = EnchantmentManager.getDurabilityEnchantmentLevel(entityliving);
+                int j = EnchantmentManager.getEnchantmentLevel(Enchantment.DURABILITY.id, this);
+                int k = 0;
 
-                if (j > 0 && entityliving.world.random.nextInt(j + 1) > 0) {
+                for (int l = 0; j > 0 && l < i; ++l) {
+                    if (EnchantmentDurability.a(this, j, entityliving.world.random)) {
+                        ++k;
+                    }
+                }
+
+                i -= k;
+                if (i <= 0) {
                     return;
                 }
             }
@@ -237,7 +246,7 @@ public final class ItemStack {
     }
 
     public String a() {
-        return Item.byId[this.id].c_(this);
+        return Item.byId[this.id].d(this);
     }
 
     public static ItemStack b(ItemStack itemstack) {
@@ -262,11 +271,11 @@ public final class ItemStack {
     }
 
     public int m() {
-        return this.getItem().a(this);
+        return this.getItem().c_(this);
     }
 
     public EnumAnimation n() {
-        return this.getItem().d_(this);
+        return this.getItem().b_(this);
     }
 
     public void b(World world, EntityHuman entityhuman, int i) {
@@ -290,7 +299,7 @@ public final class ItemStack {
     }
 
     public String r() {
-        String s = this.getItem().j(this);
+        String s = this.getItem().l(this);
 
         if (this.tag != null && this.tag.hasKey("display")) {
             NBTTagCompound nbttagcompound = this.tag.getCompound("display");
@@ -320,7 +329,7 @@ public final class ItemStack {
     }
 
     public boolean v() {
-        return !this.getItem().k(this) ? false : !this.hasEnchantments();
+        return !this.getItem().d_(this) ? false : !this.hasEnchantments();
     }
 
     public void addEnchantment(Enchantment enchantment, int i) {

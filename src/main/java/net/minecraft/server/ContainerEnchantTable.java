@@ -1,6 +1,5 @@
 package net.minecraft.server;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -152,6 +151,7 @@ public class ContainerEnchantTable extends Container {
         if (this.costs[i] > 0 && itemstack != null && (entityhuman.expLevel >= this.costs[i] || entityhuman.abilities.canInstantlyBuild)) {
             if (!this.world.isStatic) {
                 List list = EnchantmentManager.b(this.l, itemstack, this.costs[i]);
+                boolean flag = itemstack.id == Item.BOOK.id;
 
                 if (list != null) {
                     // CraftBukkit start
@@ -170,15 +170,33 @@ public class ContainerEnchantTable extends Container {
                         return false;
                     }
 
-                    entityhuman.levelDown(-level);
+                    boolean applied = !flag;
                     for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : event.getEnchantsToAdd().entrySet()) {
                         try {
-                            item.addEnchantment(entry.getKey(), entry.getValue());
+                            if (flag) {
+                                int enchantId = entry.getKey().getId();
+                                if (Enchantment.byId[enchantId] == null) {
+                                    continue;
+                                }
+
+                                EnchantmentInstance enchantment = new EnchantmentInstance(enchantId, entry.getValue());
+                                Item.ENCHANTED_BOOK.a(itemstack, enchantment);
+                                applied = true;
+                                itemstack.id = Item.ENCHANTED_BOOK.id;
+                                break;
+                            } else {
+                                item.addEnchantment(entry.getKey(), entry.getValue());
+                            }
                         } catch (IllegalArgumentException e) {
                             /* Just swallow invalid enchantments */
                         }
-                        // CraftBukkit end
                     }
+
+                    // Only down level if we've applied the enchantments
+                    if (applied) {
+                        entityhuman.levelDown(-level);
+                    }
+                    // CraftBukkit end
 
                     this.a(this.enchantSlots);
                 }

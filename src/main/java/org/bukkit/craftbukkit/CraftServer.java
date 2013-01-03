@@ -23,12 +23,14 @@ import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.Convertable;
 import net.minecraft.server.ConvertProgressUpdater;
 import net.minecraft.server.CraftingManager;
+import net.minecraft.server.DedicatedPlayerList;
 import net.minecraft.server.DedicatedServer;
 import net.minecraft.server.Enchantment;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.EntityTracker;
 import net.minecraft.server.EnumGamemode;
 import net.minecraft.server.ExceptionWorldConflict;
+import net.minecraft.server.PlayerList;
 import net.minecraft.server.RecipesFurnace;
 import net.minecraft.server.IProgressUpdate;
 import net.minecraft.server.IWorldAccess;
@@ -37,8 +39,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.MobEffectList;
 import net.minecraft.server.PropertyManager;
 import net.minecraft.server.ServerCommand;
-import net.minecraft.server.ServerConfigurationManager;
-import net.minecraft.server.ServerConfigurationManagerAbstract;
 import net.minecraft.server.ServerNBTManager;
 import net.minecraft.server.WorldLoaderServer;
 import net.minecraft.server.WorldManager;
@@ -144,7 +144,7 @@ public final class CraftServer implements Server {
     private final StandardMessenger messenger = new StandardMessenger();
     private final PluginManager pluginManager = new SimplePluginManager(this, commandMap);
     protected final MinecraftServer console;
-    protected final ServerConfigurationManager server;
+    protected final DedicatedPlayerList playerList;
     private final Map<String, World> worlds = new LinkedHashMap<String, World>();
     private YamlConfiguration configuration;
     private final Yaml yaml = new Yaml(new SafeConstructor());
@@ -157,18 +157,26 @@ public final class CraftServer implements Server {
     private int animalSpawn = -1;
     private int waterAnimalSpawn = -1;
     private int ambientSpawn = -1;
+    public int chunkGCPeriod = -1;
+    public int chunkGCLoadThresh = 0;
     private File container;
     private WarningState warningState = WarningState.DEFAULT;
+    private final BooleanWrapper online = new BooleanWrapper();
+
+    private final class BooleanWrapper {
+        private boolean value = true;
+    }
 
     static {
         ConfigurationSerialization.registerClass(CraftOfflinePlayer.class);
         CraftItemFactory.instance();
     }
 
-    public CraftServer(MinecraftServer console, ServerConfigurationManagerAbstract server) {
+    public CraftServer(MinecraftServer console, PlayerList playerList) {
         this.console = console;
-        this.server = (ServerConfigurationManager) server;
+        this.playerList = (DedicatedPlayerList) playerList;
         this.serverVersion = CraftServer.class.getPackage().getImplementationVersion();
+        online.value = console.getPropertyManager().getBoolean("online-mode", true);
 
         Bukkit.setServer(this);
 
@@ -196,6 +204,8 @@ public final class CraftServer implements Server {
         ambientSpawn = configuration.getInt("spawn-limits.ambient");
         console.autosavePeriod = configuration.getInt("ticks-per.autosave");
         warningState = WarningState.value(configuration.getString("settings.deprecated-verbose"));
+        chunkGCPeriod = configuration.getInt("chunk-gc.period-in-ticks");
+        chunkGCLoadThresh = configuration.getInt("chunk-gc.load-threshold");
 
         updater = new AutoUpdater(new BukkitDLUpdaterService(configuration.getString("auto-updater.host")), getLogger(), configuration.getString("auto-updater.preferred-channel"));
         updater.setEnabled(configuration.getBoolean("auto-updater.enabled"));
@@ -299,11 +309,11 @@ public final class CraftServer implements Server {
 
     @SuppressWarnings("unchecked")
     public Player[] getOnlinePlayers() {
-        List<EntityPlayer> online = server.players;
+        List<EntityPlayer> online = playerList.players;
         Player[] players = new Player[online.size()];
 
         for (int i = 0; i < players.length; i++) {
-            players[i] = online.get(i).netServerHandler.getPlayer();
+            players[i] = online.get(i).playerConnection.getPlayer();
         }
 
         return players;
@@ -345,7 +355,7 @@ public final class CraftServer implements Server {
     }
 
     public Player getPlayer(final EntityPlayer entity) {
-        return entity.netServerHandler.getPlayer();
+        return entity.playerConnection.getPlayer();
     }
 
     public List<Player> matchPlayer(String partialName) {
@@ -370,7 +380,7 @@ public final class CraftServer implements Server {
     }
 
     public int getMaxPlayers() {
-        return server.getMaxPlayers();
+        return playerList.getMaxPlayers();
     }
 
     // NOTE: These are dependent on the corrisponding call in MinecraftServer
@@ -478,8 +488,8 @@ public final class CraftServer implements Server {
         return new ArrayList<World>(worlds.values());
     }
 
-    public ServerConfigurationManager getHandle() {
-        return server;
+    public DedicatedPlayerList getHandle() {
+        return playerList;
     }
 
     // NOTE: Should only be called from DedicatedServer.ah()
@@ -520,7 +530,7 @@ public final class CraftServer implements Server {
         boolean monsters = config.getBoolean("spawn-monsters", console.worlds.get(0).difficulty > 0);
         int difficulty = config.getInt("difficulty", console.worlds.get(0).difficulty);
 
-        console.setOnlineMode(config.getBoolean("online-mode", console.getOnlineMode()));
+        online.value = config.getBoolean("online-mode", console.getOnlineMode());
         console.setSpawnAnimals(config.getBoolean("spawn-animals", console.getSpawnAnimals()));
         console.setPvP(config.getBoolean("pvp", console.getPvP()));
         console.setAllowFlight(config.getBoolean("allow-flight", console.getAllowFlight()));
@@ -531,6 +541,8 @@ public final class CraftServer implements Server {
         ambientSpawn = configuration.getInt("spawn-limits.ambient");
         warningState = WarningState.value(configuration.getString("settings.deprecated-verbose"));
         console.autosavePeriod = configuration.getInt("ticks-per.autosave");
+        chunkGCPeriod = configuration.getInt("chunk-gc.period-in-ticks");
+        chunkGCLoadThresh = configuration.getInt("chunk-gc.load-threshold");
 
         for (WorldServer world : console.worlds) {
             world.difficulty = difficulty;
@@ -833,7 +845,7 @@ public final class CraftServer implements Server {
     }
 
     public void savePlayers() {
-        server.savePlayers();
+        playerList.savePlayers();
     }
 
     public void configureDbConfig(ServerConfig config) {
@@ -946,7 +958,7 @@ public final class CraftServer implements Server {
     }
 
     public boolean getOnlineMode() {
-        return console.getOnlineMode();
+        return online.value;
     }
 
     public boolean getAllowFlight() {
@@ -1059,24 +1071,24 @@ public final class CraftServer implements Server {
 
     @SuppressWarnings("unchecked")
     public Set<String> getIPBans() {
-        return server.getIPBans().getEntries().keySet();
+        return playerList.getIPBans().getEntries().keySet();
     }
 
     public void banIP(String address) {
         BanEntry entry = new BanEntry(address);
-        server.getIPBans().add(entry);
-        server.getIPBans().save();
+        playerList.getIPBans().add(entry);
+        playerList.getIPBans().save();
     }
 
     public void unbanIP(String address) {
-        server.getIPBans().remove(address);
-        server.getIPBans().save();
+        playerList.getIPBans().remove(address);
+        playerList.getIPBans().save();
     }
 
     public Set<OfflinePlayer> getBannedPlayers() {
         Set<OfflinePlayer> result = new HashSet<OfflinePlayer>();
 
-        for (Object name : server.getNameBans().getEntries().keySet()) {
+        for (Object name : playerList.getNameBans().getEntries().keySet()) {
             result.add(getOfflinePlayer((String) name));
         }
 
@@ -1084,14 +1096,14 @@ public final class CraftServer implements Server {
     }
 
     public void setWhitelist(boolean value) {
-        server.hasWhitelist = value;
+        playerList.hasWhitelist = value;
         console.getPropertyManager().a("white-list", value);
     }
 
     public Set<OfflinePlayer> getWhitelistedPlayers() {
         Set<OfflinePlayer> result = new LinkedHashSet<OfflinePlayer>();
 
-        for (Object name : server.getWhitelisted()) {
+        for (Object name : playerList.getWhitelisted()) {
             if (((String)name).length() == 0 || ((String)name).startsWith("#")) {
                 continue;
             }
@@ -1104,7 +1116,7 @@ public final class CraftServer implements Server {
     public Set<OfflinePlayer> getOperators() {
         Set<OfflinePlayer> result = new HashSet<OfflinePlayer>();
 
-        for (Object name : server.getOPs()) {
+        for (Object name : playerList.getOPs()) {
             result.add(getOfflinePlayer((String) name));
         }
 
@@ -1112,7 +1124,7 @@ public final class CraftServer implements Server {
     }
 
     public void reloadWhitelist() {
-        server.reloadWhitelist();
+        playerList.reloadWhitelist();
     }
 
     public GameMode getDefaultGameMode() {

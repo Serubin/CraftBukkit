@@ -236,6 +236,8 @@ public class CraftEventFactory {
         org.bukkit.entity.AnimalTamer bukkitTamer = (tamer != null ? (AnimalTamer) tamer.getBukkitEntity() : null);
         CraftServer craftServer = (CraftServer) bukkitEntity.getServer();
 
+        entity.persistent = true;
+
         EntityTameEvent event = new EntityTameEvent((LivingEntity) bukkitEntity, bukkitTamer);
         craftServer.getPluginManager().callEvent(event);
         return event;
@@ -488,7 +490,7 @@ public class CraftEventFactory {
 
     public static Container callInventoryOpenEvent(EntityPlayer player, Container container) {
         if (player.activeContainer != player.defaultContainer) { // fire INVENTORY_CLOSE if one already open
-            player.netServerHandler.handleContainerClose(new Packet101CloseWindow(player.activeContainer.windowId));
+            player.playerConnection.handleContainerClose(new Packet101CloseWindow(player.activeContainer.windowId));
         }
 
         CraftServer server = ((WorldServer) player.world).getServer();
