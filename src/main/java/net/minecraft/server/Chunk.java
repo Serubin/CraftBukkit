@@ -88,7 +88,7 @@ public class Chunk {
                         int k1 = j1 >> 4;
 
                         if (this.sections[k1] == null) {
-                            this.sections[k1] = new ChunkSection(k1 << 4);
+                            this.sections[k1] = new ChunkSection(k1 << 4, !world.worldProvider.f);
                         }
 
                         this.sections[k1].a(l, j1 & 15, i1, b0);
@@ -387,7 +387,7 @@ public class Chunk {
                     return false;
                 }
 
-                chunksection = this.sections[j >> 4] = new ChunkSection(j >> 4 << 4);
+                chunksection = this.sections[j >> 4] = new ChunkSection(j >> 4 << 4, !world.worldProvider.f);
                 flag = j >= k1;
             }
 
@@ -498,14 +498,14 @@ public class Chunk {
     public int getBrightness(EnumSkyBlock enumskyblock, int i, int j, int k) {
         ChunkSection chunksection = this.sections[j >> 4];
 
-        return chunksection == null ? (this.d(i, j, k) ? enumskyblock.c : 0) : (enumskyblock == EnumSkyBlock.SKY ? chunksection.c(i, j & 15, k) : (enumskyblock == EnumSkyBlock.BLOCK ? chunksection.d(i, j & 15, k) : enumskyblock.c));
+        return chunksection == null ? (this.d(i, j, k) ? enumskyblock.c : 0) : (enumskyblock == EnumSkyBlock.SKY ? (this.world.worldProvider.f ? 0 : chunksection.c(i, j & 15, k)) : (enumskyblock == EnumSkyBlock.BLOCK ? chunksection.d(i, j & 15, k) : enumskyblock.c));
     }
 
     public void a(EnumSkyBlock enumskyblock, int i, int j, int k, int l) {
         ChunkSection chunksection = this.sections[j >> 4];
 
         if (chunksection == null) {
-            chunksection = this.sections[j >> 4] = new ChunkSection(j >> 4 << 4);
+            chunksection = this.sections[j >> 4] = new ChunkSection(j >> 4 << 4, !world.worldProvider.f);
             this.initLighting();
         }
 
@@ -686,12 +686,10 @@ public class Chunk {
             java.util.Iterator<Object> iter = this.entitySlices[i].iterator();
             while (iter.hasNext()) {
                 Entity entity = (Entity) iter.next();
-                int cx = Location.locToBlock(entity.locX) >> 4;
-                int cz = Location.locToBlock(entity.locZ) >> 4;
 
                 // Do not pass along players, as doing so can get them stuck outside of time.
                 // (which for example disables inventory icon updates and prevents block breaking)
-                if (entity instanceof EntityPlayer && (cx != this.x || cz != this.z)) {
+                if (entity instanceof EntityPlayer) {
                     iter.remove();
                 }
             }

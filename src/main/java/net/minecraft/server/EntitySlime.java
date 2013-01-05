@@ -26,11 +26,17 @@ public class EntitySlime extends EntityLiving implements IMonster {
 
     // CraftBukkit - protected -> public
     public void setSize(int i) {
+        boolean updateMaxHealth = this.getMaxHealth() == this.maxHealth; // CraftBukkit
         this.datawatcher.watch(16, new Byte((byte) i));
         this.a(0.6F * (float) i, 0.6F * (float) i);
         this.setPosition(this.locX, this.locY, this.locZ);
-        this.setHealth(this.getMaxHealth());
-        this.bc = i;
+        // CraftBukkit start
+        if (updateMaxHealth) {
+            this.maxHealth = this.getMaxHealth();
+        }
+        this.setHealth(this.maxHealth);
+        // CraftBukkit end
+        this.bd = i;
     }
 
     public int getMaxHealth() {
@@ -115,17 +121,17 @@ public class EntitySlime extends EntityLiving implements IMonster {
                 this.jumpDelay /= 3;
             }
 
-            this.bE = true;
+            this.bF = true;
             if (this.q()) {
                 this.makeSound(this.n(), this.aX(), ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F) * 0.8F);
             }
 
-            this.bB = 1.0F - this.random.nextFloat() * 2.0F;
-            this.bC = (float) (1 * this.getSize());
+            this.bC = 1.0F - this.random.nextFloat() * 2.0F;
+            this.bD = (float) (1 * this.getSize());
         } else {
-            this.bE = false;
+            this.bF = false;
             if (this.onGround) {
-                this.bB = this.bC = 0.0F;
+                this.bC = this.bD = 0.0F;
             }
         }
     }
