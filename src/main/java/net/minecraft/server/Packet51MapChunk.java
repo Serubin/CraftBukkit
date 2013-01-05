@@ -94,8 +94,8 @@ public class Packet51MapChunk extends Packet {
         dataoutputstream.write(this.buffer, 0, this.size);
     }
 
-    public void handle(NetHandler nethandler) {
-        nethandler.a(this);
+    public void handle(Connection connection) {
+        connection.a(this);
     }
 
     public int a() {
@@ -152,11 +152,13 @@ public class Packet51MapChunk extends Packet {
             }
         }
 
-        for (l = 0; l < achunksection.length; ++l) {
-            if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
-                nibblearray = achunksection[l].l();
-                System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
-                j += nibblearray.a.length;
+        if (!chunk.world.worldProvider.f) {
+            for (l = 0; l < achunksection.length; ++l) {
+                if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
+                    nibblearray = achunksection[l].l();
+                    System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
+                    j += nibblearray.a.length;
+                }
             }
         }
 
@@ -169,16 +171,6 @@ public class Packet51MapChunk extends Packet {
                 }
             }
         }
-
-        // CraftBukkit start - Hackiest hack to have ever hacked.
-        // First of all, check to see if we flagged it to send, and all data is "0"
-        // This means that it's an "EmptyChunk," HOWEVER... It's not a physical EmptyChunk on the server, there is simply no data present
-        if (flag && i == 0xffff && j == 0 && chunkmap.b == 0 && chunkmap.c == 0) {
-            chunkmap.b = 1;
-            j = 10240;
-            java.util.Arrays.fill(abyte, 0, j, (byte) 0);
-        }
-        // CraftBukkit end
 
         if (flag) {
             byte[] abyte2 = chunk.m();

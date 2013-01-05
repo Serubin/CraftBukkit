@@ -69,6 +69,11 @@ public class PropertyManager {
         FileOutputStream fileoutputstream = null;
 
         try {
+            // CraftBukkit start - Don't attempt writing to file if it's read only
+            if (this.c.exists() && !this.c.canWrite()) {
+                return;
+            }
+            // CraftBukkit end
             fileoutputstream = new FileOutputStream(this.c);
             this.properties.store(fileoutputstream, "Minecraft server properties");
         } catch (Exception exception) {
@@ -91,7 +96,6 @@ public class PropertyManager {
 
     public String getString(String s, String s1) {
         if (!this.properties.containsKey(s)) {
-            s1 = this.getOverride(s, s1); // CraftBukkit
             this.properties.setProperty(s, s1);
             this.savePropertiesFile();
         }
@@ -103,9 +107,8 @@ public class PropertyManager {
         try {
             return this.getOverride(s, Integer.parseInt(this.getString(s, "" + i))); // CraftBukkit
         } catch (Exception exception) {
-            i = this.getOverride(s, i); // CraftBukkit
             this.properties.setProperty(s, "" + i);
-            return i;
+            return this.getOverride(s, i); // CraftBukkit
         }
     }
 
@@ -113,9 +116,8 @@ public class PropertyManager {
         try {
             return this.getOverride(s, Boolean.parseBoolean(this.getString(s, "" + flag))); // CraftBukkit
         } catch (Exception exception) {
-            flag = this.getOverride(s, flag); // CraftBukkit
             this.properties.setProperty(s, "" + flag);
-            return flag;
+            return this.getOverride(s, flag); // CraftBukkit
         }
     }
 

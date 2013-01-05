@@ -22,6 +22,7 @@ public class ItemStackLeatherTest extends ItemStackTest {
         return StackProvider.compound(operators(), "%s %s", NAME_PARAMETER, Material.LEATHER_BOOTS, Material.LEATHER_CHESTPLATE, Material.LEATHER_HELMET, Material.LEATHER_LEGGINGS);
     }
 
+    @SuppressWarnings("unchecked")
     static List<Object[]> operators() {
         return CompoundOperator.compound(
             Joiner.on('+'),

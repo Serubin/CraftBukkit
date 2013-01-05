@@ -1,6 +1,6 @@
 package org.bukkit.craftbukkit.enchantments;
 
-import net.minecraft.server.Item;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentTarget;
 import org.bukkit.enchantments.EnchantmentWrapper;
@@ -52,7 +52,7 @@ public class CraftEnchantment extends Enchantment {
 
     @Override
     public boolean canEnchantItem(ItemStack item) {
-        return target.slot.canEnchant(Item.byId[item.getTypeId()]);
+        return target.canEnchant(CraftItemStack.asNMSCopy(item));
     }
 
     @Override
@@ -72,6 +72,8 @@ public class CraftEnchantment extends Enchantment {
             return "OXYGEN";
         case 6:
             return "WATER_WORKER";
+        case 7:
+            return "THORNS";
         case 16:
             return "DAMAGE_ALL";
         case 17:

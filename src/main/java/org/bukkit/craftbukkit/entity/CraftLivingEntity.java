@@ -41,6 +41,7 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.entity.SmallFireball;
 import org.bukkit.entity.Snowball;
 import org.bukkit.entity.WitherSkull;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -59,7 +60,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     public int getHealth() {
-        return getHandle().getHealth();
+        return Math.min(Math.max(0, getHandle().getHealth()), getMaxHealth());
     }
 
     public void setHealth(int health) {
@@ -75,7 +76,21 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     public int getMaxHealth() {
-        return getHandle().getMaxHealth();
+        return getHandle().maxHealth;
+    }
+
+    public void setMaxHealth(int amount) {
+        Validate.isTrue(amount > 0, "Max health must be greater than 0");
+
+        getHandle().maxHealth = amount;
+
+        if (getHealth() > amount) {
+            setHealth(amount);
+        }
+    }
+
+    public void resetMaxHealth() {
+        setMaxHealth(getHandle().getMaxHealth());
     }
 
     @Deprecated
@@ -255,8 +270,8 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
         getHandle().effects.remove(type.getId());
         getHandle().updateEffects = true;
         if (getHandle() instanceof EntityPlayer) {
-            if (((EntityPlayer) getHandle()).netServerHandler == null) return;
-            ((EntityPlayer) getHandle()).netServerHandler.sendPacket(new Packet42RemoveMobEffect(getHandle().id, new MobEffect(type.getId(), 0, 0)));
+            if (((EntityPlayer) getHandle()).playerConnection == null) return;
+            ((EntityPlayer) getHandle()).playerConnection.sendPacket(new Packet42RemoveMobEffect(getHandle().id, new MobEffect(type.getId(), 0, 0)));
         }
     }
 
@@ -331,5 +346,14 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
 
     public boolean getCanPickupItems() {
         return getHandle().canPickUpLoot;
+    }
+
+    @Override
+    public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause cause) {
+        if (getHealth() == 0) {
+            return false;
+        }
+
+        return super.teleport(location, cause);
     }
 }

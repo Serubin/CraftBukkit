@@ -20,6 +20,7 @@ public class ItemStackBookTest extends ItemStackTest {
         return StackProvider.compound(operators(), "%s %s", NAME_PARAMETER, Material.WRITTEN_BOOK, Material.BOOK_AND_QUILL);
     }
 
+    @SuppressWarnings("unchecked")
     static List<Object[]> operators() {
         return CompoundOperator.compound(
             Joiner.on('+'),

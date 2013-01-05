@@ -13,15 +13,15 @@ public class EntityWolf extends EntityTameableAnimal {
         super(world);
         this.texture = "/mob/wolf.png";
         this.a(0.6F, 0.8F);
-        this.bG = 0.3F;
+        this.bH = 0.3F;
         this.getNavigation().a(true);
         this.goalSelector.a(1, new PathfinderGoalFloat(this));
         this.goalSelector.a(2, this.d);
         this.goalSelector.a(3, new PathfinderGoalLeapAtTarget(this, 0.4F));
-        this.goalSelector.a(4, new PathfinderGoalMeleeAttack(this, this.bG, true));
-        this.goalSelector.a(5, new PathfinderGoalFollowOwner(this, this.bG, 10.0F, 2.0F));
-        this.goalSelector.a(6, new PathfinderGoalBreed(this, this.bG));
-        this.goalSelector.a(7, new PathfinderGoalRandomStroll(this, this.bG));
+        this.goalSelector.a(4, new PathfinderGoalMeleeAttack(this, this.bH, true));
+        this.goalSelector.a(5, new PathfinderGoalFollowOwner(this, this.bH, 10.0F, 2.0F));
+        this.goalSelector.a(6, new PathfinderGoalBreed(this, this.bH));
+        this.goalSelector.a(7, new PathfinderGoalRandomStroll(this, this.bH));
         this.goalSelector.a(8, new PathfinderGoalBeg(this, 8.0F));
         this.goalSelector.a(9, new PathfinderGoalLookAtPlayer(this, EntityHuman.class, 8.0F));
         this.goalSelector.a(9, new PathfinderGoalRandomLookaround(this));
@@ -43,7 +43,7 @@ public class EntityWolf extends EntityTameableAnimal {
     }
 
     protected void bm() {
-        this.datawatcher.watch(18, Integer.valueOf(this.getHealth()));
+        this.datawatcher.watch(18, Integer.valueOf(this.getScaledHealth())); // CraftBukkit - this.getHealth() -> this.getScaledHealth()
     }
 
     public int getMaxHealth() {
@@ -76,11 +76,13 @@ public class EntityWolf extends EntityTameableAnimal {
     }
 
     protected boolean bj() {
-        return this.isAngry();
+        // CraftBukkit - added && !this.isTamed()
+        return this.isAngry() && !this.isTamed();
     }
 
     protected String aY() {
-        return this.isAngry() ? "mob.wolf.growl" : (this.random.nextInt(3) == 0 ? (this.isTamed() && this.datawatcher.getInt(18) < 10 ? "mob.wolf.whine" : "mob.wolf.panting") : "mob.wolf.bark");
+        // CraftBukkit - getInt(18) < 10 -> < this.maxHealth / 2
+        return this.isAngry() ? "mob.wolf.growl" : (this.random.nextInt(3) == 0 ? (this.isTamed() && this.datawatcher.getInt(18) < this.maxHealth / 2 ? "mob.wolf.whine" : "mob.wolf.panting") : "mob.wolf.bark");
     }
 
     protected String aZ() {
@@ -119,7 +121,7 @@ public class EntityWolf extends EntityTameableAnimal {
         }
 
         if (this.bM()) {
-            this.bH = 10;
+            this.bI = 10;
         }
 
         if (this.G()) {
@@ -220,7 +222,7 @@ public class EntityWolf extends EntityTameableAnimal {
 
             if (entityhuman.name.equalsIgnoreCase(this.getOwnerName()) && !this.world.isStatic && !this.c(itemstack)) {
                 this.d.a(!this.isSitting());
-                this.bE = false;
+                this.bF = false;
                 this.setPathEntity((PathEntity) null);
             }
         } else if (itemstack != null && itemstack.id == Item.BONE.id && !this.isAngry()) {
@@ -235,11 +237,17 @@ public class EntityWolf extends EntityTameableAnimal {
             if (!this.world.isStatic) {
                 // CraftBukkit - added event call and isCancelled check.
                 if (this.random.nextInt(3) == 0 && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTameEvent(this, entityhuman).isCancelled()) {
+                    boolean updateMaxHealth = this.getMaxHealth() == this.maxHealth; // CraftBukkit
                     this.setTamed(true);
                     this.setPathEntity((PathEntity) null);
                     this.b((EntityLiving) null);
                     this.d.a(true);
-                    this.setHealth(20);
+                    // CraftBukkit start
+                    if (updateMaxHealth) {
+                        this.maxHealth = this.getMaxHealth();
+                    }
+                    this.setHealth(this.maxHealth);
+                    // CraftBukkit end
                     this.setOwnerName(entityhuman.name);
                     this.f(true);
                     this.world.broadcastEntityEffect(this, (byte) 7);
