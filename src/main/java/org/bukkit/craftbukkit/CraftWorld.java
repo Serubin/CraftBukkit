@@ -49,6 +49,7 @@ import org.bukkit.plugin.messaging.StandardMessenger;
 import org.bukkit.craftbukkit.util.LongHash;
 
 public class CraftWorld implements World {
+    public static final int CUSTOM_DIMENSION_OFFSET = 10;
 
     private Chunk cacheChunk;
     private int cacheChunkx = Integer.MIN_VALUE;
