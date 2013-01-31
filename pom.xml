@@ -4,7 +4,7 @@
   <groupId>org.bukkit</groupId>
   <artifactId>craftbukkit</artifactId>
   <packaging>jar</packaging>
-  <version>1.4.7-R0.2-SNAPSHOT-hydrox</version>
+  <version>1.4.7-R1.0-hydrox</version>
   <name>CraftBukkit</name>
   <url>http://www.bukkit.org</url>
 
@@ -53,7 +53,7 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.4.7-R0.2-SNAPSHOT-hydrox</version>
+      <version>1.4.7-R1.0-hydrox</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>

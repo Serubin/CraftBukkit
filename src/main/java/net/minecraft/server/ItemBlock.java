@@ -15,6 +15,7 @@ public class ItemBlock extends Item {
     }
 
     public boolean interactWith(ItemStack itemstack, EntityHuman entityhuman, World world, int i, int j, int k, int l, float f, float f1, float f2) {
+        final int clickedX = i, clickedY = j, clickedZ = k;
         int i1 = world.getTypeId(i, j, k);
 
         if (i1 == Block.SNOW.id) {
@@ -68,7 +69,7 @@ public class ItemBlock extends Item {
                 --itemstack.count;
             }
             */
-            return processBlockPlace(world, entityhuman, itemstack, i, j, k, this.id, k1);
+            return processBlockPlace(world, entityhuman, itemstack, i, j, k, this.id, k1, clickedX, clickedY, clickedZ);
             // CraftBukkit end
         } else {
             return false;
@@ -76,32 +77,36 @@ public class ItemBlock extends Item {
     }
 
     // CraftBukkit start - add method to process block placement
-    static boolean processBlockPlace(final World world, final EntityHuman entityhuman, final ItemStack itemstack, final int x, final int y, final int z, final int id, final int data) {
+    static boolean processBlockPlace(final World world, final EntityHuman entityhuman, final ItemStack itemstack, final int x, final int y, final int z, final int id, final int data, final int clickedX, final int clickedY, final int clickedZ) {
         org.bukkit.block.BlockState blockstate = org.bukkit.craftbukkit.block.CraftBlockState.getBlockState(world, x, y, z);
 
         world.suppressPhysics = true;
+        world.callingPlaceEvent = true;
         world.setRawTypeIdAndData(x, y, z, id, data);
 
-        org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockstate, x, y, z);
+        org.bukkit.event.block.BlockPlaceEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent(world, entityhuman, blockstate, clickedX, clickedY, clickedZ);
         if (event.isCancelled() || !event.canBuild()) {
             blockstate.update(true);
             world.suppressPhysics = false;
+            world.callingPlaceEvent = false;
             return false;
         }
 
         world.suppressPhysics = false;
+        world.callingPlaceEvent = false;
 
         int newId = world.getTypeId(x, y, z);
         int newData = world.getData(x, y, z);
 
         Block block = Block.byId[newId];
-        if (block != null) {
+        if (block != null && !(block instanceof BlockContainer)) { // Containers get placed automatically
             block.onPlace(world, x, y, z);
         }
 
         world.update(x, y, z, newId);
 
-        if (block != null) {
+        // Skulls don't get block data applied to them
+        if (block != null && block != Block.SKULL) {
             block.postPlace(world, x, y, z, entityhuman);
             block.postPlace(world, x, y, z, newData);
 
