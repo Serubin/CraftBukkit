@@ -8,6 +8,7 @@ import java.util.Random;
 
 // CraftBukkit start
 import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.event.CustomTimingsHandler;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -110,6 +111,14 @@ public abstract class EntityLiving extends Entity {
     public int expToDrop = 0;
     public int maxAirTicks = 300;
     public int maxHealth = this.getMaxHealth();
+    // Spigot Start
+    public static CustomTimingsHandler timerEntityBaseTick = new CustomTimingsHandler("** entityBaseTick");
+    public static CustomTimingsHandler timerEntityAI = new CustomTimingsHandler("** entityAI");
+    public static CustomTimingsHandler timerEntityAIJump = new CustomTimingsHandler("** entityAIJump");
+    public static CustomTimingsHandler timerEntityAIMove = new CustomTimingsHandler("** entityAIMove");
+    public static CustomTimingsHandler timerEntityAILoot = new CustomTimingsHandler("** entityAILoot");
+    public static CustomTimingsHandler timerEntityTickRest = new CustomTimingsHandler("** entityTickRest");
+    // Spigot End
     // CraftBukkit end
 
     public EntityLiving(World world) {
@@ -505,6 +514,7 @@ public abstract class EntityLiving extends Entity {
     }
 
     public void j_() {
+        timerEntityBaseTick.startTiming(); // Spigot
         super.j_();
         if (!this.world.isStatic) {
             int i;
@@ -531,7 +541,9 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
+        timerEntityBaseTick.stopTiming(); // Spigot
         this.c();
+        timerEntityTickRest.startTiming(); // Spigot
         double d0 = this.locX - this.lastX;
         double d1 = this.locZ - this.lastZ;
         float f = (float) (d0 * d0 + d1 * d1);
@@ -622,6 +634,7 @@ public abstract class EntityLiving extends Entity {
 
         this.world.methodProfiler.b();
         this.aD += f2;
+        timerEntityTickRest.stopTiming(); // Spigot
     }
 
     // CraftBukkit start - delegate so we can handle providing a reason for health being regained
@@ -1228,6 +1241,7 @@ public abstract class EntityLiving extends Entity {
     }
 
     public void c() {
+        timerEntityAI.startTiming(); // Spigot
         if (this.bV > 0) {
             --this.bV;
         }
@@ -1279,9 +1293,11 @@ public abstract class EntityLiving extends Entity {
                 this.az = this.yaw;
             }
         }
+        timerEntityAI.stopTiming(); // Spigot
 
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("jump");
+        timerEntityAIJump.startTiming(); // Spigot
         if (this.bF) {
             if (!this.H() && !this.J()) {
                 if (this.onGround && this.bV == 0) {
@@ -1295,8 +1311,10 @@ public abstract class EntityLiving extends Entity {
             this.bV = 0;
         }
 
+        timerEntityAIJump.stopTiming(); // Spigot
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("travel");
+        timerEntityAIMove.startTiming(); // Spigot
         this.bC *= 0.98F;
         this.bD *= 0.98F;
         this.bE *= 0.9F;
@@ -1305,6 +1323,7 @@ public abstract class EntityLiving extends Entity {
         this.aN *= this.bB();
         this.e(this.bC, this.bD);
         this.aN = f;
+        timerEntityAIMove.stopTiming(); // Spigot
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("push");
         if (!this.world.isStatic) {
@@ -1313,6 +1332,7 @@ public abstract class EntityLiving extends Entity {
 
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("looting");
+        timerEntityAILoot.startTiming(); // Spigot
         // CraftBukkit - Don't run mob pickup code on players
         if (!this.world.isStatic && !(this instanceof EntityPlayer) && this.canPickUpLoot && !this.bc && this.world.getGameRules().getBoolean("mobGriefing")) {
             List list = this.world.a(EntityItem.class, this.boundingBox.grow(1.0D, 0.0D, 1.0D));
@@ -1377,16 +1397,25 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
+        timerEntityAILoot.stopTiming(); // Spigot
         this.world.methodProfiler.b();
     }
 
     protected void bd() {
+        // Spigot start
+        boolean skip = false;
+        if (!(this instanceof EntityPlayer) && this.ticksLived % 2 != 0) {
+            skip = true;
+        }
+        // Spigot end
+
         List list = this.world.getEntities(this, this.boundingBox.grow(0.20000000298023224D, 0.0D, 0.20000000298023224D));
 
         if (list != null && !list.isEmpty()) {
             for (int i = 0; i < list.size(); ++i) {
                 Entity entity = (Entity) list.get(i);
 
+                if (!(entity instanceof EntityLiving) && skip) { continue; } // Spigot
                 if (entity.M()) {
                     this.o(entity);
                 }

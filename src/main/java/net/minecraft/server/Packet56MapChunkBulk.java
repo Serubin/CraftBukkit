@@ -24,10 +24,11 @@ public class Packet56MapChunkBulk extends Packet {
         @Override
         protected Deflater initialValue() {
             // Don't use higher compression level, slows things down too much
-            return new Deflater(6);
+            return new Deflater(4);
         }
     };
     // CraftBukkit end
+    private World world; // Spigot (Orebfuscator) Keep track of world
 
     public Packet56MapChunkBulk() {}
 
@@ -46,6 +47,9 @@ public class Packet56MapChunkBulk extends Packet {
             Chunk chunk = (Chunk) list.get(k);
             ChunkMap chunkmap = Packet51MapChunk.a(chunk, true, '\uffff');
 
+            world = chunk.world; // Spigot (Orebfuscator)
+            /* Spigot (Orebfuscator) - Don't use the build buffer yet. Copy to it more efficiently once the chunk is obfuscated
+            // Moved to compress()
             if (buildBuffer.length < j + chunkmap.a.length) {
                 byte[] abyte = new byte[j + chunkmap.a.length];
 
@@ -53,7 +57,7 @@ public class Packet56MapChunkBulk extends Packet {
                 buildBuffer = abyte;
             }
 
-            System.arraycopy(chunkmap.a, 0, buildBuffer, j, chunkmap.a.length);
+            System.arraycopy(chunkmap.a, 0, buildBuffer, j, chunkmap.a.length); */
             j += chunkmap.a.length;
             this.c[k] = chunk.x;
             this.d[k] = chunk.z;
@@ -82,6 +86,21 @@ public class Packet56MapChunkBulk extends Packet {
             return;
         }
 
+        // Spigot (Orebfuscator) start - Obfuscate chunks
+        int finalBufferSize = 0;
+        for (int i = 0; i < a.length; i++) {
+            org.bukkit.craftbukkit.OrebfuscatorManager.obfuscate(c[i], d[i], a[i], inflatedBuffers[i], world);
+            finalBufferSize += inflatedBuffers[i].length;
+        }
+
+        // Now it's time to efficiently copy the chunk to the build buffer
+        buildBuffer = new byte[finalBufferSize];
+        int bufferLocation = 0;
+        for (int i = 0; i < a.length; i++) {
+            System.arraycopy(inflatedBuffers[i], 0, buildBuffer, bufferLocation, inflatedBuffers[i].length);
+            bufferLocation += inflatedBuffers[i].length;
+        }
+        // Spigot (Orebfuscator) end
         Deflater deflater = localDeflater.get();
         deflater.reset();
         deflater.setInput(this.buildBuffer);

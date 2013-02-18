@@ -111,6 +111,13 @@ public abstract class Entity {
     public UUID uniqueId = UUID.randomUUID(); // CraftBukkit
     public boolean valid = false; // CraftBukkit
 
+    // Spigot start
+    public boolean inWater = false;
+    public final byte activationType = org.bukkit.craftbukkit.Spigot.initializeEntityActivationType(this);
+    public final boolean defaultActivationState = org.bukkit.craftbukkit.Spigot.initializeEntityActivationState(this);
+    public boolean isActivated = defaultActivationState;
+    // Spigot end
+
     public Entity(World world) {
         this.id = entityCount++;
         this.l = 1.0D;
@@ -423,6 +430,7 @@ public abstract class Entity {
     }
 
     public void move(double d0, double d1, double d2) {
+        if (d0 == 0 && d1 == 0 && d2 == 0) { return; } // Spigot
         if (this.Y) {
             this.boundingBox.d(d0, d1, d2);
             this.locX = (this.boundingBox.a + this.boundingBox.d) / 2.0D;
@@ -861,6 +869,7 @@ public abstract class Entity {
             this.ad = false;
         }
 
+        this.inWater = this.ad; // Spigot
         return this.ad;
     }
 

@@ -63,10 +63,6 @@ public class EntitySquid extends EntityWaterAnimal {
         // CraftBukkit end
     }
 
-    public boolean H() {
-        return this.world.a(this.boundingBox.grow(0.0D, -0.6000000238418579D, 0.0D), Material.WATER, (Entity) this);
-    }
-
     public void c() {
         super.c();
         this.e = this.d;

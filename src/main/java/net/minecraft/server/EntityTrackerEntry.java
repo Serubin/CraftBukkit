@@ -73,7 +73,7 @@ public class EntityTrackerEntry {
             this.broadcast(new Packet39AttachEntity(this.tracker, this.tracker.vehicle));
         }
 
-        if (this.tracker instanceof EntityItemFrame && this.m % 10 == 0) {
+        if (this.tracker instanceof EntityItemFrame && this.m % tracker.world.getServer().mapSendInterval == 0) {
             EntityItemFrame i4 = (EntityItemFrame) this.tracker;
             ItemStack i5 = i4.i();
 

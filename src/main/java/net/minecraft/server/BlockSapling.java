@@ -27,7 +27,7 @@ public class BlockSapling extends BlockFlower {
             if (world.getLightLevel(i, j + 1, k) >= 9 && random.nextInt(7) == 0) {
                 int l = world.getData(i, j, k);
 
-                if ((l & 8) == 0) {
+                if (random.nextInt(Math.max(2, (int) ((world.growthOdds / world.getWorld().treeGrowthModifier * 7) + 0.5F))) == 0) { // Spigot
                     world.setData(i, j, k, l | 8);
                 } else {
                     this.grow(world, i, j, k, random, false, null, null); // CraftBukkit - added bonemeal, player and itemstack

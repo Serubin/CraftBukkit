@@ -17,7 +17,7 @@ public class PendingConnection extends Connection {
     private byte[] d;
     public static Logger logger = Logger.getLogger("Minecraft");
     private static Random random = new Random();
-    public NetworkManager networkManager;
+    public org.spigotmc.netty.NettyNetworkManager networkManager;
     public boolean c = false;
     private MinecraftServer server;
     private int g = 0;
@@ -28,10 +28,15 @@ public class PendingConnection extends Connection {
     private SecretKey l = null;
     public String hostname = ""; // CraftBukkit - add field
 
+    public PendingConnection(MinecraftServer minecraftserver, org.spigotmc.netty.NettyNetworkManager networkManager) {
+        this.server = minecraftserver;
+        this.networkManager = networkManager;
+    }
+
     public PendingConnection(MinecraftServer minecraftserver, Socket socket, String s) throws java.io.IOException { // CraftBukkit - throws IOException
         this.server = minecraftserver;
-        this.networkManager = new NetworkManager(socket, s, this, minecraftserver.F().getPrivate());
-        this.networkManager.e = 0;
+        // this.networkManager = new NetworkManager(socket, s, this, minecraftserver.F().getPrivate());
+        // this.networkManager.e = 0;
     }
 
     // CraftBukkit start
@@ -147,7 +152,7 @@ public class PendingConnection extends Connection {
             // CraftBukkit
             org.bukkit.event.server.ServerListPingEvent pingEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callServerListPingEvent(this.server.server, getSocket().getInetAddress(), this.server.getMotd(), playerlist.getPlayerCount(), playerlist.getMaxPlayers());
 
-            if (packet254getinfo.a == 1) {
+            if (true) {
                 // CraftBukkit start - fix decompile issues, don't create a list from an array
                 Object[] list = new Object[] { 1, 51, this.server.getVersion(), pingEvent.getMotd(), playerlist.getPlayerCount(), pingEvent.getMaxPlayers() };
 

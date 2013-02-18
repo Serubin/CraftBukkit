@@ -25,6 +25,7 @@ import org.bukkit.craftbukkit.util.Waitable;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.entity.Player;
+import org.bukkit.event.CustomTimingsHandler;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
@@ -68,6 +69,7 @@ public class PlayerConnection extends Connection {
     private double q;
     public boolean checkMovement = true; // CraftBukkit - private -> public
     private IntHashMap s = new IntHashMap();
+    static private CustomTimingsHandler playerCommandTimer = new CustomTimingsHandler("playerCommand"); // Spigot
 
     public PlayerConnection(MinecraftServer minecraftserver, INetworkManager inetworkmanager, EntityPlayer entityplayer) {
         this.minecraftServer = minecraftserver;
@@ -852,8 +854,19 @@ public class PlayerConnection extends Connection {
 
                 this.chat(s, packet3chat.a_());
 
+                // Spigot start
+                boolean isCounted = true;
+                if (server.spamGuardExclusions != null) {
+                    for (String excluded : server.spamGuardExclusions) {
+                        if (s.startsWith(excluded)) {
+                            isCounted = false;
+                            break;
+                        }
+                    }
+                }
                 // This section stays because it is only applicable to packets
-                if (chatSpamField.addAndGet(this, 20) > 200 && !this.minecraftServer.getPlayerList().isOp(this.player.name)) { // CraftBukkit use thread-safe spam
+                if (isCounted && chatSpamField.addAndGet(this, 20) > 200 && !this.minecraftServer.getPlayerList().isOp(this.player.name)) { // CraftBukkit use thread-safe spam
+                    // Spigot end
                     // CraftBukkit start
                     if (packet3chat.a_()) {
                         Waitable waitable = new Waitable() {
@@ -965,6 +978,7 @@ public class PlayerConnection extends Connection {
     // CraftBukkit end
 
     private void handleCommand(String s) {
+        playerCommandTimer.startTiming(); // Spigot
         // CraftBukkit start
         CraftPlayer player = this.getPlayer();
 
@@ -972,19 +986,23 @@ public class PlayerConnection extends Connection {
         this.server.getPluginManager().callEvent(event);
 
         if (event.isCancelled()) {
+            playerCommandTimer.stopTiming(); // Spigot
             return;
         }
 
         try {
-            logger.info(event.getPlayer().getName() + " issued server command: " + event.getMessage()); // CraftBukkit
+            if (server.logCommands) logger.info(event.getPlayer().getName() + " issued server command: " + event.getMessage()); // Spigot
             if (this.server.dispatchCommand(event.getPlayer(), event.getMessage().substring(1))) {
+                playerCommandTimer.stopTiming(); // Spigot
                 return;
             }
         } catch (org.bukkit.command.CommandException ex) {
             player.sendMessage(org.bukkit.ChatColor.RED + "An internal error occurred while attempting to perform this command");
             Logger.getLogger(PlayerConnection.class.getName()).log(Level.SEVERE, null, ex);
+            playerCommandTimer.stopTiming(); // Spigot
             return;
         }
+        playerCommandTimer.stopTiming(); // Spigot
         // CraftBukkit end
 
         /* CraftBukkit start - No longer needed as we have already handled it in server.dispatchServerCommand above.
@@ -1353,8 +1371,9 @@ public class PlayerConnection extends Connection {
                     flag = false;
                 } else {
                     for (i = 0; i < packet130updatesign.lines[j].length(); ++i) {
-                        if (SharedConstants.allowedCharacters.indexOf(packet130updatesign.lines[j].charAt(i)) < 0) {
+                        if (!SharedConstants.isAllowedChatCharacter(packet130updatesign.lines[j].charAt(i))) {
                             flag = false;
+                            break;
                         }
                     }
                 }

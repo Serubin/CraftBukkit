@@ -93,7 +93,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         log.info("Starting Minecraft server on " + (this.getServerIp().length() == 0 ? "*" : this.getServerIp()) + ":" + this.G());
 
         try {
-            this.r = new DedicatedServerConnection(this, inetaddress, this.G());
+            this.r = new org.spigotmc.netty.NettyServerConnection(this, inetaddress, this.G());
         } catch (Throwable ioexception) { // CraftBukkit - IOException -> Throwable
             log.warning("**** FAILED TO BIND TO PORT!");
             log.log(Level.WARNING, "The exception was: " + ioexception.toString());
