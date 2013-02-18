@@ -253,7 +253,7 @@ public abstract class PlayerList {
 
             event.disallow(PlayerLoginEvent.Result.KICK_BANNED, s1);
         } else if (!this.isWhitelisted(s)) {
-            event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, "You are not white-listed on this server!");
+            event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, cserver.whitelistMessage); // Spigot
         } else {
             String s2 = socketaddress.toString();
 
@@ -322,10 +322,10 @@ public abstract class PlayerList {
 
     // CraftBukkit start
     public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, boolean flag) {
-        return this.moveToWorld(entityplayer, i, flag, null);
+        return this.moveToWorld(entityplayer, i, flag, null, true);
     }
 
-    public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, boolean flag, Location location) {
+    public EntityPlayer moveToWorld(EntityPlayer entityplayer, int i, boolean flag, Location location, boolean avoidSuffocation) {
         // CraftBukkit end
         entityplayer.p().getTracker().untrackPlayer(entityplayer);
         // entityplayer.p().getTracker().untrackEntity(entityplayer); // CraftBukkit
@@ -378,7 +378,7 @@ public abstract class PlayerList {
 
         worldserver.chunkProviderServer.getChunkAt((int) entityplayer1.locX >> 4, (int) entityplayer1.locZ >> 4);
 
-        while (!worldserver.getCubes(entityplayer1, entityplayer1.boundingBox).isEmpty()) {
+        while (avoidSuffocation && !worldserver.getCubes(entityplayer1, entityplayer1.boundingBox).isEmpty()) { // CraftBukkit
             entityplayer1.setPosition(entityplayer1.locX, entityplayer1.locY + 1.0D, entityplayer1.locZ);
         }
 
@@ -451,7 +451,7 @@ public abstract class PlayerList {
             }
         }
 
-        TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().s() : null;
+        TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().s() : org.bukkit.craftbukkit.CraftTravelAgent.DEFAULT; // return arbitrary TA to compensate for implementation dependent plugins
         PlayerPortalEvent event = new PlayerPortalEvent(entityplayer.getBukkitEntity(), enter, exit, agent, cause);
         event.useTravelAgent(useTravelAgent);
         Bukkit.getServer().getPluginManager().callEvent(event);
@@ -459,7 +459,10 @@ public abstract class PlayerList {
             return;
         }
 
-        exit = event.useTravelAgent() ? event.getPortalTravelAgent().findOrCreate(exit) : event.getTo();
+        exit = event.useTravelAgent() ? event.getPortalTravelAgent().findOrCreate(event.getTo()) : event.getTo();
+        if (exit == null) {
+            return;
+        }
         exitWorld = ((CraftWorld) exit.getWorld()).getHandle();
 
         Vector velocity = entityplayer.getBukkitEntity().getVelocity();
@@ -468,7 +471,7 @@ public abstract class PlayerList {
         exitWorld.s().adjustExit(entityplayer, exit, velocity);
         exitWorld.chunkProviderServer.forceChunkLoad = before;
 
-        this.moveToWorld(entityplayer, exitWorld.dimension, true, exit);
+        this.moveToWorld(entityplayer, exitWorld.dimension, true, exit, false); // Vanilla doesn't check for suffocation when handling portals, so neither should we
         if (entityplayer.motX != velocity.getX() || entityplayer.motY != velocity.getY() || entityplayer.motZ != velocity.getZ()) {
             entityplayer.getBukkitEntity().setVelocity(velocity);
         }
@@ -652,13 +655,16 @@ public abstract class PlayerList {
             this.o = 0;
         }
 
-        /* CraftBukkit start - remove updating of lag to players -- it spams way to much on big servers.
-        if (this.o < this.players.size()) {
+        if (org.bukkit.craftbukkit.Spigot.tabPing && this.o < this.players.size()) {
             EntityPlayer entityplayer = (EntityPlayer) this.players.get(this.o);
-
-            this.sendAll(new Packet201PlayerInfo(entityplayer.name, true, entityplayer.ping));
+            Packet packet = new Packet201PlayerInfo(entityplayer.listName, true, entityplayer.ping);
+            for (int i = 0; i < this.players.size(); ++i) {
+                PlayerConnection con = ((EntityPlayer) this.players.get(i)).playerConnection;
+                if (con.getPlayer().canSee(entityplayer.getBukkitEntity())) {
+                    con.sendPacket(packet);
+                }
+            }
         }
-        // CraftBukkit end */
     }
 
     public void sendAll(Packet packet) {
@@ -921,7 +927,13 @@ public abstract class PlayerList {
 
     public void r() {
         while (!this.players.isEmpty()) {
-            ((EntityPlayer) this.players.get(0)).playerConnection.disconnect(this.server.server.getShutdownMessage()); // CraftBukkit - add custom shutdown message
+            // Spigot start
+            EntityPlayer p = (EntityPlayer) this.players.get(0);
+            p.playerConnection.disconnect(this.server.server.getShutdownMessage());
+            if ((!this.players.isEmpty()) && (this.players.get(0) == p)) {
+                this.players.remove(0); // Prevent shutdown hang if already disconnected
+            }
+            // Spigot end
         }
     }
 

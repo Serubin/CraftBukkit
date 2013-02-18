@@ -111,6 +111,13 @@ public abstract class Entity {
     public UUID uniqueId = UUID.randomUUID(); // CraftBukkit
     public boolean valid = false; // CraftBukkit
 
+    // Spigot start
+    public boolean inWater = false;
+    public final byte activationType = org.bukkit.craftbukkit.Spigot.initializeEntityActivationType(this);
+    public final boolean defaultActivationState = org.bukkit.craftbukkit.Spigot.initializeEntityActivationState(this);
+    public boolean isActivated = defaultActivationState;
+    // Spigot end
+
     public Entity(World world) {
         this.id = entityCount++;
         this.l = 1.0D;
@@ -423,6 +430,7 @@ public abstract class Entity {
     }
 
     public void move(double d0, double d1, double d2) {
+        if (d0 == 0 && d1 == 0 && d2 == 0) { return; } // Spigot
         if (this.Y) {
             this.boundingBox.d(d0, d1, d2);
             this.locX = (this.boundingBox.a + this.boundingBox.d) / 2.0D;
@@ -861,6 +869,7 @@ public abstract class Entity {
             this.ad = false;
         }
 
+        this.inWater = this.ad; // Spigot
         return this.ad;
     }
 
@@ -1764,14 +1773,14 @@ public abstract class Entity {
             Location exit = exitWorld != null ? minecraftserver.getPlayerList().calculateTarget(enter, minecraftserver.getWorldServer(i)) : null;
             boolean useTravelAgent = exitWorld != null && !(this.dimension == 1 && exitWorld.dimension == 1); // don't use agent for custom worlds or return from THE_END
 
-            TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().s() : null;
+            TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().s() : org.bukkit.craftbukkit.CraftTravelAgent.DEFAULT; // return arbitrary TA to compensate for implementation dependent plugins 
             EntityPortalEvent event = new EntityPortalEvent(this.getBukkitEntity(), enter, exit, agent);
             event.useTravelAgent(useTravelAgent);
             event.getEntity().getServer().getPluginManager().callEvent(event);
             if (event.isCancelled() || event.getTo() == null || !this.isAlive()) {
                 return;
             }
-            exit = event.useTravelAgent() ? event.getPortalTravelAgent().findOrCreate(exit) : event.getTo();
+            exit = event.useTravelAgent() ? event.getPortalTravelAgent().findOrCreate(event.getTo()) : event.getTo();
             this.teleportTo(exit, true);
         }
     }

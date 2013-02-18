@@ -95,6 +95,12 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
     public int autosavePeriod;
     // CraftBukkit end
+    // Spigot start
+    private static final int TPS = 20;
+    private static final int TICK_TIME = 1000000000 / TPS;
+    public static double currentTPS = 0;
+    private static long catchupTime = 0;
+    // Spigot end
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - signature file -> OptionSet
         l = this;
@@ -406,39 +412,23 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public void run() {
         try {
             if (this.init()) {
-                long i = System.currentTimeMillis();
-
-                for (long j = 0L; this.isRunning; this.Q = true) {
-                    long k = System.currentTimeMillis();
-                    long l = k - i;
-
-                    if (l > 2000L && i - this.R >= 15000L) {
-                        if (this.server.getWarnOnOverload()) // CraftBukkit - Added option to suppress warning messages
-                        log.warning("Can\'t keep up! Did the system time change, or is the server overloaded?");
-                        l = 2000L;
-                        this.R = i;
-                    }
-
-                    if (l < 0L) {
-                        log.warning("Time ran backwards! Did the system time change?");
-                        l = 0L;
-                    }
-
-                    j += l;
-                    i = k;
-                    if (this.worlds.get(0).everyoneDeeplySleeping()) { // CraftBukkit
-                        this.q();
-                        j = 0L;
+                // Spigot start
+                for (long lastTick = 0L; this.isRunning; this.Q = true) {
+                    long curTime = System.nanoTime();
+                    long wait = TICK_TIME - (curTime - lastTick) - catchupTime;
+                    if (wait > 0) {
+                        Thread.sleep(wait / 1000000);
+                        catchupTime = 0;
+                        continue;
                     } else {
-                        while (j > 50L) {
-                            MinecraftServer.currentTick = (int) (System.currentTimeMillis() / 50); // CraftBukkit
-                            j -= 50L;
-                            this.q();
-                        }
+                        catchupTime = Math.min(TICK_TIME * TPS, Math.abs(wait));
                     }
-
-                    Thread.sleep(1L);
+                    currentTPS = (currentTPS * 0.95) + (1E9 / (curTime - lastTick) * 0.05);
+                    lastTick = curTime;
+                    MinecraftServer.currentTick++;
+                    this.q();
                 }
+                // Spigot end
             } else {
                 this.a((CrashReport) null);
             }
@@ -463,6 +453,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
             this.a(crashreport);
         } finally {
+            org.bukkit.craftbukkit.util.WatchdogThread.stopping(); // Spigot
             try {
                 this.stop();
                 this.isStopped = true;
@@ -673,6 +664,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 	    }
         }
         this.methodProfiler.b();
+        org.bukkit.craftbukkit.util.WatchdogThread.tick(); // Spigot
     }
 
     public boolean getAllowNether() {
@@ -776,6 +768,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
                 dedicatedserver.an();
             }
             */
+            dedicatedserver.primaryThread.setUncaughtExceptionHandler(new org.bukkit.craftbukkit.util.ExceptionHandler()); // Spigot
 
             dedicatedserver.primaryThread.start();
             // Runtime.getRuntime().addShutdownHook(new ThreadShutdown(dedicatedserver));

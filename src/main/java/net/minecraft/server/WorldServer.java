@@ -1,5 +1,7 @@
 package net.minecraft.server;
 
+import gnu.trove.iterator.TLongShortIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -12,6 +14,7 @@ import java.util.TreeSet;
 // CraftBukkit start
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.util.LongHash;
+import org.bukkit.craftbukkit.util.LongObjectHashMap;
 
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.weather.LightningStrikeEvent;
@@ -24,7 +27,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
     private final MinecraftServer server;
     public EntityTracker tracker; // CraftBukkit - private final -> public
     private final PlayerChunkMap manager;
-    private Set L;
+    private LongObjectHashMap<Set<NextTickListEntry>> L; // CraftBukkit - change to something chunk friendly
     private TreeSet M;
     public ChunkProviderServer chunkProviderServer;
     public boolean savingDisabled;
@@ -46,13 +49,13 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         // CraftBukkit end
         this.server = minecraftserver;
         this.tracker = new EntityTracker(this);
-        this.manager = new PlayerChunkMap(this, minecraftserver.getPlayerList().o());
+        this.manager = new PlayerChunkMap(this, getWorld().viewDistance); // Spigot
         if (this.entitiesById == null) {
             this.entitiesById = new IntHashMap();
         }
 
         if (this.L == null) {
-            this.L = new HashSet();
+            this.L = new LongObjectHashMap<Set<NextTickListEntry>>(); // CraftBukkit
         }
 
         if (this.M == null) {
@@ -154,9 +157,13 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
         long time = this.worldData.getTime();
         if (this.getGameRules().getBoolean("doMobSpawning") && (this.allowMonsters || this.allowAnimals) && (this instanceof WorldServer && this.players.size() > 0)) {
+            timings.mobSpawn.startTiming(); // Spigot
             SpawnerCreature.spawnEntities(this, this.allowMonsters && (this.ticksPerMonsterSpawns != 0 && time % this.ticksPerMonsterSpawns == 0L), this.allowAnimals && (this.ticksPerAnimalSpawns != 0 && time % this.ticksPerAnimalSpawns == 0L), this.worldData.getTime() % 400L == 0L);
+            timings.mobSpawn.stopTiming(); // Spigot
         }
         // CraftBukkit end
+        timings.doTickRest.startTiming(); // Spigot
+        this.getWorld().processChunkGC();   // Spigot
         this.methodProfiler.c("chunkSource");
         this.chunkProvider.unloadChunks();
         int j = this.a(1.0F);
@@ -183,6 +190,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         this.V();
 
         this.getWorld().processChunkGC(); // CraftBukkit
+        timings.doTickRest.stopTiming(); // Spigot
     }
 
     public BiomeMeta a(EnumCreatureType enumcreaturetype, int i, int j, int k) {
@@ -267,15 +275,31 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
     }
 
     protected void g() {
+    	 // Spigot start
+        this.aggregateTicks--;
+        if (this.aggregateTicks != 0) return;
+        aggregateTicks = this.getWorld().aggregateTicks;
+        // Spigot end
         super.g();
         int i = 0;
         int j = 0;
         // CraftBukkit start
-        // Iterator iterator = this.chunkTickList.iterator();
+        // Iterator iterator = this.chunkTickList.iterator(); // CraftBukkit
 
-        for (long chunkCoord : this.chunkTickList.popAll()) {
-            int chunkX = LongHash.msw(chunkCoord);
-            int chunkZ = LongHash.lsw(chunkCoord);
+        // CraftBukkit start
+        // Spigot start
+        for (TLongShortIterator iter = chunkTickList.iterator(); iter.hasNext();) {
+            iter.advance();
+            long chunkCoord = iter.key();
+            int chunkX = World.keyToX(chunkCoord);
+            int chunkZ = World.keyToZ(chunkCoord);
+            // If unloaded, or in procedd of being unloaded, drop it
+            if ((!this.isChunkLoaded(chunkX,  chunkZ)) || (this.chunkProviderServer.unloadQueue.contains(chunkX, chunkZ))) {
+                iter.remove();
+                continue;
+            }
+            int players = iter.value();
+            // Spigot end
             // ChunkCoordIntPair chunkcoordintpair = (ChunkCoordIntPair) iterator.next();
             int k = chunkX * 16;
             int l = chunkZ * 16;
@@ -373,6 +397,14 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
 
                         if (block != null && block.isTicking()) {
                             ++i;
+                            // Spigot start
+                            if (players < 1) {
+                                //grow fast if no players are in this chunk
+                                this.growthOdds = modifiedOdds;
+                            } else {
+                                this.growthOdds = 100;
+                            }
+                            // Spigot end
                             block.b(this, k2 + k, i3 + chunksection.d(), l2 + l, this.random);
                         }
                     }
@@ -413,10 +445,11 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
                 nextticklistentry.a(j1);
             }
 
-            if (!this.L.contains(nextticklistentry)) {
-                this.L.add(nextticklistentry);
-                this.M.add(nextticklistentry);
-            }
+            // if (!this.L.contains(nextticklistentry)) {
+                // this.L.add(nextticklistentry);
+                // this.M.add(nextticklistentry);
+            // }
+            addNextTickIfNeeded(nextticklistentry); // CraftBukkit
         }
     }
 
@@ -427,10 +460,11 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
             nextticklistentry.a((long) i1 + this.worldData.getTime());
         }
 
-        if (!this.L.contains(nextticklistentry)) {
-            this.L.add(nextticklistentry);
-            this.M.add(nextticklistentry);
-        }
+        //if (!this.L.contains(nextticklistentry)) {
+        //    this.L.add(nextticklistentry);
+        //    this.M.add(nextticklistentry);
+        //}
+        addNextTickIfNeeded(nextticklistentry); // CraftBukkit
     }
 
     public void tickEntities() {
@@ -452,9 +486,9 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
     public boolean a(boolean flag) {
         int i = this.M.size();
 
-        if (i != this.L.size()) {
-            throw new IllegalStateException("TickNextTick list out of synch");
-        } else {
+        //if (i != this.L.size()) { // Spigot
+        //    throw new IllegalStateException("TickNextTick list out of synch"); // Spigot
+        //} else { // Spigot
             if (i > 1000) {
                 // CraftBukkit start - if the server has too much to process over time, try to alleviate that
                 if (i > 20 * 1000) {
@@ -472,8 +506,11 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
                     break;
                 }
 
-                this.M.remove(nextticklistentry);
-                this.L.remove(nextticklistentry);
+                // Spigot start
+                //this.M.remove(nextticklistentry);
+                //this.L.remove(nextticklistentry);
+                this.removeNextTickIfNeeded(nextticklistentry);
+                // Spigot end
                 byte b0 = 8;
 
                 if (this.d(nextticklistentry.a - b0, nextticklistentry.b - b0, nextticklistentry.c - b0, nextticklistentry.a + b0, nextticklistentry.b + b0, nextticklistentry.c + b0)) {
@@ -502,10 +539,12 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
             }
 
             return !this.M.isEmpty();
-        }
+        // } // Spigot
     }
 
     public List a(Chunk chunk, boolean flag) {
+        return this.getNextTickEntriesForChunk(chunk, flag); // Spigot
+        /* Spigot start
         ArrayList arraylist = null;
         ChunkCoordIntPair chunkcoordintpair = chunk.l();
         int i = chunkcoordintpair.x << 4;
@@ -532,6 +571,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         }
 
         return arraylist;
+        // Spigot end */
     }
 
     public void entityJoinedWorld(Entity entity, boolean flag) {
@@ -610,7 +650,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         }
 
         if (this.L == null) {
-            this.L = new HashSet();
+            this.L = new LongObjectHashMap<Set<NextTickListEntry>>();
         }
 
         if (this.M == null) {
@@ -883,4 +923,48 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
     public PortalTravelAgent s() {
         return this.P;
     }
+
+    // Spigot start
+    private void addNextTickIfNeeded(NextTickListEntry ent) {
+        long coord = LongHash.toLong(ent.a >> 4, ent.c >> 4);
+        Set<NextTickListEntry> chunkset = L.get(coord);
+        if (chunkset == null) {
+            chunkset = new HashSet<NextTickListEntry>();
+            L.put(coord, chunkset);
+        } else if (chunkset.contains(ent)) {
+            return;
+        }
+        chunkset.add(ent);
+        M.add(ent);
+    }
+
+    private void removeNextTickIfNeeded(NextTickListEntry ent) {
+        long coord = LongHash.toLong(ent.a >> 4, ent.c >> 4);
+        Set<NextTickListEntry> chunkset = L.get(coord);
+        if (chunkset == null) {
+            return;
+        }
+        if (chunkset.remove(ent)) {
+            M.remove(ent);
+            if (chunkset.isEmpty()) {
+                L.remove(coord);
+            }
+        }
+    }
+
+    private List<NextTickListEntry> getNextTickEntriesForChunk(Chunk chunk, boolean remove) {
+        long coord = LongHash.toLong(chunk.x, chunk.z);
+        Set<NextTickListEntry> chunkset = L.get(coord);
+        if (chunkset == null) {
+            return null;
+        }
+        List<NextTickListEntry> list = new ArrayList<NextTickListEntry>(chunkset);
+        if (remove) {
+            L.remove(coord);
+            M.removeAll(list);
+            chunkset.clear();
+        }
+        return list;
+    }
+    // Spigot end
 }

@@ -212,10 +212,17 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void kickPlayer(String message) {
+        // Spigot start
+        kickPlayer(message, false);
+    }
+
+    public void kickPlayer(String message, boolean async){
         if (getHandle().playerConnection == null) return;
+        if (!async && !Bukkit.isPrimaryThread()) throw new IllegalStateException("Cannot kick player from asynchronous thread!"); // Spigot
 
         getHandle().playerConnection.disconnect(message == null ? "" : message);
     }
+    // Spigot end
 
     public void setCompassTarget(Location loc) {
         if (getHandle().playerConnection == null) return;
@@ -381,15 +388,16 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         WorldServer fromWorld = ((CraftWorld) from.getWorld()).getHandle();
         WorldServer toWorld = ((CraftWorld) to.getWorld()).getHandle();
 
+        // Close any foreign inventory
+        if (getHandle().activeContainer != getHandle().defaultContainer) {
+            getHandle().closeInventory();
+        }
+
         // Check if the fromWorld and toWorld are the same.
         if (fromWorld == toWorld) {
             entity.playerConnection.teleport(to);
         } else {
-            // Close any foreign inventory
-            if (getHandle().activeContainer != getHandle().defaultContainer){
-                getHandle().closeInventory();
-            }
-            server.getHandle().moveToWorld(entity, toWorld.dimension, true, to);
+            server.getHandle().moveToWorld(entity, toWorld.dimension, true, to, true);
         }
         return true;
     }

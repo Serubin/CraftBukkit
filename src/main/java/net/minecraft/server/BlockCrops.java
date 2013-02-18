@@ -30,7 +30,7 @@ public class BlockCrops extends BlockFlower {
             if (l < 7) {
                 float f = this.l(world, i, j, k);
 
-                if (random.nextInt((int) (25.0F / f) + 1) == 0) {
+                if (random.nextInt((int) (world.growthOdds / world.getWorld().wheatGrowthModifier * (25.0F / f)) + 1) == 0) { // Spigot
                     org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(world, i, j, k, this.id, ++l); // CraftBukkit
                 }
             }
