@@ -25,7 +25,7 @@ public class PacketEncoder extends MessageToByteEncoder<Packet> {
             dataOut = new DataOutputStream(new ByteBufOutputStream(outBuf));
         }
 
-        out.writeByte(msg.k());
+        out.writeByte(msg.n());
         msg.a(dataOut);
         out.writeBytes(outBuf);
         out.discardSomeReadBytes();

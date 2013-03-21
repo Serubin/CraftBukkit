@@ -7,6 +7,7 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.Packet;
 
 /**
@@ -32,7 +33,7 @@ public class PacketDecoder extends ReplayingDecoder<ReadState> {
         switch (state()) {
             case HEADER:
                 short packetId = in.readUnsignedByte();
-                packet = Packet.d(packetId);
+                packet = Packet.a(MinecraftServer.getServer().getLogger(), packetId);
                 if (packet == null) {
                     throw new IOException("Bad packet id " + packetId);
                 }

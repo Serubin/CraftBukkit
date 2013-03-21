@@ -15,7 +15,6 @@ import org.bukkit.craftbukkit.chunkio.ChunkIOExecutor;
 import org.bukkit.craftbukkit.util.LongHash;
 import org.bukkit.craftbukkit.util.LongHashSet;
 import org.bukkit.craftbukkit.util.LongObjectHashMap;
-import org.bukkit.event.CustomTimingsHandler;
 import org.bukkit.event.world.ChunkUnloadEvent;
 // CraftBukkit end
 
@@ -29,7 +28,6 @@ public class ChunkProviderServer implements IChunkProvider {
     public boolean forceChunkLoad = false; // true -> false
     public LongObjectHashMap<Chunk> chunks = new LongObjectHashMap<Chunk>();
     public WorldServer world;
-    static private CustomTimingsHandler syncChunkLoadTimer = new CustomTimingsHandler("syncChunkLoad"); // Spigot
     // CraftBukkit end
 
     public ChunkProviderServer(WorldServer worldserver, IChunkLoader ichunkloader, IChunkProvider ichunkprovider) {
@@ -105,7 +103,7 @@ public class ChunkProviderServer implements IChunkProvider {
         // CraftBukkit end
 
         if (chunk == null) {
-            syncChunkLoadTimer.startTiming(); // Spigot
+            org.bukkit.craftbukkit.SpigotTimings.syncChunkLoadTimer.startTiming(); // Spigot
             chunk = this.loadChunk(i, j);
             if (chunk == null) {
                 if (this.chunkProvider == null) {
@@ -144,7 +142,7 @@ public class ChunkProviderServer implements IChunkProvider {
             // CraftBukkit end
 
             chunk.a(this, this, i, j);
-            syncChunkLoadTimer.stopTiming(); // Spigot
+            org.bukkit.craftbukkit.SpigotTimings.syncChunkLoadTimer.stopTiming(); // Spigot
         }
 
         // CraftBukkit start - If we didn't need to load the chunk run the callback now
@@ -163,8 +161,8 @@ public class ChunkProviderServer implements IChunkProvider {
         chunk = chunk == null ? (!this.world.isLoading && !this.forceChunkLoad ? this.emptyChunk : this.getChunkAt(i, j)) : chunk;
         if (chunk == this.emptyChunk) return chunk;
         if (i != chunk.x || j != chunk.z) {
-            MinecraftServer.log.severe("Chunk (" + chunk.x + ", " + chunk.z + ") stored at  (" + i + ", " + j + ") in world '" + world.getWorld().getName() + "'");
-            MinecraftServer.log.severe(chunk.getClass().getName());
+            this.world.getLogger().severe("Chunk (" + chunk.x + ", " + chunk.z + ") stored at  (" + i + ", " + j + ") in world '" + world.getWorld().getName() + "'");
+            this.world.getLogger().severe(chunk.getClass().getName());
             Throwable ex = new Throwable();
             ex.fillInStackTrace();
             ex.printStackTrace();

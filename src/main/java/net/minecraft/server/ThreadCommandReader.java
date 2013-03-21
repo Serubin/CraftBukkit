@@ -11,6 +11,7 @@ class ThreadCommandReader extends Thread {
     final DedicatedServer server;
 
     ThreadCommandReader(DedicatedServer dedicatedserver) {
+        super("Command Reader Thread"); // Spigot
         this.server = dedicatedserver;
     }
 
@@ -39,7 +40,7 @@ class ThreadCommandReader extends Thread {
             }
         } catch (IOException ioexception) {
             // CraftBukkit
-            MinecraftServer.log.log(java.util.logging.Level.SEVERE, null, ioexception);
+            java.util.logging.Logger.getLogger("").log(java.util.logging.Level.SEVERE, null, ioexception);
         }
     }
 }

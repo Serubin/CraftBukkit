@@ -1,5 +1,6 @@
 package org.spigotmc.netty;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelException;
@@ -10,19 +11,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.net.InetAddress;
+import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PendingConnection;
 import net.minecraft.server.ServerConnection;
-import org.bouncycastle.crypto.BufferedBlockCipher;
-import org.bouncycastle.crypto.engines.AESFastEngine;
-import org.bouncycastle.crypto.modes.CFBBlockCipher;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bukkit.Bukkit;
 
 /**
@@ -38,6 +37,7 @@ public class NettyServerConnection extends ServerConnection {
 
     public NettyServerConnection(MinecraftServer ms, InetAddress host, int port) {
         super(ms);
+        int threads = Integer.getInteger("org.spigotmc.netty.threads", 3);
         socket = new ServerBootstrap().channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer() {
             @Override
             public void initChannel(Channel ch) throws Exception {
@@ -53,7 +53,8 @@ public class NettyServerConnection extends ServerConnection {
                         .addLast("encoder", new PacketEncoder())
                         .addLast("manager", new NettyNetworkManager());
             }
-        }).group(new NioEventLoopGroup(3)).localAddress(host, port).bind();
+        }).group(new NioEventLoopGroup(threads, new ThreadFactoryBuilder().setNameFormat("Netty IO Thread - %1$d").build())).localAddress(host, port).bind();
+        MinecraftServer.getServer().getLogger().info("Using Netty NIO with " + threads + " threads for network connections.");
     }
 
     /**
@@ -73,7 +74,7 @@ public class NettyServerConnection extends ServerConnection {
                 Bukkit.getServer().getLogger().log(Level.WARNING, "Failed to handle packet: " + ex, ex);
             }
 
-            if (connection.c) {
+            if (connection.b) {
                 pendingConnections.remove(i--);
             }
         }
@@ -92,14 +93,17 @@ public class NettyServerConnection extends ServerConnection {
     /**
      * Return a Minecraft compatible cipher instance from the specified key.
      *
-     * @param forEncryption whether the returned cipher shall be usable for
-     * encryption or decryption
+     * @param opMode the mode to initialize the cipher in
      * @param key to use as the initial vector
      * @return the initialized cipher
      */
-    public static BufferedBlockCipher getCipher(boolean forEncryption, Key key) {
-        BufferedBlockCipher cip = new BufferedBlockCipher(new CFBBlockCipher(new AESFastEngine(), 8));
-        cip.a(forEncryption, new ParametersWithIV(new KeyParameter(key.getEncoded()), key.getEncoded(), 0, 16));
-        return cip;
+    public static Cipher getCipher(int opMode, Key key) {
+        try {
+            Cipher cip = Cipher.getInstance("AES/CFB8/NoPadding");
+            cip.init(opMode, key, new IvParameterSpec(key.getEncoded()));
+            return cip;
+        } catch (GeneralSecurityException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

@@ -24,6 +24,7 @@ import org.bukkit.*;
 import org.bukkit.Achievement;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
+import org.bukkit.WeatherType;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.DelegateDeserialization;
 import org.bukkit.conversations.Conversation;
@@ -504,6 +505,18 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         setPlayerTime(0, true);
     }
 
+    public void setPlayerWeather(WeatherType type) {
+        getHandle().setPlayerWeather(type, true);
+    }
+
+    public WeatherType getPlayerWeather() {
+        return getHandle().getPlayerWeather();
+    }
+
+    public void resetPlayerWeather() {
+        getHandle().resetPlayerWeather();
+    }
+
     public boolean isBanned() {
         return server.getHandle().getNameBans().isBanned(getName().toLowerCase());
     }
@@ -619,10 +632,28 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         ChunkCoordinates bed = getHandle().getBed();
 
         if (world != null && bed != null) {
-            bed = EntityHuman.getBed(((CraftWorld) world).getHandle(), bed, getHandle().isRespawnForced());
-            if (bed != null) {
+            if (getHandle().isRespawnForced()) {
                 return new Location(world, bed.x, bed.y, bed.z);
             }
+
+            int cx = bed.x >> 4;
+            int cz = bed.z >> 4;
+            boolean before = world.isChunkLoaded(cx, cz);
+
+            if (!before) {
+                world.loadChunk(cx, cz);
+            }
+
+            Location location = null;
+            if (world.getBlockTypeIdAt(bed.x, bed.y, bed.z) == Block.BED.id) {
+                location = new Location(world, bed.x, bed.y, bed.z);
+            }
+
+            if (!before) {
+                world.unloadChunk(cx, cz);
+            }
+
+            return location;
         }
         return null;
     }

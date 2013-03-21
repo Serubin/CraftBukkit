@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.Block;
 import net.minecraft.server.World;
-import org.bukkit.event.CustomTimingsHandler;
+import org.bukkit.CustomTimingsHandler;
 
 public class OrebfuscatorManager {
 
@@ -67,6 +67,9 @@ public class OrebfuscatorManager {
                                 byte data = buffer[index];
                                 // Check if the block should be obfuscated for the default engine modes
                                 if (obfuscateBlocks[data & 0xFF]) {
+                                    if (initialRadius != 0 && !isWorldLoaded(world, startX + x, (i << 4) + y, startZ + z, initialRadius)) {
+                                        continue;
+                                    }
                                     if (initialRadius == 0 || !areAjacentBlocksTransparent(world, startX + x, (i << 4) + y, startZ + z, initialRadius)) {
                                         if (world.getServer().orebfuscatorEngineMode == 2) {
                                             // Replace with random ore.
@@ -115,11 +118,24 @@ public class OrebfuscatorManager {
             }
         }
     }
+    
+    private static boolean isWorldLoaded(World world, int x, int y, int z, int radius) {
+        boolean toret = (y > 0 && y <= world.getHeight() && world.isLoaded(x, y, z));
+        if (toret) {
+            return toret || (radius > 0 && (isWorldLoaded(world, x, y + 1, z, radius - 1)
+                    || isWorldLoaded(world, x, y - 1, z, radius - 1)
+                    || isWorldLoaded(world, x + 1, y, z, radius - 1)
+                    || isWorldLoaded(world, x - 1, y, z, radius - 1)
+                    || isWorldLoaded(world, x, y, z + 1, radius - 1)
+                    || isWorldLoaded(world, x, y, z - 1, radius - 1)));
+        }
+        
+        return false;
+    }
 
     private static boolean areAjacentBlocksTransparent(World world, int x, int y, int z, int radius) {
         return y > 0 && y <= world.getHeight()
-                && world.isLoaded(x, y, z)
-                && !Block.i(world.getTypeId(x, y, z))
+                && !Block.l(world.getTypeId(x, y, z))
                 || (radius > 0 && (areAjacentBlocksTransparent(world, x, y + 1, z, radius - 1)
                 || areAjacentBlocksTransparent(world, x, y - 1, z, radius - 1)
                 || areAjacentBlocksTransparent(world, x + 1, y, z, radius - 1)

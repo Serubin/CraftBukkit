@@ -1,5 +1,6 @@
 package org.spigotmc.netty;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundMessageHandlerAdapter;
@@ -13,6 +14,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import net.minecraft.server.Connection;
 import net.minecraft.server.INetworkManager;
@@ -21,7 +23,6 @@ import net.minecraft.server.Packet;
 import net.minecraft.server.Packet252KeyResponse;
 import net.minecraft.server.PendingConnection;
 import net.minecraft.server.PlayerConnection;
-import org.bouncycastle.crypto.BufferedBlockCipher;
 
 /**
  * This class forms the basis of the Netty integration. It implements
@@ -30,7 +31,7 @@ import org.bouncycastle.crypto.BufferedBlockCipher;
  */
 public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Packet> implements INetworkManager {
 
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("Async Packet Handler - %1$d").build());
     private static final MinecraftServer server = MinecraftServer.getServer();
     private static final PrivateKey key = server.F().getPrivate();
     private static final NettyServerConnection serverConnection = (NettyServerConnection) server.ae();
@@ -55,7 +56,7 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
     private volatile boolean connected;
     private Channel channel;
     private SocketAddress address;
-    private Connection handler;
+    private Connection connection;
     private SecretKey secret;
     private String dcReason;
     private Object[] dcArgs;
@@ -69,10 +70,10 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
         // Then the socket adaptor
         socketAdaptor = NettySocketAdaptor.adapt((SocketChannel) channel);
         // Followed by their first handler
-        handler = new PendingConnection(server, this);
+        connection = new PendingConnection(server, this);
         // Finally register the connection
         connected = true;
-        serverConnection.pendingConnections.add((PendingConnection) handler);
+        serverConnection.pendingConnections.add((PendingConnection) connection);
     }
 
     @Override
@@ -99,9 +100,9 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
         if (msg.a_()) {
             threadPool.submit(new Runnable() {
                 public void run() {
-                    Packet packet = PacketListener.callReceived(NettyNetworkManager.this, handler, msg);
+                    Packet packet = PacketListener.callReceived(NettyNetworkManager.this, connection, msg);
                     if (packet != null) {
-                        packet.handle(handler);
+                        packet.handle(connection);
                     }
                 }
             });
@@ -120,7 +121,7 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
      * @param nh the new {@link NetHandler} instance
      */
     public void a(Connection nh) {
-        handler = nh;
+        connection = nh;
     }
 
     /**
@@ -133,7 +134,7 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
         // Only send if channel is still connected
         if (connected) {
             // Process packet via handler
-            packet = PacketListener.callQueued(this, handler, packet);
+            packet = PacketListener.callQueued(this, connection, packet);
             // If handler indicates packet send
             if (packet != null) {
                 highPriorityQueue.add(packet);
@@ -141,8 +142,8 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
 
                 // If needed, check and prepare encryption phase
                 if (packet instanceof Packet252KeyResponse) {
-                    BufferedBlockCipher encrypt = NettyServerConnection.getCipher(true, secret);
-                    BufferedBlockCipher decrypt = NettyServerConnection.getCipher(false, secret);
+                    Cipher encrypt = NettyServerConnection.getCipher(Cipher.ENCRYPT_MODE, secret);
+                    Cipher decrypt = NettyServerConnection.getCipher(Cipher.DECRYPT_MODE, secret);
                     CipherCodec codec = new CipherCodec(encrypt, decrypt);
                     channel.pipeline().addBefore("decoder", "cipher", codec);
                 }
@@ -163,20 +164,20 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
      */
     public void b() {
         for (int i = 1000; !syncPackets.isEmpty() && i >= 0; i--) {
-            if (handler instanceof PendingConnection ? ((PendingConnection) handler).c : ((PlayerConnection) handler).disconnected) {
+            if (connection instanceof PendingConnection ? ((PendingConnection) connection).b : ((PlayerConnection) connection).disconnected) {
                 syncPackets.clear();
                 break;
             }
 
-            Packet packet = PacketListener.callReceived(this, handler, syncPackets.poll());
+            Packet packet = PacketListener.callReceived(this, connection, syncPackets.poll());
             if (packet != null) {
-                packet.handle(handler);
+                packet.handle(connection);
             }
         }
 
         // Disconnect via the handler - this performs all plugin related cleanup + logging
         if (!connected && (dcReason != null || dcArgs != null)) {
-            handler.a(dcReason, dcArgs);
+            connection.a(dcReason, dcArgs);
         }
     }
 

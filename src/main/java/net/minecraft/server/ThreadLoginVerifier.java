@@ -21,6 +21,7 @@ class ThreadLoginVerifier extends Thread {
     CraftServer server;
 
     ThreadLoginVerifier(PendingConnection pendingconnection, CraftServer server) {
+        super("Login Verifier Thread");
         this.server = server;
         // CraftBukkit end
         this.pendingConnection = pendingconnection;
@@ -41,9 +42,7 @@ class ThreadLoginVerifier extends Thread {
                     if (!ip.contains("127.0.0.1")) {
                         lookup.append("xbl.spamhaus.org.");
                         if (java.net.InetAddress.getByName(lookup.toString()) != null) {
-                            this.pendingConnection.networkManager.queue(new Packet255KickDisconnect("Your IP address (" + ip + ") is flagged as unsafe by spamhaus.org/xbl"));
-                            this.pendingConnection.networkManager.d();
-                            this.pendingConnection.c = true;
+                            pendingConnection.disconnect("Your IP address (" + ip + ") is flagged as unsafe by spamhaus.org/xbl");
                             return;
                         }
                     }

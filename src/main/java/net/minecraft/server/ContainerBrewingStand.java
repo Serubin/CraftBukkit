@@ -1,7 +1,7 @@
 package net.minecraft.server;
 
 // CraftBukkit start
-import org.bukkit.craftbukkit.inventory.CraftInventory;
+import org.bukkit.craftbukkit.inventory.CraftInventoryBrewer;
 import org.bukkit.craftbukkit.inventory.CraftInventoryView;
 // CraftBukkit end
 
@@ -57,7 +57,7 @@ public class ContainerBrewingStand extends Container {
 
     public boolean a(EntityHuman entityhuman) {
         if (!this.checkReachable) return true; // CraftBukkit
-        return this.brewingStand.a_(entityhuman);
+        return this.brewingStand.a(entityhuman);
     }
 
     public ItemStack b(EntityHuman entityhuman, int i) {
@@ -118,7 +118,7 @@ public class ContainerBrewingStand extends Container {
             return bukkitEntity;
         }
 
-        CraftInventory inventory = new CraftInventory(this.brewingStand);
+        CraftInventoryBrewer inventory = new CraftInventoryBrewer(this.brewingStand);
         bukkitEntity = new CraftInventoryView(this.player.player.getBukkitEntity(), inventory, this);
         return bukkitEntity;
     }

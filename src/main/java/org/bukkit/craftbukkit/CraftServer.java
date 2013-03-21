@@ -179,7 +179,6 @@ public final class CraftServer implements Server {
     public boolean ipFilter = false;
     public boolean commandComplete = true;
     public List<String> spamGuardExclusions;
-    public int mapSendInterval = 10000;
     // Spigot end
 
     static {
@@ -235,11 +234,6 @@ public final class CraftServer implements Server {
         try {
             configuration.save(getConfigFile());
         } catch (IOException e) {
-        }
-        try {
-            new org.bukkit.craftbukkit.util.Metrics().start();
-        } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Could not start metrics", e);
         }
         // Spigot end
         loadPlugins();
@@ -348,6 +342,8 @@ public final class CraftServer implements Server {
     }
 
     public Player getPlayer(final String name) {
+        Validate.notNull(name, "Name cannot be null");
+
         Player[] players = getOnlinePlayers();
 
         Player found = null;
@@ -367,6 +363,8 @@ public final class CraftServer implements Server {
     }
 
     public Player getPlayerExact(String name) {
+        Validate.notNull(name, "Name cannot be null");
+
         String lname = name.toLowerCase();
 
         for (Player player : getOnlinePlayers()) {
@@ -387,6 +385,8 @@ public final class CraftServer implements Server {
     }
 
     public List<Player> matchPlayer(String partialName) {
+        Validate.notNull(partialName, "PartialName cannot be null");
+
         List<Player> matchedPlayers = new ArrayList<Player>();
 
         for (Player iterPlayer : this.getOnlinePlayers()) {
@@ -539,6 +539,9 @@ public final class CraftServer implements Server {
     }
 
     public boolean dispatchCommand(CommandSender sender, String commandLine) {
+        Validate.notNull(sender, "Sender cannot be null");
+        Validate.notNull(commandLine, "CommandLine cannot be null");
+
         if (commandMap.dispatch(sender, commandLine)) {
             return true;
         }
@@ -550,7 +553,7 @@ public final class CraftServer implements Server {
 
     public void reload() {
         configuration = YamlConfiguration.loadConfiguration(getConfigFile());
-        PropertyManager config = new PropertyManager(console.options);
+        PropertyManager config = new PropertyManager(console.options, console.getLogger());
 
         ((DedicatedServer) console).propertyManager = config;
 
@@ -695,9 +698,7 @@ public final class CraftServer implements Server {
     }
 
     public World createWorld(WorldCreator creator) {
-        if (creator == null) {
-            throw new IllegalArgumentException("Creator may not be null");
-        }
+        Validate.notNull(creator, "Creator may not be null");
 
         String name = creator.name();
         ChunkGenerator generator = creator.generator();
@@ -737,7 +738,7 @@ public final class CraftServer implements Server {
         } while(used);
         boolean hardcore = false;
 
-        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), EnumGamemode.a(getDefaultGameMode().getValue()), generateStructures, hardcore, type), console.methodProfiler, creator.environment(), generator);
+        WorldServer internal = new WorldServer(console, new ServerNBTManager(getWorldContainer(), name, true), name, dimension, new WorldSettings(creator.seed(), EnumGamemode.a(getDefaultGameMode().getValue()), generateStructures, hardcore, type), console.methodProfiler, console.getLogger(), creator.environment(), generator);
 
         if (!(worlds.containsKey(name.toLowerCase()))) {
             return null;
@@ -838,6 +839,8 @@ public final class CraftServer implements Server {
     }
 
     public World getWorld(String name) {
+        Validate.notNull(name, "Name cannot be null");
+
         return worlds.get(name.toLowerCase());
     }
 
@@ -860,7 +863,7 @@ public final class CraftServer implements Server {
     }
 
     public Logger getLogger() {
-        return MinecraftServer.log;
+        return console.getLogger().getLogger();
     }
 
     public ConsoleReader getReader() {
@@ -882,6 +885,8 @@ public final class CraftServer implements Server {
     }
 
     public void configureDbConfig(ServerConfig config) {
+        Validate.notNull(config, "Config cannot be null");
+
         DataSourceConfig ds = new DataSourceConfig();
         ds.setDriver(configuration.getString("database.driver"));
         ds.setUrl(configuration.getString("database.url"));
@@ -918,6 +923,8 @@ public final class CraftServer implements Server {
     }
 
     public List<Recipe> getRecipesFor(ItemStack result) {
+        Validate.notNull(result, "Result cannot be null");
+
         List<Recipe> results = new ArrayList<Recipe>();
         Iterator<Recipe> iter = recipeIterator();
         while (iter.hasNext()) {
@@ -1045,6 +1052,8 @@ public final class CraftServer implements Server {
     }
 
     public CraftMapView createMap(World world) {
+        Validate.notNull(world, "World cannot be null");
+
         net.minecraft.server.ItemStack stack = new net.minecraft.server.ItemStack(Item.MAP, 1, -1);
         WorldMap worldmap = Item.MAP.getSavedMap(stack, ((CraftWorld) world).getHandle());
         return worldmap.mapView;
@@ -1095,6 +1104,8 @@ public final class CraftServer implements Server {
     }
 
     public void banIP(String address) {
+        Validate.notNull(address, "Address cannot be null.");
+
         BanEntry entry = new BanEntry(address);
         playerList.getIPBans().add(entry);
         playerList.getIPBans().save();
@@ -1152,9 +1163,7 @@ public final class CraftServer implements Server {
     }
 
     public void setDefaultGameMode(GameMode mode) {
-        if (mode == null) {
-            throw new IllegalArgumentException("Mode cannot be null");
-        }
+        Validate.notNull(mode, "Mode cannot be null");
 
         for (World world : getWorlds()) {
             ((CraftWorld) world).getHandle().worldData.setGameType(EnumGamemode.a(mode.getValue()));
@@ -1358,52 +1367,4 @@ public final class CraftServer implements Server {
     public CraftItemFactory getItemFactory() {
         return CraftItemFactory.instance();
     }
-
-    // Spigot start
-    public void restart() {
-        try {
-            String startupScript = configuration.getString("settings.restart-script-location", "");
-            File file = new File(startupScript);
-            if (file.isFile()) {
-                System.out.println("Attempting to restart with " + startupScript);
-
-                // Kick all players
-                for (Player p : this.getOnlinePlayers()) {
-                   ((org.bukkit.craftbukkit.entity.CraftPlayer) p).kickPlayer("Server is restarting", true);
-                }
-                // Give the socket a chance to send the packets
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ex) {
-                }
-                // Close the socket so we can rebind with the new process
-                this.getServer().ae().a();
-
-                // Give time for it to kick in
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException ex) {
-                }
-
-                // Actually shutdown
-                try {
-                    this.getServer().stop();
-                } catch (Throwable t) {
-                }
-
-                String os = System.getProperty("os.name").toLowerCase();
-                if (os.contains("win")) {
-                    Runtime.getRuntime().exec("cmd /c start " + file.getPath());
-                } else {
-                    Runtime.getRuntime().exec(file.getPath());
-                }
-                System.exit(0);
-            } else {
-                System.out.println("Startup script '" + startupScript + "' does not exist!");
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-    // Spigot end
 }

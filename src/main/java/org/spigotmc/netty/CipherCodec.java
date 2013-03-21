@@ -3,63 +3,47 @@ package org.spigotmc.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToByteCodec;
-import org.bouncycastle.crypto.BufferedBlockCipher;
+import javax.crypto.Cipher;
+import javax.crypto.ShortBufferException;
 
 /**
  * This class is a complete solution for encrypting and decoding bytes in a
- * Netty stream. It takes two {@link BufferedBlockCipher} instances, used for
- * encryption and decryption respectively.
+ * Netty stream. It takes two {@link Cipher} instances, used for encryption and
+ * decryption respectively.
  */
 public class CipherCodec extends ByteToByteCodec {
 
-    private BufferedBlockCipher encrypt;
-    private BufferedBlockCipher decrypt;
-    private ByteBuf heapOut;
+    private Cipher encrypt;
+    private Cipher decrypt;
+    private byte[] heapIn = new byte[0];
+    private byte[] heapOut = new byte[0];
 
-    public CipherCodec(BufferedBlockCipher encrypt, BufferedBlockCipher decrypt) {
+    public CipherCodec(Cipher encrypt, Cipher decrypt) {
         this.encrypt = encrypt;
         this.decrypt = decrypt;
     }
 
     @Override
     public void encode(ChannelHandlerContext ctx, ByteBuf in, ByteBuf out) throws Exception {
-        if (heapOut == null) {
-            heapOut = ctx.alloc().heapBuffer();
-        }
-        cipher(encrypt, in, heapOut);
-        out.writeBytes(heapOut);
-        heapOut.discardSomeReadBytes();
+        cipher(in, out, encrypt);
     }
 
     @Override
     public void decode(ChannelHandlerContext ctx, ByteBuf in, ByteBuf out) throws Exception {
-        cipher(decrypt, in, out);
+        cipher(in, out, decrypt);
     }
 
-    @Override
-    public void freeInboundBuffer(ChannelHandlerContext ctx) throws Exception {
-        super.freeInboundBuffer(ctx);
-        decrypt = null;
-    }
-
-    @Override
-    public void freeOutboundBuffer(ChannelHandlerContext ctx) throws Exception {
-        super.freeOutboundBuffer(ctx);
-        if (heapOut != null) {
-            heapOut.release();
-            heapOut = null;
+    private void cipher(ByteBuf in, ByteBuf out, Cipher cipher) throws ShortBufferException {
+        int readableBytes = in.readableBytes();
+        if (heapIn.length < readableBytes) {
+            heapIn = new byte[readableBytes];
         }
-        decrypt = null;
-    }
+        in.readBytes(heapIn, 0, readableBytes);
 
-    private void cipher(BufferedBlockCipher cipher, ByteBuf in, ByteBuf out) {
-        int available = in.readableBytes();
-        int outputSize = cipher.b(available); // getUpdateOutputSize
-        if (out.capacity() < outputSize) {
-            out.capacity(outputSize);
+        int outputSize = cipher.getOutputSize(readableBytes);
+        if (heapOut.length < outputSize) {
+            heapOut = new byte[outputSize];
         }
-        int processed = cipher.a(in.array(), in.arrayOffset() + in.readerIndex(), available, out.array(), out.arrayOffset() + out.writerIndex()); // processBytes
-        in.readerIndex(in.readerIndex() + processed);
-        out.writerIndex(out.writerIndex() + processed);
+        out.writeBytes(heapOut, 0, cipher.update(heapIn, 0, readableBytes, heapOut));
     }
 }
