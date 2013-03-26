@@ -397,7 +397,7 @@ public class EntityEnderDragon extends EntityLiving implements IComplex {
             Entity entity = (Entity) list.get(i);
 
             if (entity instanceof EntityLiving) {
-                // CraftBukkit start - throw damage events when the dragon attacks
+                // CraftBukkit start - Throw damage events when the dragon attacks
                 // The EntityHuman case is handled in EntityHuman, so don't throw it here
                 if (!(entity instanceof EntityHuman)) {
                     EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity(), org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK, 10);
@@ -460,7 +460,7 @@ public class EntityEnderDragon extends EntityLiving implements IComplex {
         boolean flag = false;
         boolean flag1 = false;
 
-        // CraftBukkit start - create a list to hold all the destroyed blocks
+        // CraftBukkit start - Create a list to hold all the destroyed blocks
         List<org.bukkit.block.Block> destroyedBlocks = new java.util.ArrayList<org.bukkit.block.Block>();
         org.bukkit.craftbukkit.CraftWorld craftWorld = this.world.getWorld();
         // CraftBukkit end
@@ -486,12 +486,12 @@ public class EntityEnderDragon extends EntityLiving implements IComplex {
         }
 
         if (flag1) {
-            // CraftBukkit start - set off an EntityExplodeEvent for the dragon exploding all these blocks
+            // CraftBukkit start - Set off an EntityExplodeEvent for the dragon exploding all these blocks
             org.bukkit.entity.Entity bukkitEntity = this.getBukkitEntity();
             EntityExplodeEvent event = new EntityExplodeEvent(bukkitEntity, bukkitEntity.getLocation(), destroyedBlocks, 0F);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled()) {
-                // this flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will cause the dragon to slow down.
+                // This flag literally means 'Dragon hit something hard' (Obsidian, White Stone or Bedrock) and will cause the dragon to slow down.
                 // We should consider adding an event extension for it, or perhaps returning true if the event is cancelled.
                 return flag;
             } else {

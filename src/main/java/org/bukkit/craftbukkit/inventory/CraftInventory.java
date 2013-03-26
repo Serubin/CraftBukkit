@@ -15,6 +15,7 @@ import net.minecraft.server.PlayerInventory;
 import net.minecraft.server.TileEntityBeacon;
 import net.minecraft.server.TileEntityBrewingStand;
 import net.minecraft.server.TileEntityDispenser;
+import net.minecraft.server.TileEntityDropper;
 import net.minecraft.server.TileEntityFurnace;
 
 import org.apache.commons.lang.Validate;
@@ -26,7 +27,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
 
 public class CraftInventory implements Inventory {
-    protected IInventory inventory;
+    protected final IInventory inventory;
 
     public CraftInventory(IInventory inventory) {
         this.inventory = inventory;
@@ -423,10 +424,13 @@ public class CraftInventory implements Inventory {
     }
 
     public InventoryType getType() {
+        // Thanks to Droppers extending Dispensers, order is important.
         if (inventory instanceof InventoryCrafting) {
             return inventory.getSize() >= 9 ? InventoryType.WORKBENCH : InventoryType.CRAFTING;
         } else if (inventory instanceof PlayerInventory) {
             return InventoryType.PLAYER;
+        } else if (inventory instanceof TileEntityDropper) {
+            return InventoryType.DROPPER;
         } else if (inventory instanceof TileEntityDispenser) {
             return InventoryType.DISPENSER;
         } else if (inventory instanceof TileEntityFurnace) {

@@ -76,7 +76,7 @@ public class CraftEventFactory {
 
         ChunkCoordinates chunkcoordinates = worldServer.getSpawn();
 
-        int distanceFromSpawn = (int) Math.max(Math.abs(x - chunkcoordinates.x), Math.abs(z - chunkcoordinates.z));
+        int distanceFromSpawn = Math.max(Math.abs(x - chunkcoordinates.x), Math.abs(z - chunkcoordinates.z));
         return distanceFromSpawn >= spawnSize;
     }
 
@@ -89,8 +89,8 @@ public class CraftEventFactory {
      * Block place methods
      */
     public static BlockPlaceEvent callBlockPlaceEvent(World world, EntityHuman who, BlockState replacedBlockState, int clickedX, int clickedY, int clickedZ) {
-        CraftWorld craftWorld = ((WorldServer) world).getWorld();
-        CraftServer craftServer = ((WorldServer) world).getServer();
+        CraftWorld craftWorld = world.getWorld();
+        CraftServer craftServer = world.getServer();
 
         Player player = (who == null) ? null : (Player) who.getBukkitEntity();
 
@@ -236,7 +236,7 @@ public class CraftEventFactory {
      */
     public static EntityTameEvent callEntityTameEvent(EntityLiving entity, EntityHuman tamer) {
         org.bukkit.entity.Entity bukkitEntity = entity.getBukkitEntity();
-        org.bukkit.entity.AnimalTamer bukkitTamer = (tamer != null ? (AnimalTamer) tamer.getBukkitEntity() : null);
+        org.bukkit.entity.AnimalTamer bukkitTamer = (tamer != null ? tamer.getBukkitEntity() : null);
         CraftServer craftServer = (CraftServer) bukkitEntity.getServer();
 
         entity.persistent = true;
@@ -267,7 +267,7 @@ public class CraftEventFactory {
 
         ItemDespawnEvent event = new ItemDespawnEvent(entity, entity.getLocation());
 
-        ((CraftServer) entity.getServer()).getPluginManager().callEvent(event);
+        entity.getServer().getPluginManager().callEvent(event);
         return event;
     }
 
@@ -329,7 +329,7 @@ public class CraftEventFactory {
     }
 
     public static PlayerDeathEvent callPlayerDeathEvent(EntityPlayer victim, List<org.bukkit.inventory.ItemStack> drops, String deathMessage) {
-        CraftPlayer entity = (CraftPlayer) victim.getBukkitEntity();
+        CraftPlayer entity = victim.getBukkitEntity();
         PlayerDeathEvent event = new PlayerDeathEvent(entity, drops, victim.getExpReward(), 0, deathMessage);
         org.bukkit.World world = entity.getWorld();
         Bukkit.getServer().getPluginManager().callEvent(event);
@@ -389,6 +389,8 @@ public class CraftEventFactory {
             } else if (damager.getBukkitEntity() instanceof Projectile) {
                 cause = DamageCause.PROJECTILE;
             }
+        } else if ("thorns".equals(source.translationIndex)) {
+            cause = DamageCause.THORNS;
         }
 
         return callEntityDamageEvent(damager, entity, cause, damage);
@@ -431,7 +433,7 @@ public class CraftEventFactory {
     }
 
     public static FoodLevelChangeEvent callFoodLevelChangeEvent(EntityHuman entity, int level) {
-        FoodLevelChangeEvent event = new FoodLevelChangeEvent((Player) entity.getBukkitEntity(), level);
+        FoodLevelChangeEvent event = new FoodLevelChangeEvent(entity.getBukkitEntity(), level);
         entity.getBukkitEntity().getServer().getPluginManager().callEvent(event);
         return event;
     }
@@ -496,8 +498,8 @@ public class CraftEventFactory {
             player.playerConnection.handleContainerClose(new Packet101CloseWindow(player.activeContainer.windowId));
         }
 
-        CraftServer server = ((WorldServer) player.world).getServer();
-        CraftPlayer craftPlayer = (CraftPlayer) player.getBukkitEntity();
+        CraftServer server = player.world.getServer();
+        CraftPlayer craftPlayer = player.getBukkitEntity();
         player.activeContainer.transferTo(container, craftPlayer);
 
         InventoryOpenEvent event = new InventoryOpenEvent(container.getBukkitView());
@@ -527,6 +529,12 @@ public class CraftEventFactory {
         Projectile bukkitEntity = (Projectile) entity.getBukkitEntity();
         ProjectileLaunchEvent event = new ProjectileLaunchEvent(bukkitEntity);
         Bukkit.getPluginManager().callEvent(event);
+        return event;
+    }
+
+    public static ProjectileHitEvent callProjectileHitEvent(Entity entity) {
+        ProjectileHitEvent event = new ProjectileHitEvent((Projectile) entity.getBukkitEntity());
+        entity.world.getServer().getPluginManager().callEvent(event);
         return event;
     }
 
@@ -560,15 +568,16 @@ public class CraftEventFactory {
         Block igniter = bukkitWorld.getBlockAt(igniterX, igniterY, igniterZ);
         IgniteCause cause;
         switch (igniter.getType()) {
-        case LAVA:
-            cause = IgniteCause.LAVA;
-            break;
-        case DISPENSER:
-            cause = IgniteCause.FLINT_AND_STEEL;
-            break;
-        case FIRE: // Fire or any other unknown block counts as SPREAD.
-        default:
-            cause = IgniteCause.SPREAD;
+            case LAVA:
+            case STATIONARY_LAVA:
+                cause = IgniteCause.LAVA;
+                break;
+            case DISPENSER:
+                cause = IgniteCause.FLINT_AND_STEEL;
+                break;
+            case FIRE: // Fire or any other unknown block counts as SPREAD.
+            default:
+                cause = IgniteCause.SPREAD;
         }
 
         BlockIgniteEvent event = new BlockIgniteEvent(bukkitWorld.getBlockAt(x, y, z), cause, igniter);
