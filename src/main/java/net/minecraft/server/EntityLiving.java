@@ -513,6 +513,7 @@ public abstract class EntityLiving extends Entity {
     }
 
     public void l_() {
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityBaseTick.startTiming(); // Spigot
         super.l_();
         if (!this.world.isStatic) {
             int i;
@@ -539,7 +540,9 @@ public abstract class EntityLiving extends Entity {
             }
         }
 
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityBaseTick.stopTiming(); // Spigot
         this.c();
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityTickRest.startTiming(); // Spigot
         double d0 = this.locX - this.lastX;
         double d1 = this.locZ - this.lastZ;
         float f = (float) (d0 * d0 + d1 * d1);
@@ -630,6 +633,7 @@ public abstract class EntityLiving extends Entity {
 
         this.world.methodProfiler.b();
         this.aE += f2;
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityTickRest.stopTiming(); // Spigot
     }
 
     // CraftBukkit start - Delegate so we can handle providing a reason for health being regained
@@ -1267,6 +1271,7 @@ public abstract class EntityLiving extends Entity {
     }
 
     public void c() {
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAI.startTiming(); // Spigot
         if (this.bX > 0) {
             --this.bX;
         }
@@ -1318,6 +1323,7 @@ public abstract class EntityLiving extends Entity {
                 this.aA = this.yaw;
             }
         }
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAI.stopTiming(); // Spigot
 
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("jump");
@@ -1336,6 +1342,7 @@ public abstract class EntityLiving extends Entity {
 
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("travel");
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAIMove.startTiming(); // Spigot
         this.bD *= 0.98F;
         this.bE *= 0.98F;
         this.bF *= 0.9F;
@@ -1344,11 +1351,14 @@ public abstract class EntityLiving extends Entity {
         this.aO *= this.bE();
         this.e(this.bD, this.bE);
         this.aO = f;
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAIMove.stopTiming(); // Spigot
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("push");
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAICollision.startTiming(); // Spigot
         if (!this.world.isStatic) {
             this.bg();
         }
+        org.bukkit.craftbukkit.SpigotTimings.timerEntityAICollision.stopTiming(); // Spigot
 
         this.world.methodProfiler.b();
         this.world.methodProfiler.a("looting");
@@ -1420,12 +1430,20 @@ public abstract class EntityLiving extends Entity {
     }
 
     protected void bg() {
+        // Spigot start
+        boolean skip = false;
+        if (!(this instanceof EntityPlayer) && this.ticksLived % 2 != 0) {
+            skip = true;
+        }
+        // Spigot end
+
         List list = this.world.getEntities(this, this.boundingBox.grow(0.20000000298023224D, 0.0D, 0.20000000298023224D));
 
         if (list != null && !list.isEmpty()) {
             for (int i = 0; i < list.size(); ++i) {
                 Entity entity = (Entity) list.get(i);
 
+                if (entity instanceof EntityLiving && skip) { continue; } // Spigot
                 if (entity.L()) {
                     this.o(entity);
                 }

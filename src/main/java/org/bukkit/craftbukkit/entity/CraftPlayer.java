@@ -213,6 +213,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void kickPlayer(String message) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous player kick!"); // Spigot
         if (getHandle().playerConnection == null) return;
 
         getHandle().playerConnection.disconnect(message == null ? "" : message);
@@ -625,10 +626,28 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         ChunkCoordinates bed = getHandle().getBed();
 
         if (world != null && bed != null) {
-            bed = EntityHuman.getBed(((CraftWorld) world).getHandle(), bed, getHandle().isRespawnForced());
-            if (bed != null) {
+            if (getHandle().isRespawnForced()) {
                 return new Location(world, bed.x, bed.y, bed.z);
             }
+
+            int cx = bed.x >> 4;
+            int cz = bed.z >> 4;
+            boolean before = world.isChunkLoaded(cx, cz);
+
+            if (!before) {
+                world.loadChunk(cx, cz);
+            }
+
+            Location location = null;
+            if (world.getBlockTypeIdAt(bed.x, bed.y, bed.z) == Block.BED.id) {
+                location = new Location(world, bed.x, bed.y, bed.z);
+            }
+
+            if (!before) {
+                world.unloadChunk(cx, cz);
+            }
+
+            return location;
         }
         return null;
     }
@@ -809,7 +828,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setTexturePack(String url) {
         Validate.notNull(url, "Texture pack URL cannot be null");
 
-        byte[] message = (url + "\0" + "16").getBytes();
+        byte[] message = (url + "\0" + org.bukkit.craftbukkit.Spigot.textureResolution).getBytes(); // Spigot
         Validate.isTrue(message.length <= Messenger.MAX_MESSAGE_SIZE, "Texture pack URL is too long");
 
         getHandle().playerConnection.sendPacket(new Packet250CustomPayload("MC|TPack", message));

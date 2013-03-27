@@ -3,7 +3,9 @@ package net.minecraft.server;
 import java.util.List;
 
 // CraftBukkit start
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 // CraftBukkit end
 
@@ -14,7 +16,7 @@ public class EntityArrow extends Entity implements IProjectile {
     private int f = -1;
     private int g = 0;
     private int h = 0;
-    private boolean inGround = false;
+    public boolean inGround = false; // Spigot - private -> public
     public int fromPlayer = 0;
     public int shake = 0;
     public Entity shooter;
@@ -207,7 +209,11 @@ public class EntityArrow extends Entity implements IProjectile {
             float f3;
 
             if (movingobjectposition != null) {
-                org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this); // CraftBukkit - Call event
+                // CraftBukkit start
+                Projectile projectile = (Projectile) this.getBukkitEntity();
+                ProjectileHitEvent phe = new ProjectileHitEvent(projectile);
+                this.world.getServer().getPluginManager().callEvent(phe);
+                // CraftBukkit end
 
                 if (movingobjectposition.entity != null) {
                     f2 = MathHelper.sqrt(this.motX * this.motX + this.motY * this.motY + this.motZ * this.motZ);

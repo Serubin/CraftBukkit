@@ -174,7 +174,18 @@ public class CraftChunk implements Chunk {
                 }
 
                 if (cs[i].i() != null) { /* If we've got extended IDs */
-                    byte[] extids = cs[i].i().a;
+                    // Spigot start
+                    if (cs[i].i().isTrivialArray()) {
+                        int tval = cs[i].i().getTrivialArrayValue();
+                        if (tval != 0) {
+                            tval = tval << 8;
+                            for (int j = 0; j < 4096; j++) {
+                                blockids[j << 1] |= tval;
+                            }
+                        }
+                  } else {
+                    byte[] extids = cs[i].i().getValueArray();
+                    // Spigot end
 
                     for (int j = 0; j < 2048; j++) {
                         short b = (short) (extids[j] & 0xFF);
@@ -186,21 +197,42 @@ public class CraftChunk implements Chunk {
                         blockids[j<<1] |= (b & 0x0F) << 8;
                         blockids[(j<<1)+1] |= (b & 0xF0) << 4;
                     }
+                    } // Spigot
                 }
 
                 sectionBlockIDs[i] = blockids;
 
                 /* Get block data nibbles */
-                sectionBlockData[i] = new byte[2048];
-                System.arraycopy(cs[i].j().a, 0, sectionBlockData[i], 0, 2048); // Should be getData
+                // Spigot start
+                if (cs[i].j().isTrivialArray() && (cs[i].j().getTrivialArrayValue() == 0)) {
+                    sectionBlockData[i] = emptyData;
+                } else {
+                    sectionBlockData[i] = new byte[2048];
+                    cs[i].j().copyToByteArray(sectionBlockData[i], 0);
+                }
                 if (cs[i].l() == null) {
                     sectionSkyLights[i] = emptyData;
+                }
+                else if (cs[i].l().isTrivialArray()) {
+                    if (cs[i].l().getTrivialArrayValue() == 0) {
+                        sectionSkyLights[i] = emptyData;
+                    } else if (cs[i].l().getTrivialArrayValue() == 15) {
+                        sectionSkyLights[i] = emptySkyLight;
+                    } else {
+                        sectionSkyLights[i] = new byte[2048];
+                        cs[i].l().copyToByteArray(sectionSkyLights[i], 0);
+                    }
                 } else {
                     sectionSkyLights[i] = new byte[2048];
-                    System.arraycopy(cs[i].l().a, 0, sectionSkyLights[i], 0, 2048); // Should be getSkyLight
+                    cs[i].l().copyToByteArray(sectionSkyLights[i], 0);
                 }
-                sectionEmitLights[i] = new byte[2048];
-                System.arraycopy(cs[i].k().a, 0, sectionEmitLights[i], 0, 2048); // Should be getBlockLight
+                if (cs[i].k().isTrivialArray() && (cs[i].k().getTrivialArrayValue() == 0)) {
+                    sectionEmitLights[i] = emptyData;
+                } else {
+                    sectionEmitLights[i] = new byte[2048];
+                    cs[i].k().copyToByteArray(sectionEmitLights[i], 0);
+                }
+                // Spigot end
             }
         }
 

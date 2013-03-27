@@ -14,6 +14,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Painting;
 import org.bukkit.entity.Vehicle;
+import org.bukkit.CustomTimingsHandler; // Spigot
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.vehicle.VehicleBlockCollisionEvent;
@@ -88,7 +89,7 @@ public abstract class Entity {
     public int ticksLived;
     public int maxFireTicks;
     public int fireTicks; // CraftBukkit - private -> public
-    protected boolean inWater;
+    public boolean inWater; // Spigot - protected -> public
     public int noDamageTicks;
     private boolean justCreated;
     protected boolean fireProof;
@@ -110,6 +111,14 @@ public abstract class Entity {
     public UUID uniqueID; // CraftBukkit - private -> public
     public EnumEntitySize at;
     public boolean valid = false; // CraftBukkit
+
+    // Spigot start
+    public CustomTimingsHandler tickTimer = org.bukkit.craftbukkit.SpigotTimings.getEntityTimings(this); // Spigot
+
+    public final byte activationType = org.bukkit.craftbukkit.Spigot.initializeEntityActivationType(this);
+    public final boolean defaultActivationState;
+    public long activatedTick = 0;
+    // Spigot end
 
     public Entity(World world) {
         this.id = entityCount++;
@@ -145,13 +154,18 @@ public abstract class Entity {
         this.ai = false;
         this.as = 0;
         this.invulnerable = false;
-        this.uniqueID = UUID.randomUUID();
+        this.uniqueID = new UUID(random.nextLong(), random.nextLong()); // Spigot
         this.at = EnumEntitySize.SIZE_2;
         this.world = world;
         this.setPosition(0.0D, 0.0D, 0.0D);
         if (world != null) {
             this.dimension = world.worldProvider.dimension;
+            // Spigot start
+            this.defaultActivationState = org.bukkit.craftbukkit.Spigot.initializeEntityActivationState(this, world.getWorld());
+        } else {
+            this.defaultActivationState = false;
         }
+        // Spigot end
 
         this.datawatcher.a(0, Byte.valueOf((byte) 0));
         this.datawatcher.a(1, Short.valueOf((short) 300));
@@ -430,6 +444,8 @@ public abstract class Entity {
     }
 
     public void move(double d0, double d1, double d2) {
+        if (d0 == 0 && d1 == 0 && d2 == 0) { return; } // Spigot
+        org.bukkit.craftbukkit.SpigotTimings.entityMoveTimer.startTiming(); // Spigot
         if (this.Z) {
             this.boundingBox.d(d0, d1, d2);
             this.locX = (this.boundingBox.a + this.boundingBox.d) / 2.0D;
@@ -729,6 +745,7 @@ public abstract class Entity {
 
             this.world.methodProfiler.b();
         }
+        org.bukkit.craftbukkit.SpigotTimings.entityMoveTimer.stopTiming(); // Spigot
     }
 
     protected void C() {

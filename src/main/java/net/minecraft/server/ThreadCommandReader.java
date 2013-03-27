@@ -11,6 +11,7 @@ class ThreadCommandReader extends Thread {
     final DedicatedServer server;
 
     ThreadCommandReader(DedicatedServer dedicatedserver) {
+        super("Command Reader Thread"); // Spigot
         this.server = dedicatedserver;
     }
 

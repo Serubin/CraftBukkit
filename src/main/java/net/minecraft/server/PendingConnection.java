@@ -17,7 +17,7 @@ public class PendingConnection extends Connection {
     private static Random random = new Random();
     private byte[] d;
     private final MinecraftServer server;
-    public final NetworkManager networkManager;
+    public final INetworkManager networkManager;
     public boolean b = false;
     private int f = 0;
     private String g = null;
@@ -27,10 +27,15 @@ public class PendingConnection extends Connection {
     private SecretKey k = null;
     public String hostname = ""; // CraftBukkit - add field
 
+    public PendingConnection(MinecraftServer minecraftserver, org.spigotmc.netty.NettyNetworkManager networkManager) {
+        this.server = minecraftserver;
+        this.networkManager = networkManager;
+    }
+
     public PendingConnection(MinecraftServer minecraftserver, Socket socket, String s) throws java.io.IOException { // CraftBukkit - throws IOException
         this.server = minecraftserver;
         this.networkManager = new NetworkManager(minecraftserver.getLogger(), socket, s, this, minecraftserver.F().getPrivate());
-        this.networkManager.e = 0;
+        // this.networkManager.e = 0;
     }
 
     // CraftBukkit start
@@ -146,7 +151,7 @@ public class PendingConnection extends Connection {
             // CraftBukkit
             org.bukkit.event.server.ServerListPingEvent pingEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callServerListPingEvent(this.server.server, getSocket().getInetAddress(), this.server.getMotd(), playerlist.getPlayerCount(), playerlist.getMaxPlayers());
 
-            if (packet254getinfo.a == 1) {
+            if (true) {
                 // CraftBukkit start - Fix decompile issues, don't create a list from an array
                 Object[] list = new Object[] { 1, 60, this.server.getVersion(), pingEvent.getMotd(), playerlist.getPlayerCount(), pingEvent.getMaxPlayers() };
 
@@ -214,4 +219,17 @@ public class PendingConnection extends Connection {
     static boolean a(PendingConnection pendingconnection, boolean flag) {
         return pendingconnection.h = flag;
     }
+
+    // Spigot start
+    @Override
+    public void a(Packet250CustomPayload pcp) {
+        if (pcp.tag.equals("BungeeCord") && org.bukkit.craftbukkit.Spigot.bungeeIPs.contains(getSocket().getInetAddress().getHostAddress())) {
+            com.google.common.io.ByteArrayDataInput in = com.google.common.io.ByteStreams.newDataInput(pcp.data);
+            String subTag = in.readUTF();
+            if (subTag.equals("Login")) {
+                networkManager.setSocketAddress(new java.net.InetSocketAddress(in.readUTF(), in.readInt()));
+            }
+        }
+    }
+    // Spigot end
 }

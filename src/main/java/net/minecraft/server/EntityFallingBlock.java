@@ -94,6 +94,7 @@ public class EntityFallingBlock extends Entity {
                     }
 
                     this.world.setAir(i, j, k);
+                    org.spigotmc.OrebfuscatorManager.updateNearbyBlocks(world, i, j, k); // Spigot (Orebfuscator)
                 }
 
                 if (this.onGround) {

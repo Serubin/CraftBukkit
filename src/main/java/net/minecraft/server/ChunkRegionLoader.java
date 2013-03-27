@@ -13,8 +13,7 @@ import java.util.Set;
 
 public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
 
-    private List a = new ArrayList();
-    private Set b = new HashSet();
+    private java.util.LinkedHashMap<ChunkCoordIntPair, PendingChunkToSave> pendingSaves = new java.util.LinkedHashMap<ChunkCoordIntPair, PendingChunkToSave>(); // Spigot
     private Object c = new Object();
     private final File d;
 
@@ -27,15 +26,12 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
         ChunkCoordIntPair chunkcoordintpair = new ChunkCoordIntPair(i, j);
 
         synchronized (this.c) {
-            if (this.b.contains(chunkcoordintpair)) {
-                for (int k = 0; k < this.a.size(); ++k) {
-                    if (((PendingChunkToSave) this.a.get(k)).a.equals(chunkcoordintpair)) {
-                        return true;
-                    }
-                }
+            // Spigot start
+            if (pendingSaves.containsKey(chunkcoordintpair)) {
+                return true;
             }
         }
-
+        // Spigot end
         return RegionFileCache.a(this.d, i, j).chunkExists(i & 31, j & 31);
     }
     // CraftBukkit end
@@ -60,6 +56,12 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
         Object object = this.c;
 
         synchronized (this.c) {
+            // Spigot start
+            PendingChunkToSave pendingchunktosave = pendingSaves.get(chunkcoordintpair);
+            if (pendingchunktosave != null) {
+                nbttagcompound = pendingchunktosave.b;
+            }
+            /*
             if (this.b.contains(chunkcoordintpair)) {
                 for (int k = 0; k < this.a.size(); ++k) {
                     if (((PendingChunkToSave) this.a.get(k)).a.equals(chunkcoordintpair)) {
@@ -68,6 +70,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
                     }
                 }
             }
+            */// Spigot end
         }
 
         if (nbttagcompound == null) {
@@ -134,6 +137,11 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
         Object object = this.c;
 
         synchronized (this.c) {
+            // Spigot start
+            if (this.pendingSaves.put(chunkcoordintpair, new PendingChunkToSave(chunkcoordintpair, nbttagcompound)) != null) {
+                return;
+            }
+            /*
             if (this.b.contains(chunkcoordintpair)) {
                 for (int i = 0; i < this.a.size(); ++i) {
                     if (((PendingChunkToSave) this.a.get(i)).a.equals(chunkcoordintpair)) {
@@ -145,6 +153,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
 
             this.a.add(new PendingChunkToSave(chunkcoordintpair, nbttagcompound));
             this.b.add(chunkcoordintpair);
+            */// Spigot end
             FileIOThread.a.a(this);
         }
     }
@@ -154,12 +163,20 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
         Object object = this.c;
 
         synchronized (this.c) {
+            // Spigot start
+            if (this.pendingSaves.isEmpty()) {
+                return false;
+            }
+            pendingchunktosave = this.pendingSaves.values().iterator().next();
+            this.pendingSaves.remove(pendingchunktosave.a);
+            /*
             if (this.a.isEmpty()) {
                 return false;
             }
 
             pendingchunktosave = (PendingChunkToSave) this.a.remove(0);
             this.b.remove(pendingchunktosave.a);
+            */// Spigot end
         }
 
         if (pendingchunktosave != null) {
@@ -208,15 +225,15 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
                 nbttagcompound1.setByte("Y", (byte) (chunksection.d() >> 4 & 255));
                 nbttagcompound1.setByteArray("Blocks", chunksection.g());
                 if (chunksection.i() != null) {
-                    nbttagcompound1.setByteArray("Add", chunksection.i().a);
+                    nbttagcompound1.setByteArray("Add", chunksection.i().getValueArray()); // Spigot
                 }
 
-                nbttagcompound1.setByteArray("Data", chunksection.j().a);
-                nbttagcompound1.setByteArray("BlockLight", chunksection.k().a);
+                nbttagcompound1.setByteArray("Data", chunksection.j().getValueArray()); // Spigot
+                nbttagcompound1.setByteArray("BlockLight", chunksection.k().getValueArray()); // Spigot
                 if (flag) {
-                    nbttagcompound1.setByteArray("SkyLight", chunksection.l().a);
+                    nbttagcompound1.setByteArray("SkyLight", chunksection.l().getValueArray()); // Spigot
                 } else {
-                    nbttagcompound1.setByteArray("SkyLight", new byte[chunksection.k().a.length]);
+                    nbttagcompound1.setByteArray("SkyLight", new byte[chunksection.k().getValueArray().length]); // Spigot
                 }
 
                 nbttaglist.add(nbttagcompound1);

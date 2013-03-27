@@ -285,6 +285,11 @@ public class PlayerInteractManager {
                 }
                 return false;
             }
+            // Spigot (Orebfuscator) start
+            else {
+                org.spigotmc.OrebfuscatorManager.updateNearbyBlocks(world, i, j, k);
+            }
+            // Spigot (Orebfuscator) end
         }
 
         if (false) { // Never trigger

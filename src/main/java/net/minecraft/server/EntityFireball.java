@@ -2,6 +2,8 @@ package net.minecraft.server;
 
 import java.util.List;
 
+import org.bukkit.event.entity.ProjectileHitEvent; // CraftBukkit
+
 public abstract class EntityFireball extends Entity {
 
     private int e = -1;
@@ -131,7 +133,8 @@ public abstract class EntityFireball extends Entity {
 
                 // CraftBukkit start
                 if (this.dead) {
-                    org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this);
+                    ProjectileHitEvent phe = new ProjectileHitEvent((org.bukkit.entity.Projectile) this.getBukkitEntity());
+                    this.world.getServer().getPluginManager().callEvent(phe);
                 }
                 // CraftBukkit end
             }

@@ -1,5 +1,7 @@
 package net.minecraft.server;
 
+import gnu.trove.iterator.TLongShortIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -13,6 +15,7 @@ import java.util.TreeSet;
 import org.bukkit.WeatherType;
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.util.LongHash;
+import org.bukkit.craftbukkit.util.LongObjectHashMap;
 
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.weather.LightningStrikeEvent;
@@ -48,7 +51,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         // CraftBukkit end
         this.server = minecraftserver;
         this.tracker = new EntityTracker(this);
-        this.manager = new PlayerChunkMap(this, minecraftserver.getPlayerList().o());
+        this.manager = new PlayerChunkMap(this, getWorld().viewDistance); // Spigot
         if (this.entitiesById == null) {
             this.entitiesById = new IntHashMap();
         }
@@ -166,9 +169,12 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
         long time = this.worldData.getTime();
         if (this.getGameRules().getBoolean("doMobSpawning") && (this.allowMonsters || this.allowAnimals) && (this instanceof WorldServer && this.players.size() > 0)) {
+            timings.mobSpawn.startTiming(); // Spigot
             SpawnerCreature.spawnEntities(this, this.allowMonsters && (this.ticksPerMonsterSpawns != 0 && time % this.ticksPerMonsterSpawns == 0L), this.allowAnimals && (this.ticksPerAnimalSpawns != 0 && time % this.ticksPerAnimalSpawns == 0L), this.worldData.getTime() % 400L == 0L);
+            timings.mobSpawn.stopTiming(); // Spigot
         }
         // CraftBukkit end
+        timings.doTickRest.startTiming(); // Spigot
         this.methodProfiler.c("chunkSource");
         this.chunkProvider.unloadChunks();
         int j = this.a(1.0F);
@@ -194,6 +200,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
         this.Y();
 
         this.getWorld().processChunkGC(); // CraftBukkit
+        timings.doTickRest.stopTiming(); // Spigot
     }
 
     public BiomeMeta a(EnumCreatureType enumcreaturetype, int i, int j, int k) {
@@ -278,15 +285,30 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
     }
 
     protected void g() {
+        // Spigot start
+        this.aggregateTicks--;
+        if (this.aggregateTicks != 0) return;
+        aggregateTicks = this.getWorld().aggregateTicks;
+        // Spigot end
         super.g();
         int i = 0;
         int j = 0;
         // CraftBukkit start
         // Iterator iterator = this.chunkTickList.iterator();
 
-        for (long chunkCoord : this.chunkTickList.popAll()) {
-            int chunkX = LongHash.msw(chunkCoord);
-            int chunkZ = LongHash.lsw(chunkCoord);
+        // Spigot start
+        for (TLongShortIterator iter = chunkTickList.iterator(); iter.hasNext();) {
+            iter.advance();
+            long chunkCoord = iter.key();
+            int chunkX = World.keyToX(chunkCoord);
+            int chunkZ = World.keyToZ(chunkCoord);
+            // If unloaded, or in procedd of being unloaded, drop it
+            if ((!this.isChunkLoaded(chunkX, chunkZ)) || (this.chunkProviderServer.unloadQueue.contains(chunkX, chunkZ))) {
+                iter.remove();
+                continue;
+            }
+            int players = iter.value();
+            // Spigot end
             // ChunkCoordIntPair chunkcoordintpair = (ChunkCoordIntPair) iterator.next();
             int k = chunkX * 16;
             int l = chunkZ * 16;
@@ -384,7 +406,17 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
 
                         if (block != null && block.isTicking()) {
                             ++i;
-                            block.a(this, k2 + k, i3 + chunksection.d(), l2 + l, this.random);
+                            // Spigot start
+                            if (players < 1) {
+                                // grow fast if no players are in this chunk
+                                this.growthOdds = modifiedOdds;
+                            } else {
+                                this.growthOdds = 100;
+                            }
+                            for (int c = 0; c < ((block.id == Block.SAPLING.id) ? 1 : getWorld().aggregateTicks); c++) {
+                                block.a(this, k2 + k, i3 + chunksection.d(), l2 + l, this.random);
+                            }
+                            // Spigot end
                         }
                     }
                 }
@@ -626,17 +658,20 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
 
     public List getTileEntities(int i, int j, int k, int l, int i1, int j1) {
         ArrayList arraylist = new ArrayList();
-        // CraftBukkit start - Use iterator
-        Iterator iterator = this.tileEntityList.iterator();
-
-        while (iterator.hasNext()) {
-            TileEntity tileentity = (TileEntity) iterator.next();
-            // CraftBukkit end
-
-            if (tileentity.x >= i && tileentity.y >= j && tileentity.z >= k && tileentity.x < l && tileentity.y < i1 && tileentity.z < j1) {
-                arraylist.add(tileentity);
+        // Spigot start - check in chunks: usually just from one
+        for (int cx = (i >> 4); cx <= ((l - 1) >> 4); cx++) {
+            for (int cz = (k >> 4); cz <= ((j1 - 1) >> 4); cz++) {
+                Chunk c = getChunkAt(cx, cz);
+                if (c == null) continue;
+                for (Object te : c.tileEntities.values()) {
+                    TileEntity tileentity = (TileEntity) te;
+                    if ((tileentity.x >= i) && (tileentity.y >= j) && (tileentity.z >= k) && (tileentity.x < l) && (tileentity.y < i1) && (tileentity.z < j1)) {
+                        arraylist.add(tileentity);
+                    }
+                }
             }
         }
+        // Spigot end
 
         return arraylist;
     }

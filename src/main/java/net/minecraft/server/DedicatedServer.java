@@ -36,7 +36,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         super(options);
         // CraftBukkit end
         this.l = new ConsoleLogManager("Minecraft-Server", (String) null, (String) null); // CraftBukkit - null last argument
-        new ThreadSleepForever(this);
+        // new ThreadSleepForever(this); // Spigot
     }
 
     protected boolean init() throws java.net.UnknownHostException { // CraftBukkit - throws UnknownHostException
@@ -96,7 +96,11 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
         this.getLogger().info("Starting Minecraft server on " + (this.getServerIp().length() == 0 ? "*" : this.getServerIp()) + ":" + this.G());
 
         try {
-            this.r = new DedicatedServerConnection(this, inetaddress, this.G());
+            // Spigot start
+            this.r = (!Boolean.getBoolean("org.spigotmc.netty.disabled"))
+                    ? new org.spigotmc.netty.NettyServerConnection(this, inetaddress, this.G())
+                    : new DedicatedServerConnection(this, inetaddress, this.G());
+            // Spigot end
         } catch (Throwable ioexception) { // CraftBukkit - IOException -> Throwable
             this.getLogger().warning("**** FAILED TO BIND TO PORT!");
             this.getLogger().warning("The exception was: {0}", new Object[] { ioexception.toString()});

@@ -161,8 +161,4 @@ class CraftMetaEnchantedBook extends CraftMetaItem implements EnchantmentStorage
     public boolean hasStoredEnchants() {
         return !(enchantments == null || enchantments.isEmpty());
     }
-
-    public boolean hasConflictingStoredEnchant(Enchantment ench) {
-        return checkConflictingEnchants(enchantments, ench);
-    }
 }

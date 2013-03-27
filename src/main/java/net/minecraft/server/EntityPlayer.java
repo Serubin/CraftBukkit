@@ -51,6 +51,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public int newLevel = 0;
     public int newTotalExp = 0;
     public boolean keepLevel = false;
+    public int lastPing = -1; // Spigot
     // CraftBukkit end
 
     public EntityPlayer(MinecraftServer minecraftserver, World world, String s, PlayerInteractManager playerinteractmanager) {
@@ -173,8 +174,9 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
 
                 iterator1.remove();
                 if (chunkcoordintpair != null && this.world.isLoaded(chunkcoordintpair.x << 4, 0, chunkcoordintpair.z << 4)) {
-                    arraylist.add(this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z));
-                    arraylist1.addAll(((WorldServer) this.world).getTileEntities(chunkcoordintpair.x * 16, 0, chunkcoordintpair.z * 16, chunkcoordintpair.x * 16 + 16, 256, chunkcoordintpair.z * 16 + 16));
+                    Chunk chunk = this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z); // Spigot
+                    arraylist.add(chunk); // Spigot
+                    arraylist1.addAll(chunk.tileEntities.values()); // Spigot
                 }
             }
 
@@ -421,7 +423,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void a(boolean flag, boolean flag1, boolean flag2) {
-        if (this.fauxSleeping && !this.sleeping) return; // CraftBukkit - Can't leave bed if not in one!
+        if (!this.sleeping) return; // CraftBukkit - Can't leave bed if not in one!
 
         if (this.isSleeping()) {
             this.o().getTracker().sendPacketToEntity(this, new Packet18ArmAnimation(this, 3));

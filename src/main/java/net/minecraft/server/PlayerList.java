@@ -303,7 +303,7 @@ public abstract class PlayerList {
 
             event.disallow(PlayerLoginEvent.Result.KICK_BANNED, s1);
         } else if (!this.isWhitelisted(s)) {
-            event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, "You are not white-listed on this server!");
+            event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, cserver.whitelistMessage); // Spigot
         } else {
             String s2 = socketaddress.toString();
 
@@ -491,7 +491,14 @@ public abstract class PlayerList {
         if (exitWorld != null) {
             if ((cause == TeleportCause.END_PORTAL) && (i == 0)) {
                 // THE_END -> NORMAL; use bed if available, otherwise default spawn
-                exit = ((org.bukkit.craftbukkit.entity.CraftPlayer) entityplayer.getBukkitEntity()).getBedSpawnLocation();
+                ChunkCoordinates chunkcoordinates = entityplayer.getBed();
+                CraftWorld spawnWorld = (CraftWorld) this.server.server.getWorld(entityplayer.spawnWorld);
+                if (spawnWorld != null && chunkcoordinates != null) {
+                    ChunkCoordinates chunkcoordinates1 = EntityHuman.getBed(spawnWorld.getHandle(), chunkcoordinates, entityplayer.isRespawnForced());
+                    if (chunkcoordinates1 != null) {
+                        exit = new Location(spawnWorld, chunkcoordinates1.x + 0.5, chunkcoordinates1.y, chunkcoordinates1.z + 0.5);
+                    }
+                }
                 if (exit == null || ((CraftWorld) exit.getWorld()).getHandle().dimension != 0) {
                     exit = exitWorld.getWorld().getSpawnLocation();
                 }
@@ -713,7 +720,23 @@ public abstract class PlayerList {
             this.sendAll(new Packet201PlayerInfo(entityplayer.name, true, entityplayer.ping));
         }
         // CraftBukkit end */
+        // Spigot start
+        if (this.players.size() == 0 || !org.bukkit.craftbukkit.Spigot.tabPing) {
+            return;
+        }
+        int index = MinecraftServer.currentTick % this.players.size();
+        EntityPlayer player = (EntityPlayer) this.players.get(index);
+        if (player.lastPing == -1 || Math.abs(player.ping - player.lastPing) > 20) {
+            Packet packet = new Packet201PlayerInfo(player.listName, true, player.ping);
+            for (EntityPlayer splayer : (List<EntityPlayer>) this.players) {
+                if (splayer.getBukkitEntity().canSee(player.getBukkitEntity())) {
+                    splayer.playerConnection.sendPacket(packet);
+                }
+            }
+            player.lastPing = player.ping;
+        }
     }
+    // Spigot end
 
     public void sendAll(Packet packet) {
         for (int i = 0; i < this.players.size(); ++i) {
@@ -1044,7 +1067,13 @@ public abstract class PlayerList {
 
     public void r() {
         while (!this.players.isEmpty()) {
-            ((EntityPlayer) this.players.get(0)).playerConnection.disconnect(this.server.server.getShutdownMessage()); // CraftBukkit - add custom shutdown message
+            // Spigot start
+            EntityPlayer p = (EntityPlayer) this.players.get(0);
+            p.playerConnection.disconnect(this.server.server.getShutdownMessage());
+            if ((!this.players.isEmpty()) && (this.players.get(0) == p)) {
+                this.players.remove(0); // Prevent shutdown hang if already disconnected
+            }
+            // Spigot end
         }
     }
 

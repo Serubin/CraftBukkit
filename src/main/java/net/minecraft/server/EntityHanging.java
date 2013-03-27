@@ -260,6 +260,21 @@ public abstract class EntityHanging extends Entity {
         if (!this.world.isStatic && !this.dead && d0 * d0 + d1 * d1 + d2 * d2 > 0.0D) {
             if (dead) return; // CraftBukkit
 
+            // CraftBukkit start
+            HangingBreakEvent event = new HangingBreakEvent((Hanging) this.getBukkitEntity(), HangingBreakEvent.RemoveCause.PHYSICS);
+            this.world.getServer().getPluginManager().callEvent(event);
+
+            PaintingBreakEvent paintingEvent = null;
+            if (this instanceof EntityPainting) {
+                // Fire old painting event until it can be removed
+                paintingEvent = new PaintingBreakEvent((Painting) this.getBukkitEntity(), PaintingBreakEvent.RemoveCause.valueOf(event.getCause().name()));
+                paintingEvent.setCancelled(event.isCancelled());
+                this.world.getServer().getPluginManager().callEvent(paintingEvent);
+            }
+            if (event.isCancelled() || (paintingEvent != null && paintingEvent.isCancelled())) {
+                return;
+            }
+            // CraftBukkit end
             this.die();
             this.h();
         }

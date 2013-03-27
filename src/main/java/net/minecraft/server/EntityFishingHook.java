@@ -178,7 +178,6 @@ public class EntityFishingHook extends Entity {
             }
 
             if (movingobjectposition != null) {
-                org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this); // Craftbukkit - Call event
                 if (movingobjectposition.entity != null) {
                     if (movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.owner), 0)) {
                         this.hooked = movingobjectposition.entity;
@@ -235,7 +234,13 @@ public class EntityFishingHook extends Entity {
                     if (this.au > 0) {
                         --this.au;
                     } else {
-                        if (random.nextDouble() < ((org.bukkit.entity.Fish) this.getBukkitEntity()).getBiteChance()) { // CraftBukkit - moved logic to CraftFish
+                        short short1 = 500;
+
+                        if (this.world.F(MathHelper.floor(this.locX), MathHelper.floor(this.locY) + 1, MathHelper.floor(this.locZ))) {
+                            short1 = 300;
+                        }
+
+                        if (this.random.nextInt(short1) == 0) {
                             this.au = this.random.nextInt(30) + 10;
                             this.motY -= 0.20000000298023224D;
                             this.makeSound("random.splash", 0.25F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);

@@ -32,7 +32,7 @@ final class DispenseBehaviorEmptyBucket extends DispenseBehaviorItem {
         }
 
         // CraftBukkit start
-        org.bukkit.block.Block block = world.getWorld().getBlockAt(i, j, k);
+        org.bukkit.block.Block block = world.getWorld().getBlockAt(isourceblock.getBlockX(), j, isourceblock.getBlockZ());
         CraftItemStack craftItem = CraftItemStack.asCraftMirror(itemstack);
 
         BlockDispenseEvent event = new BlockDispenseEvent(block, craftItem.clone(), new org.bukkit.util.Vector(0, 0, 0));

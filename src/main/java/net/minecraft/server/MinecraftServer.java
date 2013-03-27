@@ -22,6 +22,7 @@ import jline.console.ConsoleReader;
 import joptsimple.OptionSet;
 
 import org.bukkit.World.Environment;
+import org.bukkit.craftbukkit.SpigotTimings; // Spigot
 import org.bukkit.craftbukkit.util.Waitable;
 import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.event.world.WorldSaveEvent;
@@ -93,6 +94,12 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public java.util.Queue<Runnable> processQueue = new java.util.concurrent.ConcurrentLinkedQueue<Runnable>();
     public int autosavePeriod;
     // CraftBukkit end
+    // Spigot start
+    private static final int TPS = 20;
+    private static final int TICK_TIME = 1000000000 / TPS;
+    public static double currentTPS = 0;
+    private static long catchupTime = 0;
+    // Spigot end
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - signature file -> OptionSet
         k = this;
@@ -387,39 +394,27 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public void run() {
         try {
             if (this.init()) {
-                long i = System.currentTimeMillis();
-
-                for (long j = 0L; this.isRunning; this.P = true) {
-                    long k = System.currentTimeMillis();
-                    long l = k - i;
-
-                    if (l > 2000L && i - this.Q >= 15000L) {
-                        if (this.server.getWarnOnOverload()) // CraftBukkit - Added option to suppress warning messages
-                        this.getLogger().warning("Can\'t keep up! Did the system time change, or is the server overloaded?");
-                        l = 2000L;
-                        this.Q = i;
-                    }
-
-                    if (l < 0L) {
-                        this.getLogger().warning("Time ran backwards! Did the system time change?");
-                        l = 0L;
-                    }
-
-                    j += l;
-                    i = k;
-                    if (this.worlds.get(0).everyoneDeeplySleeping()) { // CraftBukkit
-                        this.q();
-                        j = 0L;
+                // Spigot start
+                for (long lastTick = 0L; this.isRunning; this.P = true) {
+                    long curTime = System.nanoTime();
+                    long wait = TICK_TIME - (curTime - lastTick) - catchupTime;
+                    if (wait > 0) {
+                        Thread.sleep(wait / 1000000);
+                        catchupTime = 0;
+                        continue;
                     } else {
-                        while (j > 50L) {
-                            MinecraftServer.currentTick = (int) (System.currentTimeMillis() / 50); // CraftBukkit
-                            j -= 50L;
-                            this.q();
-                        }
+                        catchupTime = Math.min(TICK_TIME * TPS, Math.abs(wait));
                     }
-
-                    Thread.sleep(1L);
+                    currentTPS = (currentTPS * 0.95) + (1E9 / (curTime - lastTick) * 0.05);
+                    lastTick = curTime;
+                    MinecraftServer.currentTick++;
+                    SpigotTimings.serverTickTimer.startTiming();
+                    this.q();
+                    SpigotTimings.serverTickTimer.stopTiming();
+                    org.bukkit.CustomTimingsHandler.tick();
+                    org.spigotmc.WatchdogThread.tick();
                 }
+                // Spigot end
             } else {
                 this.a((CrashReport) null);
             }
@@ -445,6 +440,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
             this.a(crashreport);
         } finally {
             try {
+                org.spigotmc.WatchdogThread.doStop();
                 this.stop();
                 this.isStopped = true;
             } catch (Throwable throwable1) {
@@ -517,6 +513,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 	long tickDuration_tmp = System.currentTimeMillis();
         this.methodProfiler.a("levels");
 
+        SpigotTimings.schedulerTimer.startTiming(); // Spigot
         // CraftBukkit start
         this.server.getScheduler().mainThreadHeartbeat(this.ticks);
 
@@ -527,7 +524,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
             processQueue.remove().run();
         }
 
+        SpigotTimings.schedulerTimer.stopTiming(); // Spigot
+        SpigotTimings.chunkIOTickTimer.startTiming(); // Spigot
         org.bukkit.craftbukkit.chunkio.ChunkIOExecutor.tick();
+        SpigotTimings.chunkIOTickTimer.stopTiming(); // Spigot
 
         // Send time updates to everyone, it will get the right time from the world the player is in.
         if (this.ticks % 20 == 0) {
@@ -583,9 +583,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
                 this.methodProfiler.b();
                 this.methodProfiler.a("tracker");
-                time = System.currentTimeMillis();
+                worldserver.timings.tracker.startTiming(); // Spigot
                 worldserver.getTracker().updatePlayers();
-                onPlayerupdatetime += (System.currentTimeMillis()-time);
+                worldserver.timings.tracker.stopTiming(); // Spigot
+                onPlayerupdatetime += worldserver.timings.tracker.curTickTotal; //Hydrox
                 this.methodProfiler.b();
                 this.methodProfiler.b();
             // } // CraftBukkit
@@ -594,16 +595,21 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
         }
 
         this.methodProfiler.c("connection");
-        time = System.currentTimeMillis();
+        SpigotTimings.connectionTimer.startTiming(); // Spigot
         this.ae().b();
-        onNetworktime += (System.currentTimeMillis()-time);
+        SpigotTimings.connectionTimer.stopTiming(); // Spigot
+        onNetworktime += SpigotTimings.connectionTimer.curTickTotal; //Hydrox
         this.methodProfiler.c("players");
+        SpigotTimings.playerListTimer.startTiming(); // Spigot
         this.s.tick();
+        SpigotTimings.playerListTimer.stopTiming(); // Spigot
         this.methodProfiler.c("tickables");
 
+        SpigotTimings.tickablesTimer.startTiming(); // Spigot
         for (int i = 0; i < this.o.size(); ++i) {
             ((IUpdatePlayerListBox) this.o.get(i)).a();
         }
+        SpigotTimings.tickablesTimer.stopTiming(); // Spigot
         tickDuration += System.currentTimeMillis() - tickDuration_tmp;
         int loggingTick = 1200;
         String logPrefix = "[Performance Log]";
@@ -1135,7 +1141,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public int S() {
-        return 16;
+        return org.bukkit.craftbukkit.Spigot.textureResolution; // Spigot
     }
 
     public abstract boolean T();

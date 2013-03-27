@@ -134,7 +134,8 @@ public class ChunkSection {
                 }
             }
         } else {
-            byte[] ext = this.extBlockIds.a;
+            this.extBlockIds.forceToNonTrivialArray(); // Spigot
+            byte[] ext = this.extBlockIds.getValueArray();
             for (int off = 0, off2 = 0; off < blkIds.length;) {
                 byte extid = ext[off2];
                 int l = (blkIds[off] & 0xFF) | ((extid & 0xF) << 8); // Even data
@@ -165,6 +166,12 @@ public class ChunkSection {
                 off++;
                 off2++;
             }
+            // Spigot start
+            this.extBlockIds.detectAndProcessTrivialArray();
+            if (this.extBlockIds.isTrivialArray() && (this.extBlockIds.getTrivialArrayValue() == 0)) {
+                this.extBlockIds = null;
+            }
+            // Spigot end
         }
         this.nonEmptyBlockCount = cntNonEmpty;
         this.tickingBlockCount = cntTicking;
@@ -219,36 +226,52 @@ public class ChunkSection {
     }
 
     public void a(byte[] abyte) {
-        this.blockIds = abyte;
+        this.blockIds = validateByteArray(abyte); // Spigot - validate
     }
 
     public void a(NibbleArray nibblearray) {
         // CraftBukkit start - Don't hang on to an empty nibble array
         boolean empty = true;
-        for (int i = 0; i < nibblearray.a.length; i++) {
-            if (nibblearray.a[i] != 0) {
-                empty = false;
-                break;
-            }
+        // Spigot start
+        if ((!nibblearray.isTrivialArray()) || (nibblearray.getTrivialArrayValue() != 0)) {
+            empty = false;
         }
+        // Spigot end
 
         if (empty) {
             return;
         }
         // CraftBukkit end
-
-        this.extBlockIds = nibblearray;
+        this.extBlockIds = validateNibbleArray(nibblearray); // Spigot - validate
     }
 
     public void b(NibbleArray nibblearray) {
-        this.blockData = nibblearray;
+        this.blockData = validateNibbleArray(nibblearray); // Spigot - validate
     }
 
     public void c(NibbleArray nibblearray) {
-        this.blockLight = nibblearray;
+        this.blockLight = validateNibbleArray(nibblearray); // Spigot - validate
     }
 
     public void d(NibbleArray nibblearray) {
-        this.skyLight = nibblearray;
+        this.skyLight = validateNibbleArray(nibblearray); // Spigot - validate
     }
+    
+    // Spigot start - validate/correct nibble array
+    private static final NibbleArray validateNibbleArray(NibbleArray na) {
+        if ((na != null) && (na.getByteLength() < 2048)) {
+            na.resizeArray(2048);
+        }
+        return na;
+    }
+    // Validate/correct byte array
+    private static final byte[] validateByteArray(byte[] ba) {
+        if ((ba != null) && (ba.length < 4096)) {
+            byte[] newba = new byte[4096];
+            System.arraycopy(ba,  0,  newba,  0,  ba.length);
+            ba = newba;
+        }
+        return ba;
+    }
+    // Spigot end
 }
