@@ -1,8 +1,9 @@
-package org.bukkit.craftbukkit;
+package org.spigotmc;
 
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.server.Block;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.World;
 import org.bukkit.CustomTimingsHandler;
 
@@ -17,17 +18,9 @@ public class OrebfuscatorManager {
 
     // Default blocks
     static {
-        obfuscateBlocks[Block.STONE.id] = true;
-        obfuscateBlocks[Block.GOLD_ORE.id] = true;
-        obfuscateBlocks[Block.IRON_ORE.id] = true;
-        obfuscateBlocks[Block.COAL_ORE.id] = true;
-        obfuscateBlocks[Block.LAPIS_ORE.id] = true;
-        obfuscateBlocks[Block.CHEST.id] = true;
-        obfuscateBlocks[Block.DIAMOND_ORE.id] = true;
-        obfuscateBlocks[Block.REDSTONE_ORE.id] = true;
-        obfuscateBlocks[Block.GLOWING_REDSTONE_ORE.id] = true;
-        obfuscateBlocks[Block.EMERALD_ORE.id] = true;
-        obfuscateBlocks[Block.ENDER_CHEST.id] = true;
+        for (short id : MinecraftServer.getServer().server.orebfuscatorBlocks) {
+            obfuscateBlocks[id] = true;
+        }
 
         List<Byte> blocks = new ArrayList<Byte>();
         for (int i = 0; i < obfuscateBlocks.length; i++) {

@@ -36,7 +36,6 @@ public class EntityTrackerEntry {
     public boolean n = false;
     public Set trackedPlayers = new HashSet();
 
-    public List<EntityPlayer> playersToUpdate = new java.util.ArrayList<EntityPlayer>(); // Spigot
     public EntityTrackerEntry(Entity entity, int i, int j, boolean flag) {
         this.tracker = entity;
         this.b = i;
@@ -74,17 +73,17 @@ public class EntityTrackerEntry {
             this.broadcast(new Packet39AttachEntity(this.tracker, this.tracker.vehicle));
         }
 
-        if (this.tracker instanceof EntityItemFrame) { // Spigot - has to be ran every tick for general frames or they may pop off?
+        if (this.tracker instanceof EntityItemFrame /*&& this.m % 10 == 0*/) { // CraftBukkit - Moved below, should always enter this block
             EntityItemFrame i4 = (EntityItemFrame) this.tracker;
             ItemStack i5 = i4.i();
 
-            if (this.m++ % 10 == 0 && i5 != null && i5.getItem() instanceof ItemWorldMap && playersToUpdate.size() > 0) { // Spigot
+            if (this.m % 10 == 0 && i5 != null && i5.getItem() instanceof ItemWorldMap) { // CraftBukkit - Moved this.m % 10 logic here so item frames do not enter the other blocks
                 WorldMap i7 = Item.MAP.getSavedMap(i5, this.tracker.world);
-                Iterator j0 = playersToUpdate.iterator(); // Spigot
+                Iterator j0 = this.trackedPlayers.iterator(); // CraftBukkit
 
                 while (j0.hasNext()) {
-                    //EntityHuman j1 = (EntityHuman) j0.next(); // Spigot - unused
-                    EntityPlayer j2 = (EntityPlayer) j0.next(); // Spigot
+                    EntityHuman j1 = (EntityHuman) j0.next();
+                    EntityPlayer j2 = (EntityPlayer) j1;
 
                     i7.a(j2, i5);
                     if (j2.playerConnection.lowPriorityCount() <= 5) {
@@ -92,7 +91,7 @@ public class EntityTrackerEntry {
 
                         if (j3 != null) {
                             j2.playerConnection.sendPacket(j3);
-                        } else { j0.remove(); } // Spigot
+                        }
                     }
                 }
             }
@@ -120,7 +119,7 @@ public class EntityTrackerEntry {
                 boolean flag = Math.abs(j1) >= 4 || Math.abs(k1) >= 4 || Math.abs(l1) >= 4 || this.m % 60 == 0;
                 boolean flag1 = Math.abs(l - this.yRot) >= 4 || Math.abs(i1 - this.xRot) >= 4;
 
-                // CraftBukkit start - code moved from below
+                // CraftBukkit start - Code moved from below
                 if (flag) {
                     this.xLoc = i;
                     this.yLoc = j;
@@ -144,7 +143,7 @@ public class EntityTrackerEntry {
                         }
                     } else {
                         this.u = 0;
-                        // CraftBukkit start - refresh list of who can see a player before sending teleport packet
+                        // CraftBukkit start - Refresh list of who can see a player before sending teleport packet
                         if (this.tracker instanceof EntityPlayer) {
                             this.scanPlayers(new java.util.ArrayList(this.trackedPlayers));
                         }
@@ -178,7 +177,7 @@ public class EntityTrackerEntry {
                     this.broadcastIncludingSelf(new Packet40EntityMetadata(this.tracker.id, datawatcher1, false));
                 }
 
-                /* CraftBukkit start - code moved up
+                /* CraftBukkit start - Code moved up
                 if (flag) {
                     this.xLoc = i;
                     this.yLoc = j;
@@ -226,7 +225,7 @@ public class EntityTrackerEntry {
 
         ++this.m;
         if (this.tracker.velocityChanged) {
-            // CraftBukkit start - create PlayerVelocity event
+            // CraftBukkit start - Create PlayerVelocity event
             boolean cancelled = false;
 
             if (this.tracker instanceof EntityPlayer) {
@@ -287,6 +286,7 @@ public class EntityTrackerEntry {
     }
 
     public void updatePlayer(EntityPlayer entityplayer) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous player tracker update!"); // Spigot
         if (entityplayer != this.tracker) {
             double d0 = entityplayer.locX - (double) (this.xLoc / 32);
             double d1 = entityplayer.locZ - (double) (this.zLoc / 32);
@@ -333,17 +333,6 @@ public class EntityTrackerEntry {
                         }
                     }
 
-                    // Spigot start - add player to list to receive initial map updates.
-                    if (this.tracker instanceof EntityItemFrame) {
-                        EntityItemFrame i4 = (EntityItemFrame) this.tracker;
-                        ItemStack i5 = i4.i();
-
-                        if (i5 != null && i5.getItem() instanceof ItemWorldMap) {
-                            this.playersToUpdate.add(entityplayer);
-                        }
-                    }
-                    // Spigot end
-
                     if (this.tracker instanceof EntityHuman) {
                         EntityHuman entityhuman = (EntityHuman) this.tracker;
 
@@ -370,7 +359,6 @@ public class EntityTrackerEntry {
                 }
             } else if (this.trackedPlayers.contains(entityplayer)) {
                 this.trackedPlayers.remove(entityplayer);
-                this.playersToUpdate.remove(entityplayer); // Spigot
                 entityplayer.removeQueue.add(Integer.valueOf(this.tracker.id));
             }
         }
@@ -388,7 +376,7 @@ public class EntityTrackerEntry {
 
     private Packet b() {
         if (this.tracker.dead) {
-            // CraftBukkit start - remove useless error spam, just return
+            // CraftBukkit start - Remove useless error spam, just return
             // this.tracker.world.getLogger().warning("Fetching addPacket for removed entity");
             return null;
             // CraftBukkit end
@@ -483,6 +471,7 @@ public class EntityTrackerEntry {
     }
 
     public void clear(EntityPlayer entityplayer) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous player tracker clear!"); // Spigot
         if (this.trackedPlayers.contains(entityplayer)) {
             this.trackedPlayers.remove(entityplayer);
             entityplayer.removeQueue.add(Integer.valueOf(this.tracker.id));

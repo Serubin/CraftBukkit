@@ -103,7 +103,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         this.getBukkitEntity().setExtraData(nbttagcompound); // CraftBukkit
     }
 
-    // CraftBukkit start - world fallback code, either respawn location or global spawn
+    // CraftBukkit start - World fallback code, either respawn location or global spawn
     public void spawnIn(World world) {
         super.spawnIn(world);
         if (world == null) {
@@ -368,7 +368,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         } else {
             if (this.dimension == 1 && i == 0) {
                 this.a((Statistic) AchievementList.B);
-                // CraftBukkit start - rely on custom portal management
+                // CraftBukkit start - Rely on custom portal management
                 /*
                 ChunkCoordinates chunkcoordinates = this.server.getWorldServer(i).getDimensionSpawn();
 
@@ -463,7 +463,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void startCrafting(int i, int j, int k) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerWorkbench(this.inventory, this.world, i, j, k));
         if(container == null) return;
         // CraftBukkit end
@@ -476,7 +476,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void startEnchanting(int i, int j, int k, String s) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerEnchantTable(this.inventory, this.world, i, j, k));
         if(container == null) return;
         // CraftBukkit end
@@ -489,7 +489,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openAnvil(int i, int j, int k) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerAnvil(this.inventory, this.world, i, j, k, this));
         if(container == null) return;
         // CraftBukkit end
@@ -506,7 +506,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
             this.closeInventory();
         }
 
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerChest(this.inventory, iinventory));
         if(container == null) return;
         // CraftBukkit end
@@ -519,7 +519,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openHopper(TileEntityHopper tileentityhopper) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerHopper(this.inventory, tileentityhopper));
         if(container == null) return;
         // CraftBukkit end
@@ -532,7 +532,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openMinecartHopper(EntityMinecartHopper entityminecarthopper) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerHopper(this.inventory, entityminecarthopper));
         if(container == null) return;
         // CraftBukkit end
@@ -545,7 +545,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openFurnace(TileEntityFurnace tileentityfurnace) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerFurnace(this.inventory, tileentityfurnace));
         if(container == null) return;
         // CraftBukkit end
@@ -558,7 +558,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openDispenser(TileEntityDispenser tileentitydispenser) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerDispenser(this.inventory, tileentitydispenser));
         if(container == null) return;
         // CraftBukkit end
@@ -571,7 +571,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openBrewingStand(TileEntityBrewingStand tileentitybrewingstand) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerBrewingStand(this.inventory, tileentitybrewingstand));
         if(container == null) return;
         // CraftBukkit end
@@ -584,7 +584,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openBeacon(TileEntityBeacon tileentitybeacon) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerBeacon(this.inventory, tileentitybeacon));
         if(container == null) return;
         // CraftBukkit end
@@ -597,7 +597,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void openTrade(IMerchant imerchant, String s) {
-        // CraftBukkit start - inventory open hook
+        // CraftBukkit start - Inventory open hook
         Container container = CraftEventFactory.callInventoryOpenEvent(this, new ContainerMerchant(this.inventory, imerchant, this.world));
         if(container == null) return;
         // CraftBukkit end
@@ -640,7 +640,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public void a(Container container, List list) {
         this.playerConnection.sendPacket(new Packet104WindowItems(container.windowId, list));
         this.playerConnection.sendPacket(new Packet103SetSlot(-1, -1, this.inventory.getCarried()));
-        // CraftBukkit start - send a Set Slot to update the crafting result slot
+        // CraftBukkit start - Send a Set Slot to update the crafting result slot
         if (java.util.EnumSet.of(InventoryType.CRAFTING,InventoryType.WORKBENCH).contains(container.getBukkitView().getType())) {
             this.playerConnection.sendPacket(new Packet103SetSlot(container.windowId, 0, container.getSlot(0).getItem()));
         }
@@ -837,7 +837,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public WeatherType getPlayerWeather() {
         return this.weather;
     }
-   
+
     public void setPlayerWeather(WeatherType type, boolean plugin) {
         if (!plugin && this.weather != null) {
             return;
@@ -849,7 +849,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
 
         this.playerConnection.sendPacket(new Packet70Bed(type == WeatherType.DOWNFALL ? 1 : 2, 0));
     }
-   
+
     public void resetPlayerWeather() {
         this.weather = null;
         this.setPlayerWeather(this.o().getWorldData().hasStorm() ? WeatherType.DOWNFALL : WeatherType.CLEAR, false);

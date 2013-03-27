@@ -152,7 +152,7 @@ public class PendingConnection extends Connection {
             org.bukkit.event.server.ServerListPingEvent pingEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callServerListPingEvent(this.server.server, getSocket().getInetAddress(), this.server.getMotd(), playerlist.getPlayerCount(), playerlist.getMaxPlayers());
 
             if (true) {
-                // CraftBukkit start - fix decompile issues, don't create a list from an array
+                // CraftBukkit start - Fix decompile issues, don't create a list from an array
                 Object[] list = new Object[] { 1, 60, this.server.getVersion(), pingEvent.getMotd(), playerlist.getPlayerCount(), pingEvent.getMaxPlayers() };
 
                 for (Object object : list) {
@@ -219,4 +219,17 @@ public class PendingConnection extends Connection {
     static boolean a(PendingConnection pendingconnection, boolean flag) {
         return pendingconnection.h = flag;
     }
+
+    // Spigot start
+    @Override
+    public void a(Packet250CustomPayload pcp) {
+        if (pcp.tag.equals("BungeeCord") && org.bukkit.craftbukkit.Spigot.bungeeIPs.contains(getSocket().getInetAddress().getHostAddress())) {
+            com.google.common.io.ByteArrayDataInput in = com.google.common.io.ByteStreams.newDataInput(pcp.data);
+            String subTag = in.readUTF();
+            if (subTag.equals("Login")) {
+                networkManager.setSocketAddress(new java.net.InetSocketAddress(in.readUTF(), in.readInt()));
+            }
+        }
+    }
+    // Spigot end
 }

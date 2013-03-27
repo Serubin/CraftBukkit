@@ -413,7 +413,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
                             } else {
                                 this.growthOdds = 100;
                             }
-                            for (int c = 0; c < getWorld().aggregateTicks; c++) {
+                            for (int c = 0; c < ((block.id == Block.SAPLING.id) ? 1 : getWorld().aggregateTicks); c++) {
                                 block.a(this, k2 + k, i3 + chunksection.d(), l2 + l, this.random);
                             }
                             // Spigot end
@@ -506,7 +506,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
             throw new IllegalStateException("TickNextTick list out of synch");
         } else {
             if (i > 1000) {
-                // CraftBukkit start - if the server has too much to process over time, try to alleviate that
+                // CraftBukkit start - If the server has too much to process over time, try to alleviate that
                 if (i > 20 * 1000) {
                     i = i / 20;
                 } else {
@@ -587,7 +587,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
                 iterator = this.M.iterator();
             } else {
                 iterator = this.T.iterator();
-                /* CraftBukkit start - comment out debug spam
+                /* CraftBukkit start - Comment out debug spam
                 if (!this.T.isEmpty()) {
                     System.out.println(this.T.size());
                 }
@@ -929,7 +929,7 @@ public class WorldServer extends World implements org.bukkit.BlockChangeDelegate
 
         super.n();
         if (flag != this.O()) {
-            // CraftBukkit start - only sending weather packets to those affected
+            // CraftBukkit start - Only send weather packets to those affected
             for (int i = 0; i < this.players.size(); ++i) {
                 if (((EntityPlayer) this.players.get(i)).world == this) {
                     ((EntityPlayer) this.players.get(i)).setPlayerWeather((!flag ? WeatherType.DOWNFALL : WeatherType.CLEAR), false);

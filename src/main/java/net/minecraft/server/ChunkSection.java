@@ -115,7 +115,7 @@ public class ChunkSection {
     }
 
     public void recalcBlockCounts() {
-        // CraftBukkit start - optimize for speed
+        // CraftBukkit start - Optimize for speed
         byte[] blkIds = this.blockIds;
         int cntNonEmpty = 0;
         int cntTicking = 0;
@@ -230,7 +230,7 @@ public class ChunkSection {
     }
 
     public void a(NibbleArray nibblearray) {
-        // CraftBukkit start - don't hang on to an empty nibble array
+        // CraftBukkit start - Don't hang on to an empty nibble array
         boolean empty = true;
         // Spigot start
         if ((!nibblearray.isTrivialArray()) || (nibblearray.getTrivialArrayValue() != 0)) {

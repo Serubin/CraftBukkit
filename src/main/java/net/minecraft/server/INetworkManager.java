@@ -20,5 +20,7 @@ public interface INetworkManager {
 
     void a(String s, Object... aobject);
     
-    java.net.Socket getSocket();
+    java.net.Socket getSocket(); // Spigot
+    
+    void setSocketAddress(java.net.SocketAddress address); // Spigot
 }

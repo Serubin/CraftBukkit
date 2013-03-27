@@ -46,7 +46,7 @@ public class Packet51MapChunk extends Packet {
 
         this.d = chunkmap.c;
         this.c = chunkmap.b;
-        org.bukkit.craftbukkit.OrebfuscatorManager.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world); // Spigot (Orebfuscator)
+        org.spigotmc.OrebfuscatorManager.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world); // Spigot (Orebfuscator)
 
         try {
             this.inflatedBuffer = chunkmap.a;

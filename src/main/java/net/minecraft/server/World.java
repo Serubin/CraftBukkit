@@ -916,12 +916,13 @@ public abstract class World implements IBlockAccess {
         return true;
     }
 
-    // CraftBukkit start - used for entities other than creatures
+    // CraftBukkit start - Used for entities other than creatures
     public boolean addEntity(Entity entity) {
         return this.addEntity(entity, SpawnReason.DEFAULT); // Set reason as DEFAULT
     }
 
     public boolean addEntity(Entity entity, SpawnReason spawnReason) { // Changed signature, added SpawnReason
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity add!"); // Spigot
         if (entity == null) return false;
         // CraftBukkit end
 
@@ -949,8 +950,12 @@ public abstract class World implements IBlockAccess {
             event = CraftEventFactory.callCreatureSpawnEvent((EntityLiving) entity, spawnReason);
         } else if (entity instanceof EntityItem) {
             event = CraftEventFactory.callItemSpawnEvent((EntityItem) entity);
-        }   // Spigot start
-        if (entity instanceof EntityExperienceOrb) {
+        } else if (entity.getBukkitEntity() instanceof org.bukkit.entity.Projectile) {
+            // Not all projectiles extend EntityProjectile, so check for Bukkit interface instead
+            event = CraftEventFactory.callProjectileLaunchEvent(entity);
+        }
+        // Spigot start
+        else if (entity instanceof EntityExperienceOrb) {
             EntityExperienceOrb xp = (EntityExperienceOrb) entity;
             double radius = this.getWorld().expMergeRadius;
             if (radius > 0) {
@@ -966,10 +971,6 @@ public abstract class World implements IBlockAccess {
                 }
             }
         } // Spigot end
-        else if (entity.getBukkitEntity() instanceof org.bukkit.entity.Projectile) {
-            // Not all projectiles extend EntityProjectile, so check for Bukkit interface instead
-            event = CraftEventFactory.callProjectileLaunchEvent(entity);
-        }
 
         if (event != null && (event.isCancelled() || entity.dead)) {
             entity.dead = true;
@@ -1028,6 +1029,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public void removeEntity(Entity entity) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity remove!"); // Spigot
         entity.die();
         if (entity instanceof EntityHuman) {
             this.players.remove(entity);
@@ -1222,7 +1224,7 @@ public abstract class World implements IBlockAccess {
 
         for (i = 0; i < this.i.size(); ++i) {
             entity = (Entity) this.i.get(i);
-            // CraftBukkit start - fixed an NPE, don't process entities in chunks queued for unload
+            // CraftBukkit start - Fixed an NPE, don't process entities in chunks queued for unload
             if (entity == null) {
                 continue;
             }
@@ -1280,7 +1282,7 @@ public abstract class World implements IBlockAccess {
         for (i = 0; i < this.entityList.size(); ++i) {
             entity = (Entity) this.entityList.get(i);
 
-            // CraftBukkit start - don't tick entities in chunks queued for unload
+            // CraftBukkit start - Don't tick entities in chunks queued for unload
             ChunkProviderServer chunkProviderServer = ((WorldServer) this).chunkProviderServer;
             if (chunkProviderServer.unloadQueue.contains(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
                 continue;
@@ -1341,7 +1343,7 @@ public abstract class World implements IBlockAccess {
                 continue;
             }
             // Spigot end
-            // CraftBukkit start - don't tick entities in chunks queued for unload
+            // CraftBukkit start - Don't tick entities in chunks queued for unload
             ChunkProviderServer chunkProviderServer = ((WorldServer) this).chunkProviderServer;
             if (chunkProviderServer.unloadQueue.contains(tileentity.x >> 4, tileentity.z >> 4)) {
                 continue;
@@ -1388,7 +1390,7 @@ public abstract class World implements IBlockAccess {
                 TileEntity tileentity1 = (TileEntity) this.a.get(l);
 
                 if (!tileentity1.r()) {
-                    /* CraftBukkit start - order matters, moved down
+                    /* CraftBukkit start - Order matters, moved down
                     if (!this.tileEntityList.contains(tileentity1)) {
                         this.tileEntityList.add(tileentity1);
                     }
@@ -1399,7 +1401,7 @@ public abstract class World implements IBlockAccess {
 
                         if (chunk1 != null) {
                             chunk1.a(tileentity1.x & 15, tileentity1.y, tileentity1.z & 15, tileentity1);
-                            // CraftBukkit start - moved down from above
+                            // CraftBukkit start - Moved down from above
                             if (!this.tileEntityList.contains(tileentity1)) {
                                 this.tileEntityList.add(tileentity1);
                             }
@@ -2639,7 +2641,7 @@ public abstract class World implements IBlockAccess {
 
         for (int i = 0; i < this.players.size(); ++i) {
             EntityHuman entityhuman1 = (EntityHuman) this.players.get(i);
-            // CraftBukkit start - fixed an NPE
+            // CraftBukkit start - Fixed an NPE
             if (entityhuman1 == null || entityhuman1.dead) {
                 continue;
             }
@@ -2665,7 +2667,7 @@ public abstract class World implements IBlockAccess {
 
         for (int i = 0; i < this.players.size(); ++i) {
             EntityHuman entityhuman1 = (EntityHuman) this.players.get(i);
-            // CraftBukkit start - fixed an NPE
+            // CraftBukkit start - Fixed an NPE
             if (entityhuman1 == null || entityhuman1.dead) {
                 continue;
             }

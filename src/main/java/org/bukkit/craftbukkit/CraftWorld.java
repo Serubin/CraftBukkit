@@ -86,13 +86,14 @@ public class CraftWorld implements World {
             name = world.worldData.getName().replaceAll(" ", "_");
         }
 
-        //load defaults first
+        // load defaults first
+        boolean info = configuration.getBoolean("world-settings.default.info", true); 
         growthPerTick = configuration.getInt("world-settings.default.growth-chunks-per-tick", growthPerTick);
-        itemMergeRadius = configuration.getDouble("world-settings.default.item-merge-radius", itemMergeRadius);
-        expMergeRadius = configuration.getDouble("world-settings.default.exp-merge-radius", expMergeRadius);
         randomLightingUpdates = configuration.getBoolean("world-settings.default.random-light-updates", randomLightingUpdates);
         mobSpawnRange = configuration.getInt("world-settings.default.mob-spawn-range", mobSpawnRange);
         aggregateTicks = Math.max(1, configuration.getInt("world-settings.default.aggregate-chunkticks", aggregateTicks));
+        itemMergeRadius = configuration.getDouble("world-settings.default.item-merge-radius", itemMergeRadius);
+        expMergeRadius = configuration.getDouble("world-settings.default.exp-merge-radius", expMergeRadius);
 
         wheatGrowthModifier = configuration.getInt("world-settings.default.wheat-growth-modifier", wheatGrowthModifier);
         cactusGrowthModifier = configuration.getInt("world-settings.default.cactus-growth-modifier", cactusGrowthModifier);
@@ -106,13 +107,22 @@ public class CraftWorld implements World {
         animalEntityActivationRange = configuration.getInt("world-settings.default.entity-activation-range-animals");
         monsterEntityActivationRange = configuration.getInt("world-settings.default.entity-activation-range-monsters");
 
+        playerTrackingRange = configuration.getInt("world-settings.default.entity-tracking-range-players");
+        miscTrackingRange = configuration.getInt("world-settings.default.entity-tracking-range-misc");
+        animalTrackingRange = configuration.getInt("world-settings.default.entity-tracking-range-animals");
+        monsterTrackingRange = configuration.getInt("world-settings.default.entity-tracking-range-monsters");
+        maxTrackingRange = configuration.getInt("world-settings.default.entity-tracking-range-max");
+        
         //override defaults with world specific, if they exist
+        info = configuration.getBoolean("world-settings." + name + ".info", info);
         growthPerTick = configuration.getInt("world-settings." + name + ".growth-chunks-per-tick", growthPerTick);
         itemMergeRadius = configuration.getDouble("world-settings." + name + ".item-merge-radius", itemMergeRadius);
         expMergeRadius = configuration.getDouble("world-settings." + name + ".exp-merge-radius", expMergeRadius);
         randomLightingUpdates = configuration.getBoolean("world-settings." + name + ".random-light-updates", randomLightingUpdates);
         mobSpawnRange = configuration.getInt("world-settings." + name + ".mob-spawn-range", mobSpawnRange);
         aggregateTicks = Math.max(1, configuration.getInt("world-settings." + name + ".aggregate-chunkticks", aggregateTicks));
+        itemMergeRadius = configuration.getDouble("world-settings." + name + ".item-merge-radius", itemMergeRadius);
+        expMergeRadius = configuration.getDouble("world-settings." + name + ".exp-merge-radius", expMergeRadius);
 
         wheatGrowthModifier = configuration.getInt("world-settings." + name + ".wheat-growth-modifier", wheatGrowthModifier);
         cactusGrowthModifier = configuration.getInt("world-settings." + name + ".cactus-growth-modifier", cactusGrowthModifier);
@@ -131,11 +141,19 @@ public class CraftWorld implements World {
         animalEntityActivationRange = configuration.getInt("world-settings." + name + ".entity-activation-range-animals", animalEntityActivationRange);
         monsterEntityActivationRange = configuration.getInt("world-settings." + name + ".entity-activation-range-monsters", monsterEntityActivationRange);
 
+        maxTrackingRange = configuration.getInt("world-settings." + name + ".entity-tracking-range-max", maxTrackingRange);
+        playerTrackingRange = Math.min(maxTrackingRange, configuration.getInt("world-settings." + name + ".entity-tracking-range-players", playerTrackingRange));
+        miscTrackingRange = Math.min(maxTrackingRange, configuration.getInt("world-settings." + name + ".entity-tracking-range-misc", miscTrackingRange));
+        animalTrackingRange = Math.min(maxTrackingRange, configuration.getInt("world-settings." + name + ".entity-tracking-range-animals", animalTrackingRange));
+        monsterTrackingRange = Math.min(maxTrackingRange, configuration.getInt("world-settings." + name + ".entity-tracking-range-monsters", monsterTrackingRange));
+        if (maxTrackingRange == 0) {
+            System.err.println("Error! Should not have 0 maxRange");
+        }
+
+        if (!info) return;
         server.getLogger().info("-------------- Spigot ----------------");
         server.getLogger().info("-------- World Settings For [" + name + "] --------");
         server.getLogger().info("Growth Per Chunk: " + growthPerTick);
-        server.getLogger().info("Item Merge Radius: " + itemMergeRadius);
-        server.getLogger().info("Experience Merge Radius: " + expMergeRadius);
         server.getLogger().info("Random Lighting Updates: " + randomLightingUpdates);
         server.getLogger().info("Mob Spawn Range: " + mobSpawnRange);
         server.getLogger().info("Aggregate Ticks: " + aggregateTicks);
@@ -149,16 +167,17 @@ public class CraftWorld implements World {
         server.getLogger().info("View distance: " + viewDistance);
         server.getLogger().info("Oreobfuscator: " + obfuscated);
         server.getLogger().info("Entity Activation Range: An " + animalEntityActivationRange + " / Mo " + monsterEntityActivationRange + " / Mi " + miscEntityActivationRange);
+        server.getLogger().info("Entity Tracking Range: Pl " + playerTrackingRange + " / An " + animalTrackingRange + " / Mo " + monsterTrackingRange + " / Mi " + miscTrackingRange + " / Max " + maxTrackingRange);
         server.getLogger().info("-------------------------------------------------");
         // Spigot end
     }
     // Spigot Start
     public int growthPerTick = 650;
-    public double itemMergeRadius = 3;
-    public double expMergeRadius = 3;
     public boolean randomLightingUpdates = false;
     public int mobSpawnRange = 4;
     public int aggregateTicks = 4;
+    public double itemMergeRadius = 3.5;
+    public double expMergeRadius = 3.5;
     public int viewDistance;
     public boolean obfuscated = false;
     //Crop growth rates:
@@ -173,6 +192,12 @@ public class CraftWorld implements World {
     public int miscEntityActivationRange = 16;
     public int animalEntityActivationRange = 32;
     public int monsterEntityActivationRange = 32;
+
+    public int playerTrackingRange = 64;
+    public int miscTrackingRange = 32;
+    public int animalTrackingRange = 48;
+    public int monsterTrackingRange = 48;
+    public int maxTrackingRange = 64;
     // Spigot end
 
     public Block getBlockAt(int x, int y, int z) {
@@ -256,7 +281,7 @@ public class CraftWorld implements World {
     }
 
     public boolean unloadChunkRequest(int x, int z, boolean safe) {
-        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk unload!");
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk unload!"); // Spigot
         if (safe && isChunkInUse(x, z)) {
             return false;
         }
@@ -267,7 +292,7 @@ public class CraftWorld implements World {
     }
 
     public boolean unloadChunk(int x, int z, boolean save, boolean safe) {
-        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk unload!");
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk unload!"); // Spigot
         if (safe && isChunkInUse(x, z)) {
             return false;
         }
@@ -335,7 +360,7 @@ public class CraftWorld implements World {
     }
 
     public boolean loadChunk(int x, int z, boolean generate) {
-        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk load!");
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous chunk load!"); // Spigot
         chunkLoadCount++;
         if (generate) {
             // Use the default variant of loadChunk when generate == true.
@@ -343,7 +368,7 @@ public class CraftWorld implements World {
         }
 
         world.chunkProviderServer.unloadQueue.remove(x, z);
-        net.minecraft.server.Chunk chunk = (net.minecraft.server.Chunk) world.chunkProviderServer.chunks.get(LongHash.toLong(x, z));
+        net.minecraft.server.Chunk chunk = world.chunkProviderServer.chunks.get(LongHash.toLong(x, z));
 
         if (chunk == null) {
             chunk = world.chunkProviderServer.loadChunk(x, z);
@@ -780,7 +805,7 @@ public class CraftWorld implements World {
     public void setStorm(boolean hasStorm) {
         CraftServer server = world.getServer();
 
-        WeatherChangeEvent weather = new WeatherChangeEvent((org.bukkit.World) this, hasStorm);
+        WeatherChangeEvent weather = new WeatherChangeEvent(this, hasStorm);
         server.getPluginManager().callEvent(weather);
         if (!weather.isCancelled()) {
             world.worldData.setStorm(hasStorm);
@@ -810,7 +835,7 @@ public class CraftWorld implements World {
         if (thundering && !hasStorm()) setStorm(true);
         CraftServer server = world.getServer();
 
-        ThunderChangeEvent thunder = new ThunderChangeEvent((org.bukkit.World) this, thundering);
+        ThunderChangeEvent thunder = new ThunderChangeEvent(this, thundering);
         server.getPluginManager().callEvent(thunder);
         if (!thunder.isCancelled()) {
             world.worldData.setThundering(thundering);
@@ -947,6 +972,8 @@ public class CraftWorld implements World {
             } else if (ThrownExpBottle.class.isAssignableFrom(clazz)) {
                 entity = new EntityThrownExpBottle(world);
                 entity.setPositionRotation(x, y, z, 0, 0);
+            } else if (ThrownPotion.class.isAssignableFrom(clazz)) {
+                entity = new EntityPotion(world, x, y, z, CraftItemStack.asNMSCopy(new ItemStack(org.bukkit.Material.POTION, 1)));
             } else if (Fireball.class.isAssignableFrom(clazz)) {
                 if (SmallFireball.class.isAssignableFrom(clazz)) {
                     entity = new EntitySmallFireball(world);
@@ -955,7 +982,7 @@ public class CraftWorld implements World {
                 } else {
                     entity = new EntityLargeFireball(world);
                 }
-                ((EntityFireball) entity).setPositionRotation(x, y, z, yaw, pitch);
+                entity.setPositionRotation(x, y, z, yaw, pitch);
                 Vector direction = location.getDirection().multiply(10);
                 ((EntityFireball) entity).setDirection(direction.getX(), direction.getY(), direction.getZ());
             }
@@ -1362,9 +1389,7 @@ public class CraftWorld implements World {
         }
 
         ChunkProviderServer cps = world.chunkProviderServer;
-        Iterator<net.minecraft.server.Chunk> iter = cps.chunks.values().iterator();
-        while (iter.hasNext()) {
-            net.minecraft.server.Chunk chunk = iter.next();
+        for (net.minecraft.server.Chunk chunk : cps.chunks.values()) {
             // If in use, skip it
             if (isChunkInUse(chunk.x, chunk.z)) {
                 continue;
@@ -1376,7 +1401,7 @@ public class CraftWorld implements World {
             }
 
             // Add unload request
-            cps.queueUnload(chunk.x,  chunk.z);
+            cps.queueUnload(chunk.x, chunk.z);
         }
     }
 }

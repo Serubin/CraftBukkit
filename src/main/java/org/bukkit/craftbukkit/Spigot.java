@@ -9,20 +9,22 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.util.List;
 import java.util.logging.Level;
+import net.minecraft.server.EntityPlayer;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.spigotmc.Metrics;
 import org.spigotmc.RestartCommand;
 import org.spigotmc.WatchdogThread;
 
 public class Spigot {
-    static AxisAlignedBB maxBB = AxisAlignedBB.a(0,0,0,0,0,0);
-    static AxisAlignedBB miscBB = AxisAlignedBB.a(0,0,0,0,0,0);
-    static AxisAlignedBB animalBB = AxisAlignedBB.a(0,0,0,0,0,0);
-    static AxisAlignedBB monsterBB = AxisAlignedBB.a(0,0,0,0,0,0);
 
+    static AxisAlignedBB maxBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
+    static AxisAlignedBB miscBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
+    static AxisAlignedBB animalBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
+    static AxisAlignedBB monsterBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
     public static boolean tabPing = false;
     private static Metrics metrics;
+    public static List<String> bungeeIPs;
+    public static int textureResolution = 16;
 
     public static void initialize(CraftServer server, SimpleCommandMap commandMap, YamlConfiguration configuration) {
         commandMap.register("bukkit", new org.bukkit.craftbukkit.command.TicksPerSecondCommand("tps"));
@@ -50,6 +52,7 @@ public class Spigot {
         server.orebfuscatorEngineMode = configuration.getInt("orebfuscator.engine-mode", 1);
         server.orebfuscatorUpdateRadius = configuration.getInt("orebfuscator.update-radius", 2);
         server.orebfuscatorDisabledWorlds = configuration.getStringList("orebfuscator.disabled-worlds");
+        server.orebfuscatorBlocks = configuration.getShortList("orebfuscator.blocks");
         if (server.orebfuscatorEngineMode != 1 && server.orebfuscatorEngineMode != 2) {
             server.orebfuscatorEngineMode = 1;
         }
@@ -59,6 +62,8 @@ public class Spigot {
         }
 
         tabPing = configuration.getBoolean("settings.tab-ping", tabPing);
+        bungeeIPs = configuration.getStringList("settings.bungee-proxies");
+        textureResolution = configuration.getInt("settings.texture-resolution", textureResolution);
 
         if (metrics == null) {
             try {
@@ -73,6 +78,7 @@ public class Spigot {
     /**
      * Initializes an entities type on construction to specify what group this
      * entity is in for activation ranges.
+     *
      * @param entity
      * @return group id
      */
@@ -94,21 +100,20 @@ public class Spigot {
      * @return boolean If it should always tick.
      */
     public static boolean initializeEntityActivationState(Entity entity, CraftWorld world) {
-        if (   (entity.activationType == 3 && world.miscEntityActivationRange == 0)
-            || (entity.activationType == 2 && world.animalEntityActivationRange == 0)
-            || (entity.activationType == 1 && world.monsterEntityActivationRange == 0)
-            || entity instanceof EntityHuman
-            || entity instanceof EntityItemFrame
-            || entity instanceof EntityProjectile
-            || entity instanceof EntityEnderDragon
-            || entity instanceof EntityComplexPart
-            || entity instanceof EntityWither
-            || entity instanceof EntityFireball
-            || entity instanceof EntityWeather
-            || entity instanceof EntityTNTPrimed
-            || entity instanceof EntityEnderCrystal
-            || entity instanceof EntityFireworks
-            ) {
+        if ((entity.activationType == 3 && world.miscEntityActivationRange == 0)
+                || (entity.activationType == 2 && world.animalEntityActivationRange == 0)
+                || (entity.activationType == 1 && world.monsterEntityActivationRange == 0)
+                || entity instanceof EntityHuman
+                || entity instanceof EntityItemFrame
+                || entity instanceof EntityProjectile
+                || entity instanceof EntityEnderDragon
+                || entity instanceof EntityComplexPart
+                || entity instanceof EntityWither
+                || entity instanceof EntityFireball
+                || entity instanceof EntityWeather
+                || entity instanceof EntityTNTPrimed
+                || entity instanceof EntityEnderCrystal
+                || entity instanceof EntityFireworks) {
             return true;
         }
 
@@ -118,6 +123,7 @@ public class Spigot {
     /**
      * Utility method to grow an AABB without creating a new AABB or touching
      * the pool, so we can re-use ones we have.
+     *
      * @param target
      * @param source
      * @param x
@@ -136,6 +142,7 @@ public class Spigot {
     /**
      * Find what entities are in range of the players in the world and set
      * active if in range.
+     *
      * @param world
      */
     public static void activateEntities(World world) {
@@ -174,6 +181,7 @@ public class Spigot {
 
     /**
      * Checks for the activation state of all entities in this chunk.
+     *
      * @param chunk
      */
     private static void activateChunkEntities(Chunk chunk) {
@@ -209,6 +217,7 @@ public class Spigot {
     /**
      * If an entity is not in range, do some more checks to see if we should
      * give it a shot.
+     *
      * @param entity
      * @return
      */
@@ -219,7 +228,7 @@ public class Spigot {
         }
         if (!(entity instanceof EntityArrow)) {
             if (!entity.onGround || entity.passenger != null
-                || entity.vehicle != null) {
+                    || entity.vehicle != null) {
                 return true;
             }
         } else if (!((EntityArrow) entity).inGround) {
@@ -249,6 +258,7 @@ public class Spigot {
 
     /**
      * Checks if the entity is active for this tick.
+     *
      * @param entity
      * @return
      */
@@ -288,8 +298,8 @@ public class Spigot {
                 System.out.println("Attempting to restart with " + startupScript);
 
                 // Kick all players
-                for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-                   ((org.bukkit.craftbukkit.entity.CraftPlayer) p).kickPlayer("Server is restarting", true);
+                for (EntityPlayer p : (List< EntityPlayer>) MinecraftServer.getServer().getPlayerList().players) {
+                    p.playerConnection.disconnect("Server is restarting");
                 }
                 // Give the socket a chance to send the packets
                 try {
@@ -314,15 +324,15 @@ public class Spigot {
                 // This will be done AFTER the server has completely halted
                 Thread shutdownHook = new Thread() {
                     @Override
-                    public void run(){
+                    public void run() {
                         try {
                             String os = System.getProperty("os.name").toLowerCase();
                             if (os.contains("win")) {
                                 Runtime.getRuntime().exec("cmd /c start " + file.getPath());
                             } else {
-                                Runtime.getRuntime().exec(new String[] { "sh", file.getPath()});
+                                Runtime.getRuntime().exec(new String[]{"sh", file.getPath()});
                             }
-                        } catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -337,5 +347,31 @@ public class Spigot {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    /**
+     * Gets the range an entity should be 'tracked' by players and visible in the client.
+     * @param entity
+     * @param defaultRange Default range defined by Mojang
+     * @return
+     */
+    public static int getEntityTrackingRange(Entity entity, int defaultRange) {
+        CraftWorld world = entity.world.getWorld();
+        int range = defaultRange;
+        if (entity instanceof EntityPlayer) {
+            range = world.playerTrackingRange;
+        } else if (entity.defaultActivationState || entity instanceof EntityGhast) {
+            range = defaultRange;
+        } else if (entity.activationType == 1) {
+            range = world.monsterEntityActivationRange;
+        } else if (entity.activationType == 2) {
+            range = world.animalTrackingRange;
+        } else if (entity instanceof EntityItemFrame || entity instanceof EntityPainting || entity instanceof EntityItem || entity instanceof EntityExperienceOrb) {
+            range = world.miscTrackingRange;
+        }
+        if (range == 0) {
+            return defaultRange;
+        }
+        return Math.min(world.maxTrackingRange, range);
     }
 }

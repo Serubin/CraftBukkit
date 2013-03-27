@@ -6,6 +6,7 @@ import java.util.Random;
 import org.bukkit.Location;
 import org.bukkit.TreeType;
 import org.bukkit.craftbukkit.util.StructureGrowDelegate;
+import org.bukkit.entity.Player;
 import org.bukkit.event.world.StructureGrowEvent;
 // CraftBukkit end
 
@@ -25,14 +26,14 @@ public class BlockSapling extends BlockFlower {
     public void a(World world, int i, int j, int k, Random random) {
         if (!world.isStatic) {
             super.a(world, i, j, k, random);
-            if (world.getLightLevel(i, j + 1, k) >= 9 && (random.nextInt(Math.max(2, (int) ((world.growthOdds * 100 / world.getWorld().treeGrowthModifier * 7 / 100F) + 0.5F))) == 0)) { // Spigot
+            if (world.getLightLevel(i, j + 1, k) >= 9 && (random.nextInt(Math.max(2, (int) ((world.growthOdds / world.getWorld().aggregateTicks / world.getWorld().treeGrowthModifier * 7) + 0.5F))) == 0)) { // Spigot
                 this.grow(world, i, j, k, random, false, null, null); // CraftBukkit - added bonemeal, player and itemstack
             }
         }
     }
 
     // CraftBukkit - added bonemeal, player and itemstack
-    public void grow(World world, int i, int j, int k, Random random, boolean bonemeal, org.bukkit.entity.Player player, ItemStack itemstack) {
+    public void grow(World world, int i, int j, int k, Random random, boolean bonemeal, Player player, ItemStack itemstack) {
         int l = world.getData(i, j, k);
 
         if ((l & 8) == 0) {
@@ -42,14 +43,14 @@ public class BlockSapling extends BlockFlower {
         }
     }
 
-    // CraftBukkit - added bonemeal, player and itemstack
-    public void d(World world, int i, int j, int k, Random random, boolean bonemeal, org.bukkit.entity.Player player, ItemStack itemstack) {
+    // CraftBukkit - Added bonemeal, player and itemstack
+    public void d(World world, int i, int j, int k, Random random, boolean bonemeal, Player player, ItemStack itemstack) {
         int l = world.getData(i, j, k) & 3;
         Object object = null;
         int i1 = 0;
         int j1 = 0;
         boolean flag = false;
-        // CraftBukkit start - records tree generation and calls StructureGrowEvent
+        // CraftBukkit start - Records tree generation and calls StructureGrowEvent
         StructureGrowDelegate delegate = new StructureGrowDelegate(world);
         TreeType treeType = null;
         TreeGenerator gen = null;

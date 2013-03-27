@@ -66,7 +66,7 @@ public class Packet56MapChunkBulk extends Packet {
             this.inflatedBuffers[k] = chunkmap.a;
         }
 
-        /* CraftBukkit start - moved to compress()
+        /* CraftBukkit start - Moved to compress()
         Deflater deflater = new Deflater(-1);
 
         try {
@@ -89,7 +89,7 @@ public class Packet56MapChunkBulk extends Packet {
         // Spigot (Orebfuscator) start - Obfuscate chunks
         int finalBufferSize = 0;
         for (int i = 0; i < a.length; i++) {
-            org.bukkit.craftbukkit.OrebfuscatorManager.obfuscate(c[i], d[i], a[i], inflatedBuffers[i], world);
+            org.spigotmc.OrebfuscatorManager.obfuscate(c[i], d[i], a[i], inflatedBuffers[i], world);
             finalBufferSize += inflatedBuffers[i].length;
         }
 

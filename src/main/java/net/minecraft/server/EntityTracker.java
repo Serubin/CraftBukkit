@@ -58,7 +58,7 @@ public class EntityTracker {
         } else if (entity instanceof EntityMinecartAbstract) {
             this.addEntity(entity, 80, 3, true);
         } else if (entity instanceof EntityBoat) {
-            this.addEntity(entity, 80, 3, true);
+            this.addEntity(entity, 80, 2, true); // Spigot - send at same speed as player
         } else if (entity instanceof EntitySquid) {
             this.addEntity(entity, 64, 3, true);
         } else if (entity instanceof EntityWither) {
@@ -89,6 +89,8 @@ public class EntityTracker {
     }
 
     public void addEntity(Entity entity, int i, int j, boolean flag) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity track!"); // Spigot
+        i = org.bukkit.craftbukkit.Spigot.getEntityTrackingRange(entity, i); // Spigot
         if (i > this.d) {
             i = this.d;
         }
@@ -124,6 +126,7 @@ public class EntityTracker {
     }
 
     public void untrackEntity(Entity entity) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity untrack!"); // Spigot
         if (entity instanceof EntityPlayer) {
             EntityPlayer entityplayer = (EntityPlayer) entity;
             Iterator iterator = this.b.iterator();

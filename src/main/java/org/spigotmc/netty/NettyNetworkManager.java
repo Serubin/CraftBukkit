@@ -69,6 +69,22 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
         address = channel.remoteAddress();
         // Then the socket adaptor
         socketAdaptor = NettySocketAdaptor.adapt((SocketChannel) channel);
+        if (serverConnection.throttle == null) {
+            serverConnection.throttle = MinecraftServer.getServer().server.getConnectionThrottle();
+        }
+        if (serverConnection.throttle > 0) {
+            long time = System.currentTimeMillis();
+            String inetAddress = socketAdaptor.getInetAddress().getHostAddress();
+            if (serverConnection.throttleMap.containsKey(inetAddress) && !"127.0.0.1".equals(inetAddress)) {
+                if (time - serverConnection.throttleMap.get(inetAddress) < serverConnection.throttle) {
+                    connected = false;
+                    dcReason = "Too many connections.";
+                    channel.close();
+                    return;
+                }
+            }
+            serverConnection.throttleMap.put(inetAddress, time);
+        }
         // Followed by their first handler
         connection = new PendingConnection(server, this);
         // Finally register the connection
@@ -93,21 +109,23 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, final Packet msg) throws Exception {
-        if (msg instanceof Packet252KeyResponse) {
-            secret = ((Packet252KeyResponse) msg).a(key);
-        }
+        if (connected) {
+            if (msg instanceof Packet252KeyResponse) {
+                secret = ((Packet252KeyResponse) msg).a(key);
+            }
 
-        if (msg.a_()) {
-            threadPool.submit(new Runnable() {
-                public void run() {
-                    Packet packet = PacketListener.callReceived(NettyNetworkManager.this, connection, msg);
-                    if (packet != null) {
-                        packet.handle(connection);
+            if (msg.a_()) {
+                threadPool.submit(new Runnable() {
+                    public void run() {
+                        Packet packet = PacketListener.callReceived(NettyNetworkManager.this, connection, msg);
+                        if (packet != null) {
+                            packet.handle(connection);
+                        }
                     }
-                }
-            });
-        } else {
-            syncPackets.add(msg);
+                });
+            } else {
+                syncPackets.add(msg);
+            }
         }
     }
 
@@ -189,6 +207,10 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
      */
     public SocketAddress getSocketAddress() {
         return address;
+    }
+
+    public void setSocketAddress(SocketAddress address) {
+        this.address = address;
     }
 
     /**

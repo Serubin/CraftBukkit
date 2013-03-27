@@ -213,17 +213,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void kickPlayer(String message) {
-        // Spigot start
-        kickPlayer(message, false);
-    }
-
-    public void kickPlayer(String message, boolean async){
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous player kick!"); // Spigot
         if (getHandle().playerConnection == null) return;
-        if (!async && !Bukkit.isPrimaryThread()) throw new IllegalStateException("Cannot kick player from asynchronous thread!"); // Spigot
 
         getHandle().playerConnection.disconnect(message == null ? "" : message);
     }
-    // Spigot end
 
     public void setCompassTarget(Location loc) {
         if (getHandle().playerConnection == null) return;
@@ -373,7 +367,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         // To = Players new Location if Teleport is Successful
         Location to = location;
         // Create & Call the Teleport Event.
-        PlayerTeleportEvent event = new PlayerTeleportEvent((Player) this, from, to, cause);
+        PlayerTeleportEvent event = new PlayerTeleportEvent(this, from, to, cause);
         server.getPluginManager().callEvent(event);
 
         // Return False to inform the Plugin that the Teleport was unsuccessful/cancelled.
@@ -834,7 +828,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setTexturePack(String url) {
         Validate.notNull(url, "Texture pack URL cannot be null");
 
-        byte[] message = (url + "\0" + "16").getBytes();
+        byte[] message = (url + "\0" + org.bukkit.craftbukkit.Spigot.textureResolution).getBytes(); // Spigot
         Validate.isTrue(message.length <= Messenger.MAX_MESSAGE_SIZE, "Texture pack URL is too long");
 
         getHandle().playerConnection.sendPacket(new Packet250CustomPayload("MC|TPack", message));

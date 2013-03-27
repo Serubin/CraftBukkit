@@ -62,7 +62,8 @@ public class LongHashSet {
         return contains(LongHash.toLong(msw, lsw));
     }
 
-    private boolean contains(long value) { // Spigot
+    public boolean contains(long value) {
+        if (flat.get(value) != null) return true; // Spigot
         int hash = hash(value);
         int index = (hash & 0x7FFFFFFF) % values.length;
         int offset = 1;
