@@ -1,23 +1,26 @@
 package org.bukkit.craftbukkit.block;
 
-import net.minecraft.server.TileEntityHopper;
+import net.minecraft.server.TileEntityBeacon;
+
 import org.bukkit.block.Block;
-import org.bukkit.block.Hopper;
+import org.bukkit.block.Beacon;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.inventory.CraftInventory;
 import org.bukkit.inventory.Inventory;
 
-public class CraftHopper extends CraftBlockState implements Hopper {
-    private final TileEntityHopper hopper;
+public class CraftBeacon extends CraftBlockState implements Beacon {
+    private final CraftWorld world;
+    private final TileEntityBeacon beacon;
 
-    public CraftHopper(final Block block) {
+    public CraftBeacon(final Block block) {
         super(block);
 
-        hopper = (TileEntityHopper) ((CraftWorld) block.getWorld()).getTileEntityAt(getX(), getY(), getZ());
+        world = (CraftWorld) block.getWorld();
+        beacon = (TileEntityBeacon) world.getTileEntityAt(getX(), getY(), getZ());
     }
 
     public Inventory getInventory() {
-        return new CraftInventory(hopper);
+        return new CraftInventory(beacon);
     }
 
     @Override
@@ -25,9 +28,10 @@ public class CraftHopper extends CraftBlockState implements Hopper {
         boolean result = super.update(force, applyPhysics);
 
         if (result) {
-            hopper.update();
+            beacon.update();
         }
 
         return result;
     }
 }
+

@@ -106,8 +106,8 @@ class CraftMetaEnchantedBook extends CraftMetaItem implements EnchantmentStorage
     public CraftMetaEnchantedBook clone() {
         CraftMetaEnchantedBook meta = (CraftMetaEnchantedBook) super.clone();
 
-        if (hasStoredEnchants()) {
-            meta.enchantments = new HashMap<Enchantment, Integer>(enchantments);
+        if (this.enchantments != null) {
+            meta.enchantments = new HashMap<Enchantment, Integer>(this.enchantments);
         }
 
         return meta;
@@ -160,5 +160,9 @@ class CraftMetaEnchantedBook extends CraftMetaItem implements EnchantmentStorage
 
     public boolean hasStoredEnchants() {
         return !(enchantments == null || enchantments.isEmpty());
+    }
+
+    public boolean hasConflictingStoredEnchant(Enchantment ench) {
+        return checkConflictingEnchants(enchantments, ench);
     }
 }

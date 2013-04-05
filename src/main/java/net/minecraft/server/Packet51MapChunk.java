@@ -36,7 +36,7 @@ public class Packet51MapChunk extends Packet {
     }
     // Spigot end
 
-    public Packet51MapChunk(Chunk chunk, boolean flag, int i) {
+    public Packet51MapChunk(Chunk chunk, boolean flag, int i, int obfuscate) { // Spigot (Orebfuscator) - added argument
         this.lowPriority = true;
         this.a = chunk.x;
         this.b = chunk.z;
@@ -46,8 +46,11 @@ public class Packet51MapChunk extends Packet {
 
         this.d = chunkmap.c;
         this.c = chunkmap.b;
-        org.spigotmc.OrebfuscatorManager.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world); // Spigot (Orebfuscator)
-
+        // Spigot start - Orebfuscator
+        if (obfuscate > 0) {
+            org.spigotmc.OrebfuscatorManager.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world, obfuscate);
+        }
+        // Spigot end
         try {
             this.inflatedBuffer = chunkmap.a;
             deflater.setInput(chunkmap.a, 0, chunkmap.a.length);
@@ -58,6 +61,12 @@ public class Packet51MapChunk extends Packet {
             deflater.end();
         }
     }
+    
+    // Spigot start - add new default constructor to support new orebfuscator arg.
+    public Packet51MapChunk(Chunk chunk, boolean flag, int i) {
+        this(chunk, flag, i, 1);
+    }
+    // Spigot end
 
     public void a(DataInputStream datainputstream) throws IOException { // CraftBukkit - throws IOException
         this.a = datainputstream.readInt();

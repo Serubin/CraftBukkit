@@ -39,15 +39,22 @@ public class OrebfuscatorManager {
         update.stopTiming();
     }
 
-    public static void obfuscateSync(int chunkX, int chunkY, int bitmask, byte[] buffer, World world) {
+    public static void obfuscateSync(int chunkX, int chunkY, int bitmask, byte[] buffer, World world, int initRadius) {
         obfuscate.startTiming();
-        obfuscate(chunkX, chunkY, bitmask, buffer, world);
+        obfuscate(chunkX, chunkY, bitmask, buffer, world, initRadius);
         obfuscate.stopTiming();
     }
-
+    
+    public static void obfuscateSync(int chunkX, int chunkY, int bitmask, byte[] buffer, World world) {
+        obfuscateSync(chunkX, chunkY, bitmask, buffer, world, 1);
+    }
+    
     public static void obfuscate(int chunkX, int chunkY, int bitmask, byte[] buffer, World world) {
+        obfuscate(chunkX, chunkY, bitmask, buffer, world, 1);
+    }
+
+    public static void obfuscate(int chunkX, int chunkY, int bitmask, byte[] buffer, World world, int initialRadius) {
         if (world.getServer().orebfuscatorEnabled && world.getWorld().obfuscated) {
-            int initialRadius = 1;
             int index = 0;
             int startX = chunkX << 4;
             int startZ = chunkY << 4;

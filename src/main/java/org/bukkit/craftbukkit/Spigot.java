@@ -299,7 +299,8 @@ public class Spigot {
 
                 // Kick all players
                 for (EntityPlayer p : (List< EntityPlayer>) MinecraftServer.getServer().getPlayerList().players) {
-                    p.playerConnection.disconnect("Server is restarting");
+                    p.playerConnection.networkManager.queue(new Packet255KickDisconnect("Server is restarting"));
+                    p.playerConnection.networkManager.d();
                 }
                 // Give the socket a chance to send the packets
                 try {
