@@ -69,22 +69,6 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
         address = channel.remoteAddress();
         // Then the socket adaptor
         socketAdaptor = NettySocketAdaptor.adapt((SocketChannel) channel);
-        if (serverConnection.throttle == null) {
-            serverConnection.throttle = MinecraftServer.getServer().server.getConnectionThrottle();
-        }
-        if (serverConnection.throttle > 0) {
-            long time = System.currentTimeMillis();
-            String inetAddress = socketAdaptor.getInetAddress().getHostAddress();
-            if (serverConnection.throttleMap.containsKey(inetAddress) && !"127.0.0.1".equals(inetAddress)) {
-                if (time - serverConnection.throttleMap.get(inetAddress) < serverConnection.throttle) {
-                    connected = false;
-                    dcReason = "Too many connections.";
-                    channel.close();
-                    return;
-                }
-            }
-            serverConnection.throttleMap.put(inetAddress, time);
-        }
         // Followed by their first handler
         connection = new PendingConnection(server, this);
         // Finally register the connection

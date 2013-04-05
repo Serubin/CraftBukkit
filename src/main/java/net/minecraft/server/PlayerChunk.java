@@ -117,7 +117,7 @@ class PlayerChunk {
                 if (this.dirtyCount == 64) {
                     i = this.location.x * 16;
                     j = this.location.z * 16;
-                    this.sendAll(new Packet51MapChunk(PlayerChunkMap.a(this.playerChunkMap).getChunkAt(this.location.x, this.location.z), (this.f == 0xFFFF), this.f)); // CraftBukkit - send everything (including biome) if all sections flagged
+                    this.sendAll(new Packet51MapChunk(PlayerChunkMap.a(this.playerChunkMap).getChunkAt(this.location.x, this.location.z), (this.f == 0xFFFF), this.f, PlayerChunkMap.a(this.playerChunkMap).getServer().orebfuscatorUpdateRadius)); // Spigot (Orebfuscator) - CraftBukkit - send everything (including biome) if all sections flagged
 
                     for (k = 0; k < 16; ++k) {
                         if ((this.f & 1 << k) != 0) {

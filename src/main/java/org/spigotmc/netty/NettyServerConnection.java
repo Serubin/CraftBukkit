@@ -16,7 +16,6 @@ import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -35,8 +34,6 @@ public class NettyServerConnection extends ServerConnection {
 
     private final ChannelFuture socket;
     final List<PendingConnection> pendingConnections = Collections.synchronizedList(new ArrayList<PendingConnection>());
-    Long throttle;
-    final ConcurrentHashMap<String, Long> throttleMap = new ConcurrentHashMap<String, Long>();
 
     public NettyServerConnection(MinecraftServer ms, InetAddress host, int port) {
         super(ms);
