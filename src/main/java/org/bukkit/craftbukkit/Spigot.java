@@ -2,15 +2,46 @@ package org.bukkit.craftbukkit;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
-import net.minecraft.server.*;
-import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.util.List;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
+import net.minecraft.server.AxisAlignedBB;
+import net.minecraft.server.Chunk;
+import net.minecraft.server.Entity;
+import net.minecraft.server.EntityAmbient;
+import net.minecraft.server.EntityAnimal;
+import net.minecraft.server.EntityArrow;
+import net.minecraft.server.EntityComplexPart;
+import net.minecraft.server.EntityCreature;
+import net.minecraft.server.EntityEnderCrystal;
+import net.minecraft.server.EntityEnderDragon;
+import net.minecraft.server.EntityExperienceOrb;
+import net.minecraft.server.EntityFireball;
+import net.minecraft.server.EntityFireworks;
+import net.minecraft.server.EntityGhast;
+import net.minecraft.server.EntityHuman;
+import net.minecraft.server.EntityItem;
+import net.minecraft.server.EntityItemFrame;
+import net.minecraft.server.EntityLiving;
+import net.minecraft.server.EntityMonster;
+import net.minecraft.server.EntityPainting;
 import net.minecraft.server.EntityPlayer;
+import net.minecraft.server.EntityProjectile;
+import net.minecraft.server.EntitySheep;
+import net.minecraft.server.EntitySlime;
+import net.minecraft.server.EntityTNTPrimed;
+import net.minecraft.server.EntityWeather;
+import net.minecraft.server.EntityWither;
+import net.minecraft.server.MathHelper;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.Packet255KickDisconnect;
+import net.minecraft.server.PendingConnection;
+import net.minecraft.server.World;
 import org.bukkit.Bukkit;
+import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.spigotmc.Metrics;
 import org.spigotmc.RestartCommand;
 import org.spigotmc.WatchdogThread;
@@ -21,10 +52,12 @@ public class Spigot {
     static AxisAlignedBB miscBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
     static AxisAlignedBB animalBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
     static AxisAlignedBB monsterBB = AxisAlignedBB.a(0, 0, 0, 0, 0, 0);
+    private static boolean filterIps;
     public static boolean tabPing = false;
     private static Metrics metrics;
     public static List<String> bungeeIPs;
     public static int textureResolution = 16;
+    public static final Pattern validName = Pattern.compile("^[a-zA-Z0-9_-]{2,16}$");
 
     public static void initialize(CraftServer server, SimpleCommandMap commandMap, YamlConfiguration configuration) {
         commandMap.register("bukkit", new org.bukkit.craftbukkit.command.TicksPerSecondCommand("tps"));
@@ -33,9 +66,9 @@ public class Spigot {
         server.whitelistMessage = configuration.getString("settings.whitelist-message", server.whitelistMessage);
         server.stopMessage = configuration.getString("settings.stop-message", server.stopMessage);
         server.logCommands = configuration.getBoolean("settings.log-commands", true);
-        server.ipFilter = configuration.getBoolean("settings.filter-unsafe-ips", false);
         server.commandComplete = configuration.getBoolean("settings.command-complete", true);
         server.spamGuardExclusions = configuration.getStringList("settings.spam-exclusions");
+        filterIps = configuration.getBoolean("settings.filter-unsafe-ips", false);
 
         int configVersion = configuration.getInt("config-version");
         switch (configVersion) {
@@ -104,7 +137,6 @@ public class Spigot {
                 || (entity.activationType == 2 && world.animalEntityActivationRange == 0)
                 || (entity.activationType == 1 && world.monsterEntityActivationRange == 0)
                 || entity instanceof EntityHuman
-                || entity instanceof EntityItemFrame
                 || entity instanceof EntityProjectile
                 || entity instanceof EntityEnderDragon
                 || entity instanceof EntityComplexPart
@@ -351,7 +383,9 @@ public class Spigot {
     }
 
     /**
-     * Gets the range an entity should be 'tracked' by players and visible in the client.
+     * Gets the range an entity should be 'tracked' by players and visible in
+     * the client.
+     *
      * @param entity
      * @param defaultRange Default range defined by Mojang
      * @return
@@ -364,7 +398,7 @@ public class Spigot {
         } else if (entity.defaultActivationState || entity instanceof EntityGhast) {
             range = defaultRange;
         } else if (entity.activationType == 1) {
-            range = world.monsterEntityActivationRange;
+            range = world.monsterTrackingRange;
         } else if (entity.activationType == 2) {
             range = world.animalTrackingRange;
         } else if (entity instanceof EntityItemFrame || entity instanceof EntityPainting || entity instanceof EntityItem || entity instanceof EntityExperienceOrb) {
@@ -374,5 +408,30 @@ public class Spigot {
             return defaultRange;
         }
         return Math.min(world.maxTrackingRange, range);
+    }
+
+    public static boolean filterIp(PendingConnection con) {
+        if (filterIps) {
+            try {
+                InetAddress address = con.getSocket().getInetAddress();
+                String ip = address.getHostAddress();
+
+                if (!address.isLoopbackAddress()) {
+                    String[] split = ip.split("\\.");
+                    StringBuilder lookup = new StringBuilder();
+                    for (int i = split.length - 1; i >= 0; i--) {
+                        lookup.append(split[i]);
+                        lookup.append(".");
+                    }
+                    lookup.append("xbl.spamhaus.org.");
+                    if (InetAddress.getByName(lookup.toString()) != null) {
+                        con.disconnect("Your IP address (" + ip + ") is flagged as unsafe by spamhaus.org/xbl");
+                        return true;
+                    }
+                }
+            } catch (Exception ex) {
+            }
+        }
+        return false;
     }
 }

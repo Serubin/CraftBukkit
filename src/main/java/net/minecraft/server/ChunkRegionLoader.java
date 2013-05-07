@@ -100,6 +100,20 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
                 world.getLogger().severe("Chunk file at " + i + "," + j + " is in the wrong location; relocating. (Expected " + i + ", " + j + ", got " + chunk.x + ", " + chunk.z + ")");
                 nbttagcompound.getCompound("Level").setInt("xPos", i); // CraftBukkit - .getCompound("Level")
                 nbttagcompound.getCompound("Level").setInt("zPos", j); // CraftBukkit - .getCompound("Level")
+
+                // CraftBukkit start - Have to move tile entities since we don't load them at this stage
+                NBTTagList tileEntities = nbttagcompound.getCompound("Level").getList("TileEntities");
+                if (tileEntities != null) {
+                    for (int te = 0; te < tileEntities.size(); te++) {
+                        NBTTagCompound tileEntity = (NBTTagCompound) tileEntities.get(te);
+                        int x = tileEntity.getInt("x") - chunk.x * 16;
+                        int z = tileEntity.getInt("z") - chunk.z * 16;
+                        tileEntity.setInt("x", i * 16 + x);
+                        tileEntity.setInt("z", j * 16 + z);
+                    }
+                }
+                // CraftBukkit end
+
                 chunk = this.a(world, nbttagcompound.getCompound("Level"));
             }
 
@@ -115,7 +129,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
     public void a(World world, Chunk chunk) {
         // CraftBukkit start - "handle" exception
         try {
-            world.E();
+            world.F();
         } catch (ExceptionWorldConflict ex) {
             ex.printStackTrace();
         }
@@ -201,7 +215,11 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
 
     public void a() {}
 
-    public void b() {}
+    public void b() {
+        while (this.c()) {
+            ;
+        }
+    }
 
     private void a(Chunk chunk, World world, NBTTagCompound nbttagcompound) {
         nbttagcompound.setInt("xPos", chunk.x);
@@ -222,18 +240,18 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
 
             if (chunksection != null) {
                 nbttagcompound1 = new NBTTagCompound();
-                nbttagcompound1.setByte("Y", (byte) (chunksection.d() >> 4 & 255));
-                nbttagcompound1.setByteArray("Blocks", chunksection.g());
-                if (chunksection.i() != null) {
-                    nbttagcompound1.setByteArray("Add", chunksection.i().getValueArray()); // Spigot
+                nbttagcompound1.setByte("Y", (byte) (chunksection.getYPosition() >> 4 & 255));
+                nbttagcompound1.setByteArray("Blocks", chunksection.getIdArray());
+                if (chunksection.getExtendedIdArray() != null) {
+                    nbttagcompound1.setByteArray("Add", chunksection.getExtendedIdArray().getValueArray()); // Spigot
                 }
 
-                nbttagcompound1.setByteArray("Data", chunksection.j().getValueArray()); // Spigot
-                nbttagcompound1.setByteArray("BlockLight", chunksection.k().getValueArray()); // Spigot
+                nbttagcompound1.setByteArray("Data", chunksection.getDataArray().getValueArray()); // Spigot
+                nbttagcompound1.setByteArray("BlockLight", chunksection.getEmittedLightArray().getValueArray()); // Spigot
                 if (flag) {
-                    nbttagcompound1.setByteArray("SkyLight", chunksection.l().getValueArray()); // Spigot
+                    nbttagcompound1.setByteArray("SkyLight", chunksection.getSkyLightArray().getValueArray()); // Spigot
                 } else {
-                    nbttagcompound1.setByteArray("SkyLight", new byte[chunksection.k().getValueArray().length]); // Spigot
+                    nbttagcompound1.setByteArray("SkyLight", new byte[chunksection.getEmittedLightArray().getValueArray().length]); // Spigot
                 }
 
                 nbttaglist.add(nbttagcompound1);
@@ -316,15 +334,15 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
             byte b1 = nbttagcompound1.getByte("Y");
             ChunkSection chunksection = new ChunkSection(b1 << 4, flag);
 
-            chunksection.a(nbttagcompound1.getByteArray("Blocks"));
+            chunksection.setIdArray(nbttagcompound1.getByteArray("Blocks"));
             if (nbttagcompound1.hasKey("Add")) {
-                chunksection.a(new NibbleArray(nbttagcompound1.getByteArray("Add"), 4));
+                chunksection.setExtendedIdArray(new NibbleArray(nbttagcompound1.getByteArray("Add"), 4));
             }
 
-            chunksection.b(new NibbleArray(nbttagcompound1.getByteArray("Data"), 4));
-            chunksection.c(new NibbleArray(nbttagcompound1.getByteArray("BlockLight"), 4));
+            chunksection.setDataArray(new NibbleArray(nbttagcompound1.getByteArray("Data"), 4));
+            chunksection.setEmittedLightArray(new NibbleArray(nbttagcompound1.getByteArray("BlockLight"), 4));
             if (flag) {
-                chunksection.d(new NibbleArray(nbttagcompound1.getByteArray("SkyLight"), 4));
+                chunksection.setSkyLightArray(new NibbleArray(nbttagcompound1.getByteArray("SkyLight"), 4));
             }
 
             chunksection.recalcBlockCounts();

@@ -15,6 +15,11 @@ public class PacketEncoder extends MessageToByteEncoder<Packet> {
 
     private ByteBuf outBuf;
     private DataOutputStream dataOut;
+    private final NettyNetworkManager networkManager;
+
+    public PacketEncoder(NettyNetworkManager networkManager) {
+        this.networkManager = networkManager;
+    }
 
     @Override
     public void encode(ChannelHandlerContext ctx, Packet msg, ByteBuf out) throws Exception {
@@ -27,6 +32,8 @@ public class PacketEncoder extends MessageToByteEncoder<Packet> {
 
         out.writeByte(msg.n());
         msg.a(dataOut);
+
+        networkManager.addWrittenBytes(outBuf.readableBytes());
         out.writeBytes(outBuf);
         out.discardSomeReadBytes();
     }

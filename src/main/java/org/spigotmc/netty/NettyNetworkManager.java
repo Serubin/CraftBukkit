@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundMessageHandlerAdapter;
 import io.netty.channel.socket.SocketChannel;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.security.PrivateKey;
@@ -23,6 +24,7 @@ import net.minecraft.server.Packet;
 import net.minecraft.server.Packet252KeyResponse;
 import net.minecraft.server.PendingConnection;
 import net.minecraft.server.PlayerConnection;
+import org.spigotmc.MultiplexingServerConnection;
 
 /**
  * This class forms the basis of the Netty integration. It implements
@@ -34,7 +36,7 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
     private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("Async Packet Handler - %1$d").build());
     private static final MinecraftServer server = MinecraftServer.getServer();
     private static final PrivateKey key = server.F().getPrivate();
-    private static final NettyServerConnection serverConnection = (NettyServerConnection) server.ae();
+    private static final MultiplexingServerConnection serverConnection = (MultiplexingServerConnection) server.ae();
     /*========================================================================*/
     private final Queue<Packet> syncPackets = new ConcurrentLinkedQueue<Packet>();
     private final List<Packet> highPriorityQueue = new AbstractList<Packet>() {
@@ -61,19 +63,24 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
     private String dcReason;
     private Object[] dcArgs;
     private Socket socketAdaptor;
+    private long writtenBytes;
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         // Channel and address groundwork first
         channel = ctx.channel();
         address = channel.remoteAddress();
+        // Check the throttle
+        if (serverConnection.throttle(((InetSocketAddress) channel.remoteAddress()).getAddress())) {
+            channel.close();
+        }
         // Then the socket adaptor
         socketAdaptor = NettySocketAdaptor.adapt((SocketChannel) channel);
         // Followed by their first handler
         connection = new PendingConnection(server, this);
         // Finally register the connection
         connected = true;
-        serverConnection.pendingConnections.add((PendingConnection) connection);
+        serverConnection.register((PendingConnection) connection);
     }
 
     @Override
@@ -140,14 +147,17 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
             // If handler indicates packet send
             if (packet != null) {
                 highPriorityQueue.add(packet);
-                channel.write(packet);
 
                 // If needed, check and prepare encryption phase
+                // We don't send the packet here as it is sent just before the cipher handler has been added to ensure we can safeguard from any race conditions
+                // Which are caused by the slow first initialization of the cipher SPI
                 if (packet instanceof Packet252KeyResponse) {
                     Cipher encrypt = NettyServerConnection.getCipher(Cipher.ENCRYPT_MODE, secret);
                     Cipher decrypt = NettyServerConnection.getCipher(Cipher.DECRYPT_MODE, secret);
-                    CipherCodec codec = new CipherCodec(encrypt, decrypt);
+                    CipherCodec codec = new CipherCodec(encrypt, decrypt, (Packet252KeyResponse) packet);
                     channel.pipeline().addBefore("decoder", "cipher", codec);
+                } else {
+                    channel.write(packet);
                 }
             }
         }
@@ -231,5 +241,13 @@ public class NettyNetworkManager extends ChannelInboundMessageHandlerAdapter<Pac
             dcArgs = arguments;
             d();
         }
+    }
+
+    public long getWrittenBytes() {
+        return writtenBytes;
+    }
+
+    public void addWrittenBytes(int written) {
+        writtenBytes += written;
     }
 }

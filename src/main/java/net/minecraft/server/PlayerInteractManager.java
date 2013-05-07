@@ -55,7 +55,7 @@ public class PlayerInteractManager {
     }
 
     public void a() {
-        this.currentTick = (int) (System.currentTimeMillis() / 50); // CraftBukkit
+        this.currentTick = MinecraftServer.currentTick; // CraftBukkit
         int i;
         float f;
         int j;
@@ -189,7 +189,7 @@ public class PlayerInteractManager {
 
     public void a(int i, int j, int k) {
         if (i == this.f && j == this.g && k == this.h) {
-            this.currentTick = (int) (System.currentTimeMillis() / 50); // CraftBukkit
+            this.currentTick = MinecraftServer.currentTick; // CraftBukkit
             int l = this.currentTick - this.lastDigTick;
             int i1 = this.world.getTypeId(i, j, k);
 
@@ -313,13 +313,13 @@ public class PlayerInteractManager {
             if (this.isCreative()) {
                 this.player.playerConnection.sendPacket(new Packet53BlockChange(i, j, k, this.world));
             } else {
-                ItemStack itemstack = this.player.cb();
+                ItemStack itemstack = this.player.cd();
                 boolean flag1 = this.player.a(Block.byId[l]);
 
                 if (itemstack != null) {
                     itemstack.a(this.world, l, i, j, k, this.player);
                     if (itemstack.count == 0) {
-                        this.player.cc();
+                        this.player.ce();
                     }
                 }
 
@@ -358,7 +358,7 @@ public class PlayerInteractManager {
                 entityhuman.inventory.items[entityhuman.inventory.itemInHandIndex] = null;
             }
 
-            if (!entityhuman.bV()) {
+            if (!entityhuman.bX()) {
                 ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
             }
 

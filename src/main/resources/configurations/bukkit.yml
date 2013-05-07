@@ -13,6 +13,9 @@
 # Bug tracker: http://leaky.bukkit.org/
 
 
+#listeners:
+#  - address: 127.0.0.1
+#    port: 25577
 settings:
     allow-end: true
     warn-on-overload: true
@@ -25,12 +28,12 @@ settings:
     query-plugins: true
     deprecated-verbose: default
     shutdown-message: Server closed
-    filter-unsafe-ips: false
     whitelist-message: You are not white-listed on this server!
     log-commands: true
     command-complete: true
     spam-exclusions:
        - /skill
+    filter-unsafe-ips: false
     tab-ping: false
     timeout-time: 30
     restart-on-crash: false

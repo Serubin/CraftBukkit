@@ -25,7 +25,6 @@ import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.plugin.PluginManager;
@@ -339,19 +338,7 @@ public abstract class Entity {
                 }
             } else {
                 if (this.fireTicks % 20 == 0) {
-                    // CraftBukkit start - TODO: this event spams!
-                    if (this instanceof EntityLiving) {
-                        EntityDamageEvent event = new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.FIRE_TICK, 1);
-                        this.world.getServer().getPluginManager().callEvent(event);
-
-                        if (!event.isCancelled()) {
-                            event.getEntity().setLastDamageCause(event);
-                            this.damageEntity(DamageSource.BURN, event.getDamage());
-                        }
-                    } else {
-                        this.damageEntity(DamageSource.BURN, 1);
-                    }
-                    // CraftBukkit end
+                    this.damageEntity(DamageSource.BURN, 1);
                 }
 
                 --this.fireTicks;
@@ -444,7 +431,12 @@ public abstract class Entity {
     }
 
     public void move(double d0, double d1, double d2) {
-        if (d0 == 0 && d1 == 0 && d2 == 0) { return; } // Spigot
+        // CraftBukkit start - Don't do anything if we aren't moving
+        if (d0 == 0 && d1 == 0 && d2 == 0 && this.vehicle == null && this.passenger == null) {
+            return;
+        }
+        // CraftBukkit end
+
         org.bukkit.craftbukkit.SpigotTimings.entityMoveTimer.startTiming(); // Spigot
         if (this.Z) {
             this.boundingBox.d(d0, d1, d2);
@@ -807,20 +799,6 @@ public abstract class Entity {
 
     protected void burn(int i) {
         if (!this.fireProof) {
-            // CraftBukkit start
-            if (this instanceof EntityLiving) {
-                EntityDamageEvent event = new EntityDamageEvent(this.getBukkitEntity(), EntityDamageEvent.DamageCause.FIRE, i);
-                this.world.getServer().getPluginManager().callEvent(event);
-
-                if (event.isCancelled()) {
-                    return;
-                }
-
-                i = event.getDamage();
-                event.getEntity().setLastDamageCause(event);
-            }
-            // CraftBukkit end
-
             this.damageEntity(DamageSource.FIRE, i);
         }
     }
@@ -1392,7 +1370,7 @@ public abstract class Entity {
 
     public void U() {
         if (this.passenger != null) {
-            if (!(this.passenger instanceof EntityHuman) || !((EntityHuman) this.passenger).ce()) {
+            if (!(this.passenger instanceof EntityHuman) || !((EntityHuman) this.passenger).cg()) {
                 this.passenger.U = this.U;
                 this.passenger.V = this.V + this.W() + this.passenger.V();
                 this.passenger.W = this.W;
@@ -1611,14 +1589,11 @@ public abstract class Entity {
             }
         }
 
-        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(stormBukkitEntity, thisBukkitEntity, EntityDamageEvent.DamageCause.LIGHTNING, 5);
-        pluginManager.callEvent(event);
-
+        EntityDamageEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityDamageEvent(entitylightning, this, EntityDamageEvent.DamageCause.LIGHTNING, 5);
         if (event.isCancelled()) {
             return;
         }
 
-        thisBukkitEntity.setLastDamageCause(event);
         this.burn(event.getDamage());
         // CraftBukkit end
 
@@ -1735,7 +1710,7 @@ public abstract class Entity {
         return this == entity;
     }
 
-    public float ao() {
+    public float getHeadRotation() {
         return 0.0F;
     }
 
@@ -1788,7 +1763,7 @@ public abstract class Entity {
             Location exit = exitWorld != null ? minecraftserver.getPlayerList().calculateTarget(enter, minecraftserver.getWorldServer(i)) : null;
             boolean useTravelAgent = exitWorld != null && !(this.dimension == 1 && exitWorld.dimension == 1); // don't use agent for custom worlds or return from THE_END
 
-            TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().s() : org.bukkit.craftbukkit.CraftTravelAgent.DEFAULT; // return arbitrary TA to compensate for implementation dependent plugins
+            TravelAgent agent = exit != null ? (TravelAgent) ((CraftWorld) exit.getWorld()).getHandle().t() : org.bukkit.craftbukkit.CraftTravelAgent.DEFAULT; // return arbitrary TA to compensate for implementation dependent plugins
             EntityPortalEvent event = new EntityPortalEvent(this.getBukkitEntity(), enter, exit, agent);
             event.useTravelAgent(useTravelAgent);
             event.getEntity().getServer().getPluginManager().callEvent(event);

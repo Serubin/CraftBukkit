@@ -13,16 +13,10 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.net.InetAddress;
 import java.security.GeneralSecurityException;
 import java.security.Key;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PendingConnection;
 import net.minecraft.server.ServerConnection;
-import org.bukkit.Bukkit;
 
 /**
  * This is the NettyServerConnection class. It implements
@@ -33,7 +27,6 @@ import org.bukkit.Bukkit;
 public class NettyServerConnection extends ServerConnection {
 
     private final ChannelFuture socket;
-    final List<PendingConnection> pendingConnections = Collections.synchronizedList(new ArrayList<PendingConnection>());
 
     public NettyServerConnection(MinecraftServer ms, InetAddress host, int port) {
         super(ms);
@@ -47,37 +40,16 @@ public class NettyServerConnection extends ServerConnection {
                     // IP_TOS is not supported (Windows XP / Windows Server 2003)
                 }
 
+                NettyNetworkManager networkManager = new NettyNetworkManager();
                 ch.pipeline()
+                        .addLast("flusher", new OutboundManager())
                         .addLast("timer", new ReadTimeoutHandler(30))
                         .addLast("decoder", new PacketDecoder())
-                        .addLast("encoder", new PacketEncoder())
-                        .addLast("manager", new NettyNetworkManager());
+                        .addLast("encoder", new PacketEncoder(networkManager))
+                        .addLast("manager", networkManager);
             }
-        }).group(new NioEventLoopGroup(threads, new ThreadFactoryBuilder().setNameFormat("Netty IO Thread - %1$d").build())).localAddress(host, port).bind();
+        }).childOption(ChannelOption.TCP_NODELAY, false).group(new NioEventLoopGroup(threads, new ThreadFactoryBuilder().setNameFormat("Netty IO Thread - %1$d").build())).localAddress(host, port).bind();
         MinecraftServer.getServer().getLogger().info("Using Netty NIO with " + threads + " threads for network connections.");
-    }
-
-    /**
-     * Pulse. This method pulses all connections causing them to update. It is
-     * called from the main server thread a few times a tick.
-     */
-    @Override
-    public void b() {
-        super.b(); // pulse PlayerConnections
-        for (int i = 0; i < pendingConnections.size(); ++i) {
-            PendingConnection connection = pendingConnections.get(i);
-
-            try {
-                connection.c();
-            } catch (Exception ex) {
-                connection.disconnect("Internal server error");
-                Bukkit.getServer().getLogger().log(Level.WARNING, "Failed to handle packet: " + ex, ex);
-            }
-
-            if (connection.b) {
-                pendingConnections.remove(i--);
-            }
-        }
     }
 
     /**

@@ -1,5 +1,7 @@
 package net.minecraft.server;
 
+import org.bukkit.craftbukkit.Spigot;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
@@ -19,6 +21,7 @@ public class Packet2Handshake extends Packet {
         this.b = a(datainputstream, 16);
         this.c = a(datainputstream, 255);
         this.d = datainputstream.readInt();
+        if(!Spigot.validName.matcher(this.b).matches()) throw new IOException("Invalid name!"); // Spigot
     }
 
     public void a(DataOutputStream dataoutputstream) throws IOException { // CraftBukkit - throws IOException

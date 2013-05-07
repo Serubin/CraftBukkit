@@ -10,7 +10,7 @@ public class EntityItem extends Entity {
     public int pickupDelay;
     private int d;
     public float c;
-    private int lastTick = (int) (System.currentTimeMillis() / 50); // CraftBukkit
+    private int lastTick = MinecraftServer.currentTick; // CraftBukkit
 
     public EntityItem(World world, double d0, double d1, double d2) {
         super(world);
@@ -55,13 +55,13 @@ public class EntityItem extends Entity {
 
     public void l_() {
         super.l_();
-        // CraftBukkit start
-        int currentTick = (int) (System.currentTimeMillis() / 50);
-        this.pickupDelay -= (currentTick - this.lastTick);
-        this.lastTick = currentTick;
+        // CraftBukkit start - Use wall time for pickup and despawn timers
+        int elapsedTicks = MinecraftServer.currentTick - this.lastTick;
+        this.pickupDelay -= elapsedTicks;
+        this.age += elapsedTicks;
+        this.lastTick = MinecraftServer.currentTick;
         // CraftBukkit end
 
-        if (lastTick % 2 == 0) { // Spigot
         this.lastX = this.locX;
         this.lastY = this.locY;
         this.lastZ = this.locZ;
@@ -100,9 +100,8 @@ public class EntityItem extends Entity {
         if (this.onGround) {
             this.motY *= -0.5D;
         }
-        }
-        this.age = ticksLived;
-        // Spigot
+
+        // ++this.age; // CraftBukkit - Moved up
         if (!this.world.isStatic && this.age >= 6000) {
             // CraftBukkit start
             if (org.bukkit.craftbukkit.event.CraftEventFactory.callItemDespawnEvent(this).isCancelled()) {
