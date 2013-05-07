@@ -54,7 +54,7 @@ public class OrebfuscatorManager {
     }
 
     public static void obfuscate(int chunkX, int chunkY, int bitmask, byte[] buffer, World world, int initialRadius) {
-        if (world.getServer().orebfuscatorEnabled && world.getWorld().obfuscated) {
+        if (world.getWorld().obfuscated) {
             int index = 0;
             int startX = chunkX << 4;
             int startZ = chunkY << 4;
@@ -97,7 +97,7 @@ public class OrebfuscatorManager {
     }
 
     private static void updateNearbyBlocks(World world, int x, int y, int z, int radius) {
-        if (world.getServer().orebfuscatorEnabled && world.getWorld().obfuscated && world.isLoaded(x, y, z)) {
+        if (world.getWorld().obfuscated && world.isLoaded(x, y, z)) {
             // Get block id
             int id = world.getTypeId(x, y, z);
 

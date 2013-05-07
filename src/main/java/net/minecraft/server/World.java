@@ -3,23 +3,20 @@ package net.minecraft.server;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-//CraftBukkit start
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.util.LongHashSet;
-import org.bukkit.craftbukkit.Spigot; // Spigot
-import org.bukkit.craftbukkit.SpigotTimings; // Spigot
-import org.bukkit.craftbukkit.util.UnsafeList;
-import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.Spigot;
+import org.bukkit.craftbukkit.SpigotTimings;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
-import org.bukkit.craftbukkit.util.LongHashSet;
 import org.bukkit.craftbukkit.util.UnsafeList;
 import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
@@ -27,6 +24,9 @@ import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.weather.ThunderChangeEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.generator.ChunkGenerator;
+//CraftBukkit start
+// Spigot
+// Spigot
 // CraftBukkit end
 
 public abstract class World implements IBlockAccess {
@@ -34,7 +34,7 @@ public abstract class World implements IBlockAccess {
     public boolean d = false;
     public List entityList = new ArrayList();
     protected List f = new ArrayList();
-    public List tileEntityList = new ArrayList();
+    public Set tileEntityList = new HashSet(); // CraftBukkit - ArrayList -> HashSet
     private List a = new ArrayList();
     private List b = new ArrayList();
     public List players = new CopyOnWriteArrayList();
@@ -48,7 +48,6 @@ public abstract class World implements IBlockAccess {
     protected float o;
     protected float p;
     public int q = 0;
-    // public boolean suppressPhysics = false; // CraftBukkit (removed in vanilla)
     public boolean callingPlaceEvent = false; // CraftBukkit
     public int difficulty;
     public Random random = new Random();
@@ -196,7 +195,7 @@ public abstract class World implements IBlockAccess {
             this.villages.a(this);
         }
 
-        this.y();
+        this.z();
         this.a();
 
         this.getServer().addWorld(this.world); // CraftBukkit
@@ -701,7 +700,7 @@ public abstract class World implements IBlockAccess {
         return this.worldProvider.g[this.getLightLevel(i, j, k)];
     }
 
-    public boolean u() {
+    public boolean v() {
         return this.j < 4;
     }
 
@@ -1177,7 +1176,7 @@ public abstract class World implements IBlockAccess {
         return this.worldProvider.a(this.worldData.getDayTime(), f);
     }
 
-    public int v() {
+    public int w() {
         return this.worldProvider.a(this.worldData.getDayTime());
     }
 
@@ -1940,7 +1939,7 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    public void y() {
+    public void z() {
         int i = this.a(1.0F);
 
         if (i != this.j) {
@@ -1954,7 +1953,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public void doTick() {
-        this.n();
+        this.o();
     }
 
     private void a() {
@@ -1966,7 +1965,7 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    protected void n() {
+    protected void o() {
         if (!this.worldProvider.f) {
             int i = this.worldData.getThunderDuration();
 
@@ -2045,7 +2044,7 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    public void z() {
+    public void A() {
         this.worldData.setWeatherDuration(1);
     }
 
@@ -2054,7 +2053,7 @@ public abstract class World implements IBlockAccess {
     protected float modifiedOdds = 100F;
     public float growthOdds = 100F;
 
-    protected void A() {
+    protected void B() {
         // this.chunkTickList.clear(); // CraftBukkit - removed
         this.methodProfiler.a("buildList");
 
@@ -2146,7 +2145,7 @@ public abstract class World implements IBlockAccess {
     }
 
     protected void g() {
-        this.A();
+        this.B();
     }
 
     public boolean x(int i, int j, int k) {
@@ -2463,15 +2462,25 @@ public abstract class World implements IBlockAccess {
         for (int j = 0; j < this.entityList.size(); ++j) {
             Entity entity = (Entity) this.entityList.get(j);
 
+            // CraftBukkit start - Split out persistent check, don't apply it to special persistent mobs
+            if (entity instanceof EntityLiving) {
+                EntityLiving entityliving = (EntityLiving) entity;
+                if (entityliving.isTypeNotPersistent() && entityliving.bU()) { // Should be isPersistent
+                    continue;
+                }
+            }
+
             if (oclass.isAssignableFrom(entity.getClass())) {
                 ++i;
             }
+            // CraftBukkit end
         }
 
         return i;
     }
 
     public void a(List list) {
+        if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity world add!"); // Spigot
         // CraftBukkit start
         Entity entity = null;
         for (int i = 0; i < list.size(); ++i) {
@@ -2683,7 +2692,7 @@ public abstract class World implements IBlockAccess {
                 }
 
                 if (entityhuman1.isInvisible()) {
-                    float f = entityhuman1.ca();
+                    float f = entityhuman1.cc();
 
                     if (f < 0.1F) {
                         f = 0.1F;
@@ -2712,7 +2721,7 @@ public abstract class World implements IBlockAccess {
         return null;
     }
 
-    public void E() throws ExceptionWorldConflict { // CraftBukkit - added throws
+    public void F() throws ExceptionWorldConflict { // CraftBukkit - added throws
         this.dataManager.checkSession();
     }
 
@@ -2742,7 +2751,7 @@ public abstract class World implements IBlockAccess {
 
     public void broadcastEntityEffect(Entity entity, byte b0) {}
 
-    public IChunkProvider J() {
+    public IChunkProvider K() {
         return this.chunkProvider;
     }
 
@@ -2784,16 +2793,16 @@ public abstract class World implements IBlockAccess {
         return this.m + (this.n - this.m) * f;
     }
 
-    public boolean N() {
+    public boolean O() {
         return (double) this.h(1.0F) > 0.9D;
     }
 
-    public boolean O() {
+    public boolean P() {
         return (double) this.i(1.0F) > 0.2D;
     }
 
     public boolean F(int i, int j, int k) {
-        if (!this.O()) {
+        if (!this.P()) {
             return false;
         } else if (!this.l(i, j, k)) {
             return false;
@@ -2855,7 +2864,7 @@ public abstract class World implements IBlockAccess {
         return 256;
     }
 
-    public int Q() {
+    public int R() {
         return this.worldProvider.f ? 128 : 256;
     }
 
@@ -2871,7 +2880,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public ChunkPosition b(String s, int i, int j, int k) {
-        return this.J().findNearestMapFeature(this, s, i, j, k);
+        return this.K().findNearestMapFeature(this, s, i, j, k);
     }
 
     public CrashReportSystemDetails a(CrashReport crashreport) {
@@ -2902,7 +2911,7 @@ public abstract class World implements IBlockAccess {
         return this.J;
     }
 
-    public Calendar U() {
+    public Calendar V() {
         if (this.getTime() % 600L == 0L) {
             this.K.setTimeInMillis(System.currentTimeMillis());
         }

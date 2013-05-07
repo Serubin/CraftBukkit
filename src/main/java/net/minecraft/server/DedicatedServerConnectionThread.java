@@ -82,7 +82,7 @@ public class DedicatedServerConnectionThread extends Thread {
 
                 PendingConnection pendingconnection = new PendingConnection(this.e.d(), socket, "Connection #" + this.c++);
 
-                this.a(pendingconnection);
+                ((org.spigotmc.MultiplexingServerConnection) this.e.d().ae()).register(pendingconnection); // Spigot
             } catch (IOException ioexception) {
                 this.e.d().getLogger().warning("DSCT: " + ioexception.getMessage()); // CraftBukkit
             }

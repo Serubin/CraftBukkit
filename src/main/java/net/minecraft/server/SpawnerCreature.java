@@ -22,7 +22,7 @@ public final class SpawnerCreature {
         Chunk chunk = world.getChunkAt(i, j);
         int k = i * 16 + world.random.nextInt(16);
         int l = j * 16 + world.random.nextInt(16);
-        int i1 = world.random.nextInt(chunk == null ? world.Q() : chunk.h() + 16 - 1);
+        int i1 = world.random.nextInt(chunk == null ? world.R() : chunk.h() + 16 - 1);
 
         return new ChunkPosition(k, i1, l);
     }
@@ -33,14 +33,8 @@ public final class SpawnerCreature {
         for (Long coord : b.keySet()) {
             int x = LongHash.msw(coord);
             int z = LongHash.lsw(coord);
-            if (!server.chunkProviderServer.unloadQueue.contains(x,z) && server.isChunkLoaded(x, z)) {
-                for (List<Entity> entitySlice : server.getChunkAt(x, z).entitySlices) {
-                    for (Entity entity : entitySlice) {
-                        if (oClass.isAssignableFrom(entity.getClass())) {
-                            ++i;
-                        }
-                    }
-                }
+            if (!server.chunkProviderServer.unloadQueue.contains(coord) && server.isChunkLoaded(x, z)) {
+                i += server.getChunkAt(x, z).entityCount.get(oClass);
             }
         }
         return i;

@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToByteCodec;
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
+import net.minecraft.server.Packet252KeyResponse;
 
 /**
  * This class is a complete solution for encrypting and decoding bytes in a
@@ -15,12 +16,27 @@ public class CipherCodec extends ByteToByteCodec {
 
     private Cipher encrypt;
     private Cipher decrypt;
-    private byte[] heapIn = new byte[0];
-    private byte[] heapOut = new byte[0];
+    private Packet252KeyResponse responsePacket;
+    private ThreadLocal<byte[]> heapInLocal = new EmptyByteThreadLocal();
+    private ThreadLocal<byte[]> heapOutLocal = new EmptyByteThreadLocal();
 
-    public CipherCodec(Cipher encrypt, Cipher decrypt) {
+    private static class EmptyByteThreadLocal extends ThreadLocal<byte[]> {
+
+        @Override
+        protected byte[] initialValue() {
+            return new byte[0];
+        }
+    }
+
+    public CipherCodec(Cipher encrypt, Cipher decrypt, Packet252KeyResponse responsePacket) {
         this.encrypt = encrypt;
         this.decrypt = decrypt;
+        this.responsePacket = responsePacket;
+    }
+
+    @Override
+    public void beforeAdd(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().write(responsePacket);
     }
 
     @Override
@@ -34,12 +50,14 @@ public class CipherCodec extends ByteToByteCodec {
     }
 
     private void cipher(ByteBuf in, ByteBuf out, Cipher cipher) throws ShortBufferException {
+        byte[] heapIn = heapInLocal.get();
         int readableBytes = in.readableBytes();
         if (heapIn.length < readableBytes) {
             heapIn = new byte[readableBytes];
         }
         in.readBytes(heapIn, 0, readableBytes);
 
+        byte[] heapOut = heapOutLocal.get();
         int outputSize = cipher.getOutputSize(readableBytes);
         if (heapOut.length < outputSize) {
             heapOut = new byte[outputSize];

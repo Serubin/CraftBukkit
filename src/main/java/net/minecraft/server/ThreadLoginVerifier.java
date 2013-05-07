@@ -21,7 +21,7 @@ class ThreadLoginVerifier extends Thread {
     CraftServer server;
 
     ThreadLoginVerifier(PendingConnection pendingconnection, CraftServer server) {
-        super("Login Verifier Thread");
+        super("Login Verifier - " + pendingconnection.getName());
         this.server = server;
         // CraftBukkit end
         this.pendingConnection = pendingconnection;
@@ -29,27 +29,7 @@ class ThreadLoginVerifier extends Thread {
 
     public void run() {
         try {
-            // Spigot start
-            if (((CraftServer) org.bukkit.Bukkit.getServer()).ipFilter) {
-                try {
-                    String ip = this.pendingConnection.getSocket().getInetAddress().getHostAddress();
-                    String[] split = ip.split("\\.");
-                    StringBuilder lookup = new StringBuilder();
-                    for (int i = split.length - 1; i >= 0; i--) {
-                        lookup.append(split[i]);
-                        lookup.append(".");
-                    }
-                    if (!ip.contains("127.0.0.1")) {
-                        lookup.append("xbl.spamhaus.org.");
-                        if (java.net.InetAddress.getByName(lookup.toString()) != null) {
-                            pendingConnection.disconnect("Your IP address (" + ip + ") is flagged as unsafe by spamhaus.org/xbl");
-                            return;
-                        }
-                    }
-                } catch (Exception ex) {
-                }
-            }
-            // Spigot end
+            if (org.bukkit.craftbukkit.Spigot.filterIp(pendingConnection)) return; // Spigot
             String s = (new BigInteger(MinecraftEncryption.a(PendingConnection.a(this.pendingConnection), PendingConnection.b(this.pendingConnection).F().getPublic(), PendingConnection.c(this.pendingConnection)))).toString(16);
             URL url = new URL("http://session.minecraft.net/game/checkserver.jsp?user=" + URLEncoder.encode(PendingConnection.d(this.pendingConnection), "UTF-8") + "&serverId=" + URLEncoder.encode(s, "UTF-8"));
             BufferedReader bufferedreader = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -66,11 +46,11 @@ class ThreadLoginVerifier extends Thread {
                 return;
             }
 
-            AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(PendingConnection.d(this.pendingConnection), this.pendingConnection.getSocket().getInetAddress());
+            AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(PendingConnection.d(this.pendingConnection), ((java.net.InetSocketAddress) this.pendingConnection.networkManager.getSocketAddress()).getAddress()); // Spigot
             this.server.getPluginManager().callEvent(asyncEvent);
 
             if (PlayerPreLoginEvent.getHandlerList().getRegisteredListeners().length != 0) {
-                final PlayerPreLoginEvent event = new PlayerPreLoginEvent(PendingConnection.d(this.pendingConnection), this.pendingConnection.getSocket().getInetAddress());
+                final PlayerPreLoginEvent event = new PlayerPreLoginEvent(PendingConnection.d(this.pendingConnection), ((java.net.InetSocketAddress) this.pendingConnection.networkManager.getSocketAddress()).getAddress()); // Spigot
                 if (asyncEvent.getResult() != PlayerPreLoginEvent.Result.ALLOWED) {
                     event.disallow(asyncEvent.getResult(), asyncEvent.getKickMessage());
                 }

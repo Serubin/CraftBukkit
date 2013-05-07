@@ -92,7 +92,11 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public void a(NBTTagCompound nbttagcompound) {
         super.a(nbttagcompound);
         if (nbttagcompound.hasKey("playerGameType")) {
-            this.playerInteractManager.setGameMode(EnumGamemode.a(nbttagcompound.getInt("playerGameType")));
+            if (MinecraftServer.getServer().getForceGamemode()) {
+                this.playerInteractManager.setGameMode(MinecraftServer.getServer().getGamemode());
+            } else {
+                this.playerInteractManager.setGameMode(EnumGamemode.a(nbttagcompound.getInt("playerGameType")));
+            }
         }
         this.getBukkitEntity().readExtraData(nbttagcompound); // CraftBukkit
     }
@@ -150,6 +154,13 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         --this.invulnerableTicks;
         this.activeContainer.b();
 
+        // CraftBukkit start - Check inventory status every tick
+        if (!this.activeContainer.a(this)) { // Should be stillValid
+            this.closeInventory();
+            this.activeContainer = this.defaultContainer;
+        }
+        // CraftBukkit end
+
         while (!this.removeQueue.isEmpty()) {
             int i = Math.min(this.removeQueue.size(), 127);
             int[] aint = new int[i];
@@ -174,9 +185,11 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
 
                 iterator1.remove();
                 if (chunkcoordintpair != null && this.world.isLoaded(chunkcoordintpair.x << 4, 0, chunkcoordintpair.z << 4)) {
-                    Chunk chunk = this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z); // Spigot
-                    arraylist.add(chunk); // Spigot
-                    arraylist1.addAll(chunk.tileEntities.values()); // Spigot
+                    // CraftBukkit start - Get tile entities directly from the chunk instead of the world
+                    Chunk chunk = this.world.getChunkAt(chunkcoordintpair.x, chunkcoordintpair.z);
+                    arraylist.add(chunk);
+                    arraylist1.addAll(chunk.tileEntities.values());
+                    // CraftBukkit end
                 }
             }
 
@@ -646,6 +659,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     }
 
     public void closeInventory() {
+        CraftEventFactory.handleInventoryCloseEvent(this); // CraftBukkit
         this.playerConnection.sendPacket(new Packet101CloseWindow(this.activeContainer.windowId));
         this.j();
     }
@@ -872,8 +886,12 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         this.expTotal = this.newTotalExp;
         this.exp = 0;
         this.deathTicks = 0;
-        effects.clear();
+        this.effects.clear();
+        this.updateEffects = true;
         this.activeContainer = this.defaultContainer;
+        this.killer = null;
+        this.lastDamager = null;
+        this.bt = new CombatTracker(this); // Should be combatTracker
         this.lastSentExp = -1;
         if (this.keepLevel || keepInventory) {
             this.exp = exp;

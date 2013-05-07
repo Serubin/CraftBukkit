@@ -139,9 +139,9 @@ public class Packet51MapChunk extends Packet {
         int l;
 
         for (l = 0; l < achunksection.length; ++l) {
-            if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
+            if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
                 chunkmap.b |= 1 << l;
-                if (achunksection[l].i() != null) {
+                if (achunksection[l].getExtendedIdArray() != null) {
                     chunkmap.c |= 1 << l;
                     ++k;
                 }
@@ -149,8 +149,8 @@ public class Packet51MapChunk extends Packet {
         }
 
         for (l = 0; l < achunksection.length; ++l) {
-            if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
-                byte[] abyte1 = achunksection[l].g();
+            if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
+                byte[] abyte1 = achunksection[l].getIdArray();
 
                 System.arraycopy(abyte1, 0, abyte, j, abyte1.length);
                 j += abyte1.length;
@@ -160,8 +160,8 @@ public class Packet51MapChunk extends Packet {
         NibbleArray nibblearray;
 
         for (l = 0; l < achunksection.length; ++l) {
-            if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
-                nibblearray = achunksection[l].j();
+            if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
+                nibblearray = achunksection[l].getDataArray();
                 // Spigot start
                 // System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
                 // j += nibblearray.a.length;
@@ -171,8 +171,8 @@ public class Packet51MapChunk extends Packet {
         }
 
         for (l = 0; l < achunksection.length; ++l) {
-            if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
-                nibblearray = achunksection[l].k();
+            if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
+                nibblearray = achunksection[l].getEmittedLightArray();
                 // Spigot start
                 // System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
                 // j += nibblearray.a.length;
@@ -183,8 +183,8 @@ public class Packet51MapChunk extends Packet {
 
         if (!chunk.world.worldProvider.f) {
             for (l = 0; l < achunksection.length; ++l) {
-                if (achunksection[l] != null && (!flag || !achunksection[l].a()) && (i & 1 << l) != 0) {
-                    nibblearray = achunksection[l].l();
+                if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
+                    nibblearray = achunksection[l].getSkyLightArray();
                     // Spigot start
                     // System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
                     // j += nibblearray.a.length;
@@ -196,8 +196,8 @@ public class Packet51MapChunk extends Packet {
 
         if (k > 0) {
             for (l = 0; l < achunksection.length; ++l) {
-                if (achunksection[l] != null && (!flag || !achunksection[l].a()) && achunksection[l].i() != null && (i & 1 << l) != 0) {
-                    nibblearray = achunksection[l].i();
+                if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && achunksection[l].getExtendedIdArray() != null && (i & 1 << l) != 0) {
+                    nibblearray = achunksection[l].getExtendedIdArray();
                     // Spigot start
                     //System.arraycopy(nibblearray.a, 0, abyte, j, nibblearray.a.length);
                     //j += nibblearray.a.length;

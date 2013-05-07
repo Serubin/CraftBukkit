@@ -46,7 +46,7 @@ public class EntityTrackerEntry {
         this.zLoc = MathHelper.floor(entity.locZ * 32.0D);
         this.yRot = MathHelper.d(entity.yaw * 256.0F / 360.0F);
         this.xRot = MathHelper.d(entity.pitch * 256.0F / 360.0F);
-        this.i = MathHelper.d(entity.ao() * 256.0F / 360.0F);
+        this.i = MathHelper.d(entity.getHeadRotation() * 256.0F / 360.0F);
     }
 
     public boolean equals(Object object) {
@@ -68,7 +68,7 @@ public class EntityTrackerEntry {
             this.scanPlayers(list);
         }
 
-        if (this.v != this.tracker.vehicle || this.tracker.vehicle != null && this.m % 60 == 0) {
+        if (this.v != this.tracker.vehicle /* || this.tracker.vehicle != null && this.m % 60 == 0 */) { // CraftBukkit - Revert to 1.4 logic, this packet is a toggle
             this.v = this.tracker.vehicle;
             this.broadcast(new Packet39AttachEntity(this.tracker, this.tracker.vehicle));
         }
@@ -132,7 +132,7 @@ public class EntityTrackerEntry {
                 }
                 // CraftBukkit end
 
-                if (this.m > 0) {
+                if (this.m > 0 || this.tracker instanceof EntityArrow) {
                     if (j1 >= -128 && j1 < 128 && k1 >= -128 && k1 < 128 && l1 >= -128 && l1 < 128 && this.u <= 400 && !this.w) {
                         if (flag && flag1) {
                             object = new Packet33RelEntityMoveLook(this.tracker.id, (byte) j1, (byte) k1, (byte) l1, (byte) l, (byte) i1);
@@ -214,7 +214,7 @@ public class EntityTrackerEntry {
                 this.w = true;
             }
 
-            i = MathHelper.d(this.tracker.ao() * 256.0F / 360.0F);
+            i = MathHelper.d(this.tracker.getHeadRotation() * 256.0F / 360.0F);
             if (Math.abs(i - this.i) >= 4) {
                 this.broadcast(new Packet35EntityHeadRotation(this.tracker.id, (byte) i));
                 this.i = i;
@@ -319,9 +319,13 @@ public class EntityTrackerEntry {
                         entityplayer.playerConnection.sendPacket(new Packet28EntityVelocity(this.tracker.id, this.tracker.motX, this.tracker.motY, this.tracker.motZ));
                     }
 
-                    if (this.tracker.vehicle != null) {
+                    // CraftBukkit start
+                    if (this.tracker.vehicle != null && this.tracker.id > this.tracker.vehicle.id) {
                         entityplayer.playerConnection.sendPacket(new Packet39AttachEntity(this.tracker, this.tracker.vehicle));
+                    } else if (this.tracker.passenger != null && this.tracker.id > this.tracker.passenger.id) {
+                        entityplayer.playerConnection.sendPacket(new Packet39AttachEntity(this.tracker.passenger, this.tracker));
                     }
+                    // CraftBukkit end
 
                     if (this.tracker instanceof EntityLiving) {
                         for (int i = 0; i < 5; ++i) {
@@ -342,7 +346,7 @@ public class EntityTrackerEntry {
                     }
 
                     // CraftBukkit start - Fix for nonsensical head yaw
-                    this.i = MathHelper.d(this.tracker.ao() * 256.0F / 360.0F); // tracker.ao() should be getHeadRotation
+                    this.i = MathHelper.d(this.tracker.getHeadRotation() * 256.0F / 360.0F); // tracker.ao() should be getHeadRotation
                     this.broadcast(new Packet35EntityHeadRotation(this.tracker.id, (byte) i));
                     // CraftBukkit end
 
@@ -465,7 +469,7 @@ public class EntityTrackerEntry {
                 }
             }
         } else {
-            this.i = MathHelper.d(this.tracker.ao() * 256.0F / 360.0F);
+            this.i = MathHelper.d(this.tracker.getHeadRotation() * 256.0F / 360.0F);
             return new Packet24MobSpawn((EntityLiving) this.tracker);
         }
     }

@@ -27,7 +27,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
@@ -501,7 +500,7 @@ public class PlayerConnection extends Connection {
         } else if (packet14blockdig.e == 3) {
             this.player.a(true);
         } else if (packet14blockdig.e == 5) {
-            this.player.bX();
+            this.player.bZ();
         } else {
             boolean flag = false;
 
@@ -1161,11 +1160,7 @@ public class PlayerConnection extends Connection {
     public void handleContainerClose(Packet101CloseWindow packet101closewindow) {
         if (this.player.dead) return; // CraftBukkit
 
-        // CraftBukkit start
-        InventoryCloseEvent event = new InventoryCloseEvent(this.player.activeContainer.getBukkitView());
-        server.getPluginManager().callEvent(event);
-        this.player.activeContainer.transferTo(this.player.defaultContainer, getPlayer());
-        // CraftBukkit end
+        CraftEventFactory.handleInventoryCloseEvent(this.player); // CraftBukkit
 
         this.player.j();
     }
@@ -1183,12 +1178,12 @@ public class PlayerConnection extends Connection {
             InventoryView inventory = this.player.activeContainer.getBukkitView();
             SlotType type = CraftInventoryView.getSlotType(inventory, packet102windowclick.slot);
 
-            InventoryClickEvent event = new InventoryClickEvent(inventory, type, packet102windowclick.slot, packet102windowclick.button != 0, packet102windowclick.shift == 1);
+            InventoryClickEvent event = new InventoryClickEvent(inventory, type, packet102windowclick.slot, packet102windowclick.button != 0, packet102windowclick.shift == 1, packet102windowclick.shift == 6);
             org.bukkit.inventory.Inventory top = inventory.getTopInventory();
             if (packet102windowclick.slot == 0 && top instanceof CraftingInventory) {
                 org.bukkit.inventory.Recipe recipe = ((CraftingInventory) top).getRecipe();
                 if (recipe != null) {
-                    event = new org.bukkit.event.inventory.CraftItemEvent(recipe, inventory, type, packet102windowclick.slot, packet102windowclick.button != 0, packet102windowclick.shift == 1);
+                    event = new org.bukkit.event.inventory.CraftItemEvent(recipe, inventory, type, packet102windowclick.slot, packet102windowclick.button != 0, packet102windowclick.shift == 1, packet102windowclick.shift == 6);
                 }
             }
             server.getPluginManager().callEvent(event);
@@ -1276,7 +1271,7 @@ public class PlayerConnection extends Connection {
                 slot = SlotType.OUTSIDE;
             }
 
-            InventoryClickEvent event = new InventoryClickEvent(inventory, slot, slot == SlotType.OUTSIDE ? -999 : packet107setcreativeslot.slot, false, false);
+            InventoryClickEvent event = new InventoryClickEvent(inventory, slot, slot == SlotType.OUTSIDE ? -999 : packet107setcreativeslot.slot, false, false, false);
             server.getPluginManager().callEvent(event);
             org.bukkit.inventory.ItemStack item = event.getCurrentItem();
 

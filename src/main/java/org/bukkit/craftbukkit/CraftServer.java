@@ -37,6 +37,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.MobEffectList;
 import net.minecraft.server.PropertyManager;
 import net.minecraft.server.ServerCommand;
+import net.minecraft.server.RegionFile;
+import net.minecraft.server.RegionFileCache;
 import net.minecraft.server.ServerNBTManager;
 import net.minecraft.server.WorldLoaderServer;
 import net.minecraft.server.WorldManager;
@@ -177,7 +179,6 @@ public final class CraftServer implements Server {
     public String whitelistMessage = "You are not white-listed on this server!";
     public String stopMessage = "Server restarting. Brb";
     public boolean logCommands = true;
-    public boolean ipFilter = false;
     public boolean commandComplete = true;
     public List<String> spamGuardExclusions;
     // Spigot end
@@ -833,6 +834,30 @@ public final class CraftServer implements Server {
         worlds.remove(world.getName().toLowerCase());
         console.worlds.remove(console.worlds.indexOf(handle));
 
+        File parentFolder = world.getWorldFolder().getAbsoluteFile();
+
+        // Synchronized because access to RegionFileCache.a is guarded by this lock.
+        synchronized (RegionFileCache.class) {
+            // RegionFileCache.a should be RegionFileCache.cache
+            Iterator<Map.Entry<File, RegionFile>> i = RegionFileCache.a.entrySet().iterator();
+            while(i.hasNext()) {
+                Map.Entry<File, RegionFile> entry = i.next();
+                File child = entry.getKey().getAbsoluteFile();
+                while (child != null) {
+                    if (child.equals(parentFolder)) {
+                        i.remove();
+                        try {
+                            entry.getValue().c(); // Should be RegionFile.close();
+                        } catch (IOException ex) {
+                            getLogger().log(Level.SEVERE, null, ex);
+                        }
+                        break;
+                    }
+                    child = child.getParentFile();
+                }
+            }
+        }
+
         return true;
     }
 
@@ -1033,9 +1058,12 @@ public final class CraftServer implements Server {
                     if (plugin == null) {
                         getLogger().severe("Could not set generator for default world '" + world + "': Plugin '" + split[0] + "' does not exist");
                     } else if (!plugin.isEnabled()) {
-                        getLogger().severe("Could not set generator for default world '" + world + "': Plugin '" + split[0] + "' is not enabled yet (is it load:STARTUP?)");
+                        getLogger().severe("Could not set generator for default world '" + world + "': Plugin '" + plugin.getDescription().getFullName() + "' is not enabled yet (is it load:STARTUP?)");
                     } else {
                         result = plugin.getDefaultWorldGenerator(world, id);
+                        if (result == null) {
+                            getLogger().severe("Could not set generator for default world '" + world + "': Plugin '" + plugin.getDescription().getFullName() + "' lacks a default world generator");
+                        }
                     }
                 }
             }
@@ -1373,4 +1401,20 @@ public final class CraftServer implements Server {
     public CraftScoreboardManager getScoreboardManager() {
         return scoreboardManager;
     }
+
+    // Spigot start
+    @SuppressWarnings("unchecked")
+    public java.util.Collection<java.net.InetSocketAddress> getSecondaryHosts() {
+        java.util.Collection<java.net.InetSocketAddress> ret = new java.util.HashSet<java.net.InetSocketAddress>();
+        List<?> listeners = configuration.getList("listeners");
+        if (listeners != null) {
+            for (Object o : listeners) {
+
+                Map<String, Object> sect = (Map<String, Object>) o;
+                ret.add(new java.net.InetSocketAddress((String) sect.get("address"), (Integer) sect.get("port")));
+            }
+        }
+        return ret;
+    }
+    // Spigot end
 }

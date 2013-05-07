@@ -56,9 +56,9 @@ public class EntityTracker {
         } else if (entity instanceof EntityItem) {
             this.addEntity(entity, 64, 20, true);
         } else if (entity instanceof EntityMinecartAbstract) {
-            this.addEntity(entity, 80, 3, true);
+            this.addEntity(entity, 80, 2, true); // CraftBukkit - Send updates at same rate as players
         } else if (entity instanceof EntityBoat) {
-            this.addEntity(entity, 80, 2, true); // Spigot - send at same speed as player
+            this.addEntity(entity, 80, 2, true); // CraftBukkit - Send updates at same rate as players
         } else if (entity instanceof EntitySquid) {
             this.addEntity(entity, 64, 3, true);
         } else if (entity instanceof EntityWither) {
