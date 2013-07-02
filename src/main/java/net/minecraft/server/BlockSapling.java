@@ -13,7 +13,6 @@ import org.bukkit.event.world.StructureGrowEvent;
 public class BlockSapling extends BlockFlower {
 
     public static final String[] a = new String[] { "oak", "spruce", "birch", "jungle"};
-    private static final String[] b = new String[] { "sapling", "sapling_spruce", "sapling_birch", "sapling_jungle"};
 
     protected BlockSapling(int i) {
         super(i);
@@ -26,7 +25,7 @@ public class BlockSapling extends BlockFlower {
     public void a(World world, int i, int j, int k, Random random) {
         if (!world.isStatic) {
             super.a(world, i, j, k, random);
-            if (world.getLightLevel(i, j + 1, k) >= 9 && (random.nextInt(Math.max(2, (int) ((world.growthOdds / world.getWorld().aggregateTicks / world.getWorld().treeGrowthModifier * 7) + 0.5F))) == 0)) { // Spigot
+            if (world.getLightLevel(i, j + 1, k) >= 9 && (random.nextInt(Math.max(2, (int) ((world.growthOdds / world.spigotConfig.saplingModifier * 7) + 0.5F))) == 0)) { // Spigot
                 this.grow(world, i, j, k, random, false, null, null); // CraftBukkit - added bonemeal, player and itemstack
             }
         }

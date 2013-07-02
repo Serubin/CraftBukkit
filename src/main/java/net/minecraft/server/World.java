@@ -12,9 +12,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.util.LongHashSet;
+import org.bukkit.craftbukkit.SpigotTimings; // Spigot
+import org.bukkit.craftbukkit.util.UnsafeList;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.Spigot;
 import org.bukkit.craftbukkit.SpigotTimings;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.util.UnsafeList;
@@ -31,7 +34,7 @@ import org.bukkit.generator.ChunkGenerator;
 
 public abstract class World implements IBlockAccess {
 
-    public boolean d = false;
+    public boolean d;
     public List entityList = new ArrayList();
     protected List f = new ArrayList();
     public Set tileEntityList = new HashSet(); // CraftBukkit - ArrayList -> HashSet
@@ -40,14 +43,14 @@ public abstract class World implements IBlockAccess {
     public List players = new CopyOnWriteArrayList();
     public List i = new ArrayList();
     private long c = 16777215L;
-    public int j = 0;
+    public int j;
     protected int k = (new Random()).nextInt();
     protected final int l = 1013904223;
     protected float m;
     protected float n;
     protected float o;
     protected float p;
-    public int q = 0;
+    public int q;
     public boolean callingPlaceEvent = false; // CraftBukkit
     public int difficulty;
     public Random random = new Random();
@@ -70,7 +73,6 @@ public abstract class World implements IBlockAccess {
     // CraftBukkit start - public, longhashset
     public boolean allowMonsters = true;
     public boolean allowAnimals = true;
-    protected gnu.trove.map.hash.TLongShortHashMap chunkTickList; // Spigot
     public long ticksPerAnimalSpawns;
     public long ticksPerMonsterSpawns;
     // CraftBukkit end
@@ -78,33 +80,43 @@ public abstract class World implements IBlockAccess {
     int[] H;
     public boolean isStatic;
     // Spigot start
+    protected final gnu.trove.map.hash.TLongShortHashMap chunkTickList;
+    protected float growthOdds = 100;
+    protected float modifiedOdds = 100;
+    private final byte chunkTickRadius;
 
-    public static long chunkToKey(int x, int z) {
-        long k = ((((long)x) & 0xFFFF0000L) << 16) | ((((long)x) & 0x0000FFFFL) << 0);
-        k |= ((((long)z) & 0xFFFF0000L) << 32) | ((((long)z) & 0x0000FFFFL) << 16);
+    public static long chunkToKey(int x, int z)
+    {
+        long k = ( ( ( (long) x ) & 0xFFFF0000L ) << 16 ) | ( ( ( (long) x ) & 0x0000FFFFL ) << 0 );
+        k     |= ( ( ( (long) z ) & 0xFFFF0000L ) << 32 ) | ( ( ( (long) z ) & 0x0000FFFFL ) << 16 );
         return k;
     }
-    public static int keyToX(long k) {
-        return (int)(((k >> 16) & 0xFFFF0000) | (k & 0x0000FFFF));
+
+    public static int keyToX(long k)
+    {
+        return (int) ( ( ( k >> 16 ) & 0xFFFF0000 ) | ( k & 0x0000FFFF ) );
     }
-    public static int keyToZ(long k) {
-        return (int)(((k >> 32) & 0xFFFF0000L) | ((k >> 16) & 0x0000FFFF));
+
+    public static int keyToZ(long k)
+    {
+        return (int) ( ( ( k >> 32 ) & 0xFFFF0000L ) | ( ( k >> 16 ) & 0x0000FFFF ) );
     }
     // Spigot end
+
     public BiomeBase getBiome(int i, int j) {
         if (this.isLoaded(i, 0, j)) {
             Chunk chunk = this.getChunkAtWorldCoords(i, j);
 
             if (chunk != null) {
-                return chunk.a(i & 15, j & 15, this.worldProvider.d);
+                return chunk.a(i & 15, j & 15, this.worldProvider.e);
             }
         }
 
-        return this.worldProvider.d.getBiome(i, j);
+        return this.worldProvider.e.getBiome(i, j);
     }
 
     public WorldChunkManager getWorldChunkManager() {
-        return this.worldProvider.d;
+        return this.worldProvider.e;
     }
 
     // CraftBukkit start
@@ -116,7 +128,7 @@ public abstract class World implements IBlockAccess {
     int lastXAccessed = Integer.MIN_VALUE;
     int lastZAccessed = Integer.MIN_VALUE;
     final Object chunkLock = new Object();
-    private byte chunkTickRadius;
+    public final org.spigotmc.SpigotWorldConfig spigotConfig; // Spigot
 
     public final SpigotTimings.WorldTimingsHandler timings; // Spigot
 
@@ -130,27 +142,25 @@ public abstract class World implements IBlockAccess {
 
     // Changed signature
     public World(IDataManager idatamanager, String s, WorldSettings worldsettings, WorldProvider worldprovider, MethodProfiler methodprofiler, IConsoleLogManager iconsolelogmanager, ChunkGenerator gen, org.bukkit.World.Environment env) {
+        this.spigotConfig = new org.spigotmc.SpigotWorldConfig( s ); // Spigot
         this.generator = gen;
-        this.worldData = idatamanager.getWorldData(); // Spigot
         this.world = new CraftWorld((WorldServer) this, gen, env);
         this.ticksPerAnimalSpawns = this.getServer().getTicksPerAnimalSpawns(); // CraftBukkit
         this.ticksPerMonsterSpawns = this.getServer().getTicksPerMonsterSpawns(); // CraftBukkit
-        this.chunkTickRadius = (byte)((this.getServer().getViewDistance() < 7) ? this.getServer().getViewDistance() : 7); // CraftBukkit - don't tick chunks we don't load for player
         // CraftBukkit end
-
         // Spigot start
-        chunkTickList = new gnu.trove.map.hash.TLongShortHashMap(world.growthPerTick * 5, 0.7f, Long.MIN_VALUE, Short.MIN_VALUE);
-        chunkTickList.setAutoCompactionFactor(0);
+        this.chunkTickRadius = (byte) ( ( this.getServer().getViewDistance() < 7 ) ? this.getServer().getViewDistance() : 7 );
+        this.chunkTickList = new gnu.trove.map.hash.TLongShortHashMap( spigotConfig.chunksPerTick * 5, 0.7f, Long.MIN_VALUE, Short.MIN_VALUE );
+        this.chunkTickList.setAutoCompactionFactor( 0 );
         // Spigot end
 
         this.O = this.random.nextInt(12000);
         this.H = new int['\u8000'];
-        this.isStatic = false;
         this.dataManager = idatamanager;
         this.methodProfiler = methodprofiler;
         this.worldMaps = new WorldMapCollection(idatamanager);
         this.logAgent = iconsolelogmanager;
-        // this.worldData = idatamanager.getWorldData(); Moved up
+        this.worldData = idatamanager.getWorldData();
         if (worldprovider != null) {
             this.worldProvider = worldprovider;
         } else if (this.worldData != null && this.worldData.j() != 0) {
@@ -195,7 +205,7 @@ public abstract class World implements IBlockAccess {
             this.villages.a(this);
         }
 
-        this.z();
+        this.A();
         this.a();
 
         this.getServer().addWorld(this.world); // CraftBukkit
@@ -455,7 +465,7 @@ public abstract class World implements IBlockAccess {
             k = i1;
         }
 
-        if (!this.worldProvider.f) {
+        if (!this.worldProvider.g) {
             for (i1 = k; i1 <= l; ++i1) {
                 this.c(EnumSkyBlock.SKY, i, i1, j);
             }
@@ -574,7 +584,7 @@ public abstract class World implements IBlockAccess {
             if (flag) {
                 int l = this.getTypeId(i, j, k);
 
-                if (Block.w[l]) {
+                if (Block.x[l]) {
                     int i1 = this.b(i, j + 1, k, false);
                     int j1 = this.b(i + 1, j, k, false);
                     int k1 = this.b(i - 1, j, k, false);
@@ -697,7 +707,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public float q(int i, int j, int k) {
-        return this.worldProvider.g[this.getLightLevel(i, j, k)];
+        return this.worldProvider.h[this.getLightLevel(i, j, k)];
     }
 
     public boolean v() {
@@ -957,7 +967,7 @@ public abstract class World implements IBlockAccess {
         // Spigot start
         else if (entity instanceof EntityExperienceOrb) {
             EntityExperienceOrb xp = (EntityExperienceOrb) entity;
-            double radius = this.getWorld().expMergeRadius;
+            double radius = spigotConfig.expMerge;
             if (radius > 0) {
                 List<Entity> entities = this.getEntities(entity, entity.boundingBox.grow(radius, radius, radius));
                 for (Entity e : entities) {
@@ -1061,30 +1071,38 @@ public abstract class World implements IBlockAccess {
         int j1 = MathHelper.floor(axisalignedbb.f + 1.0D);
 
         // Spigot start
-        int ystart = ((k - 1) < 0) ? 0 : (k - 1);
-        for (int chunkx = (i >> 4); chunkx <= ((j - 1) >> 4); chunkx++) {
+        int ystart = ( ( k - 1 ) < 0 ) ? 0 : ( k - 1 );
+        for ( int chunkx = ( i >> 4 ); chunkx <= ( ( j - 1 ) >> 4 ); chunkx++ )
+        {
             int cx = chunkx << 4;
-            for (int chunkz = (i1 >> 4); chunkz <= ((j1 - 1) >> 4); chunkz++) {
-                if (!this.isChunkLoaded(chunkx, chunkz)) {
+            for ( int chunkz = ( i1 >> 4 ); chunkz <= ( ( j1 - 1 ) >> 4 ); chunkz++ )
+            {
+                if ( !this.isChunkLoaded( chunkx, chunkz ) )
+                {
                     continue;
                 }
                 int cz = chunkz << 4;
-                Chunk chunk = this.getChunkAt(chunkx, chunkz);
+                Chunk chunk = this.getChunkAt( chunkx, chunkz );
                 // Compute ranges within chunk
-                int xstart = (i < cx) ? cx : i;
-                int xend = (j < (cx + 16)) ? j : (cx + 16);
-                int zstart = (i1 < cz) ? cz : i1;
-                int zend = (j1 < (cz + 16)) ? j1 : (cz + 16);
+                int xstart = ( i < cx ) ? cx : i;
+                int xend = ( j < ( cx + 16 ) ) ? j : ( cx + 16 );
+                int zstart = ( i1 < cz ) ? cz : i1;
+                int zend = ( j1 < ( cz + 16 ) ) ? j1 : ( cz + 16 );
                 // Loop through blocks within chunk
-                for (int x = xstart; x < xend; x++) {
-                    for (int z = zstart; z < zend; z++) {
-                        for (int y = ystart; y < l; y++) {
-                            int blkid = chunk.getTypeId(x - cx, y, z - cz);
-                            if (blkid > 0) {
+                for ( int x = xstart; x < xend; x++ )
+                {
+                    for ( int z = zstart; z < zend; z++ )
+                    {
+                        for ( int y = ystart; y < l; y++ )
+                        {
+                            int blkid = chunk.getTypeId( x - cx, y, z - cz );
+                            if ( blkid > 0 )
+                            {
                                 Block block = Block.byId[blkid];
 
-                                if (block != null) {
-                                    block.a(this, x, y, z, axisalignedbb, this.M, entity);
+                                if ( block != null )
+                                {
+                                    block.a( this, x, y, z, axisalignedbb, this.M, entity );
                                 }
                             }
                         }
@@ -1092,21 +1110,7 @@ public abstract class World implements IBlockAccess {
                 }
             }
         }
-        /*
-        for (int k1 = i; k1 < j; ++k1) {
-            for (int l1 = i1; l1 < j1; ++l1) {
-                if (this.isLoaded(k1, 64, l1)) {
-                    for (int i2 = k - 1; i2 < l; ++i2) {
-                        Block block = Block.byId[this.getTypeId(k1, i2, l1)];
-
-                        if (block != null) {
-                            block.a(this, k1, i2, l1, axisalignedbb, this.M, entity);
-                        }
-                    }
-                }
-            }
-        }
-        */// Spigot end
+        // Spigot end
 
         double d0 = 0.25D;
         List list = this.getEntities(entity, axisalignedbb.grow(d0, d0, d0));
@@ -1114,12 +1118,12 @@ public abstract class World implements IBlockAccess {
         for (int j2 = 0; j2 < list.size(); ++j2) {
             AxisAlignedBB axisalignedbb1 = ((Entity) list.get(j2)).D();
 
-            if (axisalignedbb1 != null && axisalignedbb1.a(axisalignedbb)) {
+            if (axisalignedbb1 != null && axisalignedbb1.b(axisalignedbb)) {
                 this.M.add(axisalignedbb1);
             }
 
             axisalignedbb1 = entity.g((Entity) list.get(j2));
-            if (axisalignedbb1 != null && axisalignedbb1.a(axisalignedbb)) {
+            if (axisalignedbb1 != null && axisalignedbb1.b(axisalignedbb)) {
                 this.M.add(axisalignedbb1);
             }
         }
@@ -1176,8 +1180,8 @@ public abstract class World implements IBlockAccess {
         return this.worldProvider.a(this.worldData.getDayTime(), f);
     }
 
-    public int w() {
-        return this.worldProvider.a(this.worldData.getDayTime());
+    public float x() {
+        return WorldProvider.a[this.worldProvider.a(this.worldData.getDayTime())];
     }
 
     public float d(float f) {
@@ -1277,7 +1281,7 @@ public abstract class World implements IBlockAccess {
         this.f.clear();
         this.methodProfiler.c("regular");
 
-        org.bukkit.craftbukkit.Spigot.activateEntities(this); // Spigot
+        org.spigotmc.ActivationRange.activateEntities(this); // Spigot
         timings.entityTick.startTiming(); // Spigot
         for (i = 0; i < this.entityList.size(); ++i) {
             entity = (Entity) this.entityList.get(i);
@@ -1439,8 +1443,9 @@ public abstract class World implements IBlockAccess {
         byte b0 = 32;
 
         // Spigot start
-        if (!Spigot.checkIfActive(entity)) {
+        if (!org.spigotmc.ActivationRange.checkIfActive(entity)) {
             entity.ticksLived++;
+            entity.inactiveTick();
         } else {
             entity.tickTimer.startTiming();
             // Spigot end
@@ -1653,7 +1658,7 @@ public abstract class World implements IBlockAccess {
                 }
             }
 
-            if (vec3d.b() > 0.0D && entity.aw()) {
+            if (vec3d.b() > 0.0D && entity.av()) {
                 vec3d = vec3d.a();
                 double d1 = 0.014D;
 
@@ -1939,7 +1944,7 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    public void z() {
+    public void A() {
         int i = this.a(1.0F);
 
         if (i != this.j) {
@@ -1966,7 +1971,7 @@ public abstract class World implements IBlockAccess {
     }
 
     protected void o() {
-        if (!this.worldProvider.f) {
+        if (!this.worldProvider.g) {
             int i = this.worldData.getThunderDuration();
 
             if (i <= 0) {
@@ -2044,16 +2049,11 @@ public abstract class World implements IBlockAccess {
         }
     }
 
-    public void A() {
+    public void B() {
         this.worldData.setWeatherDuration(1);
     }
 
-    // Spigot start
-    public int aggregateTicks = 1;
-    protected float modifiedOdds = 100F;
-    public float growthOdds = 100F;
-
-    protected void B() {
+    protected void C() {
         // this.chunkTickList.clear(); // CraftBukkit - removed
         this.methodProfiler.a("buildList");
 
@@ -2062,42 +2062,45 @@ public abstract class World implements IBlockAccess {
         int j;
         int k;
 
-        final int optimalChunks = this.getWorld().growthPerTick;
-
-        if (optimalChunks <= 0) return;
-        if (players.size() == 0) return;
-        // Keep chunks with growth inside of the optimal chunk range
-        int chunksPerPlayer = Math.min(200, Math.max(1, (int) (((optimalChunks - players.size()) / (double) players.size()) + 0.5)));
-        int randRange = 3 + chunksPerPlayer / 30;
-        if (randRange > chunkTickRadius) { // Limit to normal tick radius - including view distance
-            randRange = chunkTickRadius;
+        // Spigot start
+        int optimalChunks = spigotConfig.chunksPerTick;
+        // Quick conditions to allow us to exist early
+        if ( optimalChunks <= 0 || players.isEmpty() )
+        {
+            return;
         }
+        // Keep chunks with growth inside of the optimal chunk range
+        int chunksPerPlayer = Math.min( 200, Math.max( 1, (int) ( ( ( optimalChunks - players.size() ) / (double) players.size() ) + 0.5 ) ) );
+        int randRange = 3 + chunksPerPlayer / 30;
+        // Limit to normal tick radius - including view distance
+        randRange = ( randRange > chunkTickRadius ) ? chunkTickRadius : randRange;
         // odds of growth happening vs growth happening in vanilla
-        final float modifiedOdds = Math.max(35, Math.min(100, ((chunksPerPlayer + 1) * 100F) / 15F));
-        this.modifiedOdds = modifiedOdds;
-        this.growthOdds = modifiedOdds;
-
+        this.growthOdds = this.modifiedOdds = Math.max( 35, Math.min( 100, ( ( chunksPerPlayer + 1 ) * 100F ) / 15F ) );
+        // Spigot end
         for (i = 0; i < this.players.size(); ++i) {
             entityhuman = (EntityHuman) this.players.get(i);
-            int chunkX = MathHelper.floor(entityhuman.locX / 16.0D);
-            int chunkZ = MathHelper.floor(entityhuman.locZ / 16.0D);
+            j = MathHelper.floor(entityhuman.locX / 16.0D);
+            k = MathHelper.floor(entityhuman.locZ / 16.0D);
+            byte b0 = 7;
 
-            // Always update the chunk the player is on
-            long key = chunkToKey(chunkX, chunkZ);
-            int existingPlayers = Math.max(0, chunkTickList.get(key)); //filter out -1's
+            // Spigot start - Always update the chunk the player is on
+            long key = chunkToKey( j, k );
+            int existingPlayers = Math.max( 0, chunkTickList.get( key ) ); // filter out -1
             chunkTickList.put(key, (short) (existingPlayers + 1));
 
             // Check and see if we update the chunks surrounding the player this tick
-            for (int chunk = 0; chunk < chunksPerPlayer; chunk++) {
-                int dx = (random.nextBoolean() ? 1 : -1) * random.nextInt(randRange);
-                int dz = (random.nextBoolean() ? 1 : -1) * random.nextInt(randRange);
-                long hash = chunkToKey(dx + chunkX, dz + chunkZ);
-                if (!chunkTickList.contains(hash) && this.isChunkLoaded(dx + chunkX, dz + chunkZ)) {
-                    chunkTickList.put(hash, (short) -1); //no players
+            for ( int chunk = 0; chunk < chunksPerPlayer; chunk++ )
+            {
+                int dx = ( random.nextBoolean() ? 1 : -1 ) * random.nextInt( randRange );
+                int dz = ( random.nextBoolean() ? 1 : -1 ) * random.nextInt( randRange );
+                long hash = chunkToKey( dx + j, dz + k );
+                if ( !chunkTickList.contains( hash ) && this.isChunkLoaded( dx + j, dz + k ) )
+                {
+                    chunkTickList.put( hash, (short) -1 ); // no players
                 }
             }
+            // Spigot End
         }
-        // Spigot End
 
         this.methodProfiler.b();
         if (this.O > 0) {
@@ -2105,7 +2108,7 @@ public abstract class World implements IBlockAccess {
         }
 
         this.methodProfiler.a("playerCheckLight");
-        if (!this.players.isEmpty() && this.getWorld().randomLightingUpdates) { // Spigot
+        if (spigotConfig.randomLightUpdates && !this.players.isEmpty()) { // Spigot
             i = this.random.nextInt(this.players.size());
             entityhuman = (EntityHuman) this.players.get(i);
             j = MathHelper.floor(entityhuman.locX) + this.random.nextInt(11) - 5;
@@ -2145,7 +2148,7 @@ public abstract class World implements IBlockAccess {
     }
 
     protected void g() {
-        this.B();
+        this.C();
     }
 
     public boolean x(int i, int j, int k) {
@@ -2220,7 +2223,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public void A(int i, int j, int k) {
-        if (!this.worldProvider.f) {
+        if (!this.worldProvider.g) {
             this.c(EnumSkyBlock.SKY, i, j, k);
         }
 
@@ -2463,9 +2466,9 @@ public abstract class World implements IBlockAccess {
             Entity entity = (Entity) this.entityList.get(j);
 
             // CraftBukkit start - Split out persistent check, don't apply it to special persistent mobs
-            if (entity instanceof EntityLiving) {
-                EntityLiving entityliving = (EntityLiving) entity;
-                if (entityliving.isTypeNotPersistent() && entityliving.bU()) { // Should be isPersistent
+            if (entity instanceof EntityInsentient) {
+                EntityInsentient entityinsentient = (EntityInsentient) entity;
+                if (entityinsentient.isTypeNotPersistent() && entityinsentient.bA()) { // Should be isPersistent
                     continue;
                 }
             }
@@ -2692,7 +2695,7 @@ public abstract class World implements IBlockAccess {
                 }
 
                 if (entityhuman1.isInvisible()) {
-                    float f = entityhuman1.cc();
+                    float f = entityhuman1.bs();
 
                     if (f < 0.1F) {
                         f = 0.1F;
@@ -2713,7 +2716,7 @@ public abstract class World implements IBlockAccess {
 
     public EntityHuman a(String s) {
         for (int i = 0; i < this.players.size(); ++i) {
-            if (s.equals(((EntityHuman) this.players.get(i)).name)) {
+            if (s.equals(((EntityHuman) this.players.get(i)).getName())) {
                 return (EntityHuman) this.players.get(i);
             }
         }
@@ -2721,7 +2724,7 @@ public abstract class World implements IBlockAccess {
         return null;
     }
 
-    public void F() throws ExceptionWorldConflict { // CraftBukkit - added throws
+    public void G() throws ExceptionWorldConflict { // CraftBukkit - added throws
         this.dataManager.checkSession();
     }
 
@@ -2751,7 +2754,7 @@ public abstract class World implements IBlockAccess {
 
     public void broadcastEntityEffect(Entity entity, byte b0) {}
 
-    public IChunkProvider K() {
+    public IChunkProvider L() {
         return this.chunkProvider;
     }
 
@@ -2793,16 +2796,16 @@ public abstract class World implements IBlockAccess {
         return this.m + (this.n - this.m) * f;
     }
 
-    public boolean O() {
+    public boolean P() {
         return (double) this.h(1.0F) > 0.9D;
     }
 
-    public boolean P() {
+    public boolean Q() {
         return (double) this.i(1.0F) > 0.2D;
     }
 
     public boolean F(int i, int j, int k) {
-        if (!this.P()) {
+        if (!this.Q()) {
             return false;
         } else if (!this.l(i, j, k)) {
             return false;
@@ -2864,8 +2867,8 @@ public abstract class World implements IBlockAccess {
         return 256;
     }
 
-    public int R() {
-        return this.worldProvider.f ? 128 : 256;
+    public int S() {
+        return this.worldProvider.g ? 128 : 256;
     }
 
     public IUpdatePlayerListBox a(EntityMinecartAbstract entityminecartabstract) {
@@ -2880,7 +2883,7 @@ public abstract class World implements IBlockAccess {
     }
 
     public ChunkPosition b(String s, int i, int j, int k) {
-        return this.K().findNearestMapFeature(this, s, i, j, k);
+        return this.L().findNearestMapFeature(this, s, i, j, k);
     }
 
     public CrashReportSystemDetails a(CrashReport crashreport) {
@@ -2911,9 +2914,9 @@ public abstract class World implements IBlockAccess {
         return this.J;
     }
 
-    public Calendar V() {
+    public Calendar W() {
         if (this.getTime() % 600L == 0L) {
-            this.K.setTimeInMillis(System.currentTimeMillis());
+            this.K.setTimeInMillis(MinecraftServer.aq());
         }
 
         return this.K;
@@ -2949,5 +2952,27 @@ public abstract class World implements IBlockAccess {
 
     public IConsoleLogManager getLogger() {
         return this.logAgent;
+    }
+
+    public float b(double d0, double d1, double d2) {
+        return this.I(MathHelper.floor(d0), MathHelper.floor(d1), MathHelper.floor(d2));
+    }
+
+    public float I(int i, int j, int k) {
+        float f = 0.0F;
+        boolean flag = this.difficulty == 3;
+
+        if (this.isLoaded(i, j, k)) {
+            float f1 = this.x();
+
+            f += MathHelper.a((float) this.getChunkAtWorldCoords(i, k).q / 3600000.0F, 0.0F, 1.0F) * (flag ? 1.0F : 0.75F);
+            f += f1 * 0.25F;
+        }
+
+        if (this.difficulty < 2) {
+            f *= (float) this.difficulty / 2.0F;
+        }
+
+        return MathHelper.a(f, 0.0F, flag ? 1.5F : 1.0F);
     }
 }

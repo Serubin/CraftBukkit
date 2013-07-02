@@ -3,7 +3,8 @@ package org.spigotmc.netty;
 /**
  * Stores the state of the packet currently being read.
  */
-public enum ReadState {
+public enum ReadState
+{
 
     /**
      * Indicates the byte representing the ID has been read.

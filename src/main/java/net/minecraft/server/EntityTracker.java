@@ -73,14 +73,12 @@ public class EntityTracker {
             this.addEntity(entity, 160, 10, true);
         } else if (entity instanceof EntityFallingBlock) {
             this.addEntity(entity, 160, 20, true);
-        } else if (entity instanceof EntityPainting) {
+        } else if (entity instanceof EntityHanging) {
             this.addEntity(entity, 160, Integer.MAX_VALUE, false);
         } else if (entity instanceof EntityExperienceOrb) {
             this.addEntity(entity, 160, 20, true);
         } else if (entity instanceof EntityEnderCrystal) {
             this.addEntity(entity, 256, Integer.MAX_VALUE, false);
-        } else if (entity instanceof EntityItemFrame) {
-            this.addEntity(entity, 160, Integer.MAX_VALUE, false);
         }
     }
 
@@ -90,7 +88,7 @@ public class EntityTracker {
 
     public void addEntity(Entity entity, int i, int j, boolean flag) {
         if (Thread.currentThread() != MinecraftServer.getServer().primaryThread) throw new IllegalStateException("Asynchronous entity track!"); // Spigot
-        i = org.bukkit.craftbukkit.Spigot.getEntityTrackingRange(entity, i); // Spigot
+        i = org.spigotmc.TrackingRange.getEntityTrackingRange(entity, i); // Spigot
         if (i > this.d) {
             i = this.d;
         }

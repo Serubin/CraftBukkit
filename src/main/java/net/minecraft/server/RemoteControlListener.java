@@ -26,7 +26,7 @@ public class RemoteControlListener extends RemoteConnectionThread
     this.g = paramIMinecraftServer.a("rcon.port", 0);
     this.k = paramIMinecraftServer.a("rcon.password", "");
     this.i = paramIMinecraftServer.a("rcon.ip", "");
-    this.h = paramIMinecraftServer.v();
+    this.h = paramIMinecraftServer.x();
     if (0 == this.g)
     {
       this.g = (this.h + 10);

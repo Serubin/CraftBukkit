@@ -89,7 +89,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public boolean isOnline() {
         for (Object obj : server.getHandle().players) {
             EntityPlayer player = (EntityPlayer) obj;
-            if (player.name.equalsIgnoreCase(getName())) {
+            if (player.getName().equalsIgnoreCase(getName())) {
                 return true;
             }
         }
@@ -128,7 +128,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void sendRawMessage(String message) {
         if (getHandle().playerConnection == null) return;
 
-        getHandle().playerConnection.sendPacket(new Packet3Chat(message));
+        getHandle().playerConnection.sendPacket(new Packet3Chat(ChatMessage.d(message)));
     }
 
     public void sendMessage(String message) {
@@ -266,13 +266,11 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         getHandle().playerConnection.sendPacket(packet);
     }
 
-    public void playEffect(Location loc, Effect effect, int data) {
-        if (getHandle().playerConnection == null) return;
-
-        int packetData = effect.getId();
-        Packet61WorldEvent packet = new Packet61WorldEvent(packetData, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), data, false);
-        getHandle().playerConnection.sendPacket(packet);
+    // Spigot start
+    public void playEffect(Location location, Effect effect, int data) {
+        spigot().playEffect(location, effect, data, 0, 0f, 0f, 0f, 1f, 1, 64);
     }
+    // Spigot end
 
     public <T> void playEffect(Location loc, Effect effect, T data) {
         if (data != null) {
@@ -280,9 +278,14 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         } else {
             Validate.isTrue(effect.getData() == null, "Wrong kind of data for this effect!");
         }
-
-        int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
-        playEffect(loc, effect, datavalue);
+        if (data != null && data.getClass().equals(org.bukkit.material.MaterialData.class)) {
+            org.bukkit.material.MaterialData materialData = (org.bukkit.material.MaterialData) data;
+            Validate.isTrue(!materialData.getItemType().isBlock(), "Material must be block");
+            spigot().playEffect(loc, effect, materialData.getItemType().getId(), materialData.getData(), 0, 0, 0, 1, 1, 64);
+        } else {
+            int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
+            playEffect(loc, effect, datavalue);
+        }
     }
 
     public void sendBlockChange(Location loc, Material material, byte data) {
@@ -628,28 +631,10 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         ChunkCoordinates bed = getHandle().getBed();
 
         if (world != null && bed != null) {
-            if (getHandle().isRespawnForced()) {
+            bed = EntityHuman.getBed(((CraftWorld) world).getHandle(), bed, getHandle().isRespawnForced());
+            if (bed != null) {
                 return new Location(world, bed.x, bed.y, bed.z);
             }
-
-            int cx = bed.x >> 4;
-            int cz = bed.z >> 4;
-            boolean before = world.isChunkLoaded(cx, cz);
-
-            if (!before) {
-                world.loadChunk(cx, cz);
-            }
-
-            Location location = null;
-            if (world.getBlockTypeIdAt(bed.x, bed.y, bed.z) == Block.BED.id) {
-                location = new Location(world, bed.x, bed.y, bed.z);
-            }
-
-            if (!before) {
-                world.unloadChunk(cx, cz);
-            }
-
-            return location;
         }
         return null;
     }
@@ -830,7 +815,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setTexturePack(String url) {
         Validate.notNull(url, "Texture pack URL cannot be null");
 
-        byte[] message = (url + "\0" + org.bukkit.craftbukkit.Spigot.textureResolution).getBytes(); // Spigot
+        byte[] message = (url + "\0" + "16").getBytes();
         Validate.isTrue(message.length <= Messenger.MAX_MESSAGE_SIZE, "Texture pack URL is too long");
 
         getHandle().playerConnection.sendPacket(new Packet250CustomPayload("MC|TPack", message));
@@ -878,10 +863,12 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         }
     }
 
+    @Override
     public EntityType getType() {
         return EntityType.PLAYER;
     }
 
+    @Override
     public void setMetadata(String metadataKey, MetadataValue newMetadataValue) {
         server.getPlayerMetadata().setMetadata(this, metadataKey, newMetadataValue);
     }
@@ -986,11 +973,13 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         }
     }
 
-    public void setMaxHealth(int amount) {
+    @Override
+    public void setMaxHealth(double amount) {
         super.setMaxHealth(amount);
         getHandle().triggerHealthUpdate();
     }
 
+    @Override
     public void resetMaxHealth() {
         super.resetMaxHealth();
         getHandle().triggerHealthUpdate();
@@ -1012,4 +1001,57 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
         this.server.getScoreboardManager().setPlayerBoard(this, scoreboard);
     }
+
+    // Spigot start
+    private final Spigot spigot = new Spigot()
+    {
+        @Override
+        public InetSocketAddress getRawAddress()
+        {
+            return ( getHandle().playerConnection == null ) ? null : (InetSocketAddress) getHandle().playerConnection.networkManager.getSocket().getRemoteSocketAddress();
+        }
+
+        @Override
+        public void playEffect(Location location, Effect effect, int id, int data, float offsetX, float offsetY, float offsetZ, float speed, int particleCount, int radius)
+        {
+            Validate.notNull( location, "Location cannot be null" );
+            Validate.notNull( effect, "Effect cannot be null" );
+            Validate.notNull( location.getWorld(), "World cannot be null" );
+
+            Packet packet;
+            if ( effect.getType() != Effect.Type.PARTICLE )
+            {
+                int packetData = effect.getId();
+                packet = new Packet61WorldEvent( packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), id, false );
+            } else
+            {
+                StringBuilder particleFullName = new StringBuilder();
+                particleFullName.append( effect.getName() );
+
+                if ( effect.getData() != null && ( effect.getData().equals( Material.class ) || effect.getData().equals( org.bukkit.material.MaterialData.class ) ) )
+                {
+                    particleFullName.append( '_' ).append( id );
+                }
+
+                if ( effect.getData() != null && effect.getData().equals( org.bukkit.material.MaterialData.class ) )
+                {
+                    particleFullName.append( '_' ).append( data );
+                }
+                packet = new Packet63WorldParticles( effect.getName(), (float) location.getX(), (float) location.getY(), (float) location.getZ(), offsetX, offsetY, offsetZ, particleCount, radius );
+            }
+
+            if ( !location.getWorld().equals( getWorld() ) )
+            {
+                return;
+            }
+
+            getHandle().playerConnection.sendPacket( packet );
+        }
+    };
+
+    public Spigot spigot()
+    {
+        return spigot;
+    }
+    // Spigot end
 }

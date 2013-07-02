@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import org.bukkit.CustomTimingsHandler; // Spigot
+import org.spigotmc.CustomTimingsHandler; // Spigot
 import org.bukkit.inventory.InventoryHolder; // CraftBukkit
 
 public class TileEntity {
@@ -31,12 +31,12 @@ public class TileEntity {
         }
     }
 
-    public void b(World world) {
-        this.world = world;
-    }
-
     public World getWorld() {
         return this.world;
+    }
+
+    public void b(World world) {
+        this.world = world;
     }
 
     public boolean o() {

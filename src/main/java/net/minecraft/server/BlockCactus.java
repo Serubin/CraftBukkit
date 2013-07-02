@@ -23,7 +23,7 @@ public class BlockCactus extends Block {
             if (l < 3) {
                 int i1 = world.getData(i, j, k);
 
-                if (i1 >= (byte) range(3, (world.growthOdds / world.getWorld().cactusGrowthModifier * 15) + 0.5F, 15)) { // Spigot
+                if (i1 >= (byte) range(3, (world.growthOdds / world.spigotConfig.cactusModifier * 15) + 0.5F, 15)) { // Spigot
                     org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(world, i, j + 1, k, this.id, 0); // CraftBukkit
                     world.setData(i, j, k, 0, 4);
                     this.doPhysics(world, i, j + 1, k, this.id);
@@ -84,17 +84,17 @@ public class BlockCactus extends Block {
             org.bukkit.block.Block damager = world.getWorld().getBlockAt(i, j, k);
             org.bukkit.entity.Entity damagee = (entity == null) ? null : entity.getBukkitEntity();
 
-            EntityDamageByBlockEvent event = new EntityDamageByBlockEvent(damager, damagee, org.bukkit.event.entity.EntityDamageEvent.DamageCause.CONTACT, 1);
+            EntityDamageByBlockEvent event = new EntityDamageByBlockEvent(damager, damagee, org.bukkit.event.entity.EntityDamageEvent.DamageCause.CONTACT, 1D);
             world.getServer().getPluginManager().callEvent(event);
 
             if (!event.isCancelled()) {
                 damagee.setLastDamageCause(event);
-                entity.damageEntity(DamageSource.CACTUS, event.getDamage());
+                entity.damageEntity(DamageSource.CACTUS, (float) event.getDamage());
             }
             return;
         }
         // CraftBukkit end
 
-        entity.damageEntity(DamageSource.CACTUS, 1);
+        entity.damageEntity(DamageSource.CACTUS, 1.0F);
     }
 }

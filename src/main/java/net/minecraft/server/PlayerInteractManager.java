@@ -107,7 +107,7 @@ public class PlayerInteractManager {
         // CraftBukkit
         PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.LEFT_CLICK_BLOCK, i, j, k, l, this.player.inventory.getItemInHand());
 
-        if (!this.gamemode.isAdventure() || this.player.e(i, j, k)) {
+        if (!this.gamemode.isAdventure() || this.player.d(i, j, k)) {
             // CraftBukkit start
             if (event.isCancelled()) {
                 // Let the client know the block still exists
@@ -184,6 +184,7 @@ public class PlayerInteractManager {
                     this.o = j1;
                 }
             }
+            world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, i, j, k); // Spigot
         }
     }
 
@@ -258,7 +259,10 @@ public class PlayerInteractManager {
             event = new BlockBreakEvent(block, this.player.getBukkitEntity());
 
             // Adventure mode pre-cancel
-            event.setCancelled(this.gamemode.isAdventure() && !this.player.e(i, j, k));
+            event.setCancelled(this.gamemode.isAdventure() && !this.player.d(i, j, k));
+
+            // Sword + Creative mode pre-cancel
+            event.setCancelled(event.isCancelled() || (this.gamemode.d() && this.player.aV() != null && this.player.aV().getItem() instanceof ItemSword));
 
             // Calculate default block experience
             Block nmsBlock = Block.byId[block.getTypeId()];
@@ -285,11 +289,6 @@ public class PlayerInteractManager {
                 }
                 return false;
             }
-            // Spigot (Orebfuscator) start
-            else {
-                org.spigotmc.OrebfuscatorManager.updateNearbyBlocks(world, i, j, k);
-            }
-            // Spigot (Orebfuscator) end
         }
 
         if (false) { // Never trigger
@@ -313,13 +312,13 @@ public class PlayerInteractManager {
             if (this.isCreative()) {
                 this.player.playerConnection.sendPacket(new Packet53BlockChange(i, j, k, this.world));
             } else {
-                ItemStack itemstack = this.player.cd();
+                ItemStack itemstack = this.player.bt();
                 boolean flag1 = this.player.a(Block.byId[l]);
 
                 if (itemstack != null) {
                     itemstack.a(this.world, l, i, j, k, this.player);
                     if (itemstack.count == 0) {
-                        this.player.ce();
+                        this.player.bu();
                     }
                 }
 
@@ -358,7 +357,7 @@ public class PlayerInteractManager {
                 entityhuman.inventory.items[entityhuman.inventory.itemInHandIndex] = null;
             }
 
-            if (!entityhuman.bX()) {
+            if (!entityhuman.bm()) {
                 ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
             }
 
