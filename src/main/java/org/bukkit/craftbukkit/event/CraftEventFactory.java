@@ -13,15 +13,19 @@ import net.minecraft.server.EntityArrow;
 import net.minecraft.server.EntityDamageSource;
 import net.minecraft.server.EntityDamageSourceIndirect;
 import net.minecraft.server.EntityHuman;
+import net.minecraft.server.EntityInsentient;
 import net.minecraft.server.EntityItem;
 import net.minecraft.server.EntityLiving;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.EntityPotion;
 import net.minecraft.server.Explosion;
+import net.minecraft.server.IInventory;
 import net.minecraft.server.InventoryCrafting;
 import net.minecraft.server.Item;
 import net.minecraft.server.ItemStack;
 import net.minecraft.server.Packet101CloseWindow;
+import net.minecraft.server.Packet103SetSlot;
+import net.minecraft.server.Slot;
 import net.minecraft.server.World;
 import net.minecraft.server.WorldServer;
 
@@ -31,6 +35,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.CreatureSpawner;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.block.CraftBlock;
@@ -64,6 +69,7 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.meta.BookMeta;
 
 public class CraftEventFactory {
     public static final DamageSource MELTING = CraftDamageSource.copyOf(DamageSource.BURN);
@@ -107,6 +113,22 @@ public class CraftEventFactory {
         BlockPlaceEvent event = new BlockPlaceEvent(placedBlock, replacedBlockState, blockClicked, player.getItemInHand(), player, canBuild);
         craftServer.getPluginManager().callEvent(event);
 
+        return event;
+    }
+
+    /**
+     * Mob spawner event
+     */
+    public static SpawnerSpawnEvent callSpawnerSpawnEvent(Entity spawnee, int spawnerX, int spawnerY, int spawnerZ) {
+        org.bukkit.craftbukkit.entity.CraftEntity entity = spawnee.getBukkitEntity();
+        BlockState state = entity.getWorld().getBlockAt(spawnerX, spawnerY, spawnerZ).getState();
+
+        if (!(state instanceof CreatureSpawner)) {
+            state = null;
+        }
+
+        SpawnerSpawnEvent event = new SpawnerSpawnEvent(entity, (CreatureSpawner) state);
+        entity.getServer().getPluginManager().callEvent(event);
         return event;
     }
 
@@ -239,7 +261,7 @@ public class CraftEventFactory {
     /**
      * EntityTameEvent
      */
-    public static EntityTameEvent callEntityTameEvent(EntityLiving entity, EntityHuman tamer) {
+    public static EntityTameEvent callEntityTameEvent(EntityInsentient entity, EntityHuman tamer) {
         org.bukkit.entity.Entity bukkitEntity = entity.getBukkitEntity();
         org.bukkit.entity.AnimalTamer bukkitTamer = (tamer != null ? tamer.getBukkitEntity() : null);
         CraftServer craftServer = (CraftServer) bukkitEntity.getServer();
@@ -366,7 +388,7 @@ public class CraftEventFactory {
     /**
      * EntityDamage(ByEntityEvent)
      */
-    public static EntityDamageEvent callEntityDamageEvent(Entity damager, Entity damagee, DamageCause cause, int damage) {
+    public static EntityDamageEvent callEntityDamageEvent(Entity damager, Entity damagee, DamageCause cause, double damage) {
         EntityDamageEvent event;
         if (damager != null) {
             event = new EntityDamageByEntityEvent(damager.getBukkitEntity(), damagee.getBukkitEntity(), cause, damage);
@@ -383,7 +405,7 @@ public class CraftEventFactory {
         return event;
     }
 
-    public static EntityDamageEvent handleEntityDamageEvent(Entity entity, DamageSource source, int damage) {
+    public static EntityDamageEvent handleEntityDamageEvent(Entity entity, DamageSource source, float damage) {
         if (source instanceof EntityDamageSource) {
             Entity damager = source.getEntity();
             DamageCause cause = DamageCause.ENTITY_ATTACK;
@@ -439,7 +461,7 @@ public class CraftEventFactory {
     }
 
     // Non-Living Entities such as EntityEnderCrystal need to call this
-    public static boolean handleNonLivingEntityDamageEvent(Entity entity, DamageSource source, int damage) {
+    public static boolean handleNonLivingEntityDamageEvent(Entity entity, DamageSource source, float damage) {
         if (!(source instanceof EntityDamageSource)) {
             return false;
         }
@@ -671,5 +693,27 @@ public class CraftEventFactory {
         InventoryCloseEvent event = new InventoryCloseEvent(human.activeContainer.getBukkitView());
         human.world.getServer().getPluginManager().callEvent(event);
         human.activeContainer.transferTo(human.defaultContainer, human.getBukkitEntity());
+    }
+
+    public static void handleEditBookEvent(EntityPlayer player, ItemStack newBookItem) {
+        int itemInHandIndex = player.inventory.itemInHandIndex;
+
+        PlayerEditBookEvent editBookEvent = new PlayerEditBookEvent(player.getBukkitEntity(), player.inventory.itemInHandIndex, (BookMeta) CraftItemStack.getItemMeta(player.inventory.getItemInHand()), (BookMeta) CraftItemStack.getItemMeta(newBookItem), newBookItem.id == Item.WRITTEN_BOOK.id);
+        player.world.getServer().getPluginManager().callEvent(editBookEvent);
+        ItemStack itemInHand = player.inventory.getItem(itemInHandIndex);
+
+        // If they've got the same item in their hand, it'll need to be updated.
+        if (itemInHand.id == Item.BOOK_AND_QUILL.id) {
+            if (!editBookEvent.isCancelled()) {
+                CraftItemStack.setItemMeta(itemInHand, editBookEvent.getNewBookMeta());
+                if (editBookEvent.isSigning()) {
+                    itemInHand.id = Item.WRITTEN_BOOK.id;
+                }
+            }
+
+            // Client will have updated its idea of the book item; we need to overwrite that
+            Slot slot = player.activeContainer.a((IInventory) player.inventory, itemInHandIndex);
+            player.playerConnection.sendPacket(new Packet103SetSlot(player.activeContainer.windowId, slot.g, itemInHand));
+        }
     }
 }

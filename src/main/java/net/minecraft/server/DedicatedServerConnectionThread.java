@@ -13,7 +13,7 @@ public class DedicatedServerConnectionThread extends Thread {
 
     private final List a = Collections.synchronizedList(new ArrayList());
     private final HashMap b = new HashMap();
-    private int c = 0;
+    private int c;
     private final ServerSocket d;
     private ServerConnection e;
     private final InetAddress f;
@@ -82,7 +82,7 @@ public class DedicatedServerConnectionThread extends Thread {
 
                 PendingConnection pendingconnection = new PendingConnection(this.e.d(), socket, "Connection #" + this.c++);
 
-                ((org.spigotmc.MultiplexingServerConnection) this.e.d().ae()).register(pendingconnection); // Spigot
+                this.a(pendingconnection);
             } catch (IOException ioexception) {
                 this.e.d().getLogger().warning("DSCT: " + ioexception.getMessage()); // CraftBukkit
             }

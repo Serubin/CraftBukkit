@@ -29,9 +29,10 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
             // Spigot start
             if (pendingSaves.containsKey(chunkcoordintpair)) {
                 return true;
-            }
+             }
+            // Spigot end
         }
-        // Spigot end
+
         return RegionFileCache.a(this.d, i, j).chunkExists(i & 31, j & 31);
     }
     // CraftBukkit end
@@ -61,16 +62,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
             if (pendingchunktosave != null) {
                 nbttagcompound = pendingchunktosave.b;
             }
-            /*
-            if (this.b.contains(chunkcoordintpair)) {
-                for (int k = 0; k < this.a.size(); ++k) {
-                    if (((PendingChunkToSave) this.a.get(k)).a.equals(chunkcoordintpair)) {
-                        nbttagcompound = ((PendingChunkToSave) this.a.get(k)).b;
-                        break;
-                    }
-                }
-            }
-            */// Spigot end
+            // Spigot end
         }
 
         if (nbttagcompound == null) {
@@ -129,7 +121,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
     public void a(World world, Chunk chunk) {
         // CraftBukkit start - "handle" exception
         try {
-            world.F();
+            world.G();
         } catch (ExceptionWorldConflict ex) {
             ex.printStackTrace();
         }
@@ -155,19 +147,7 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
             if (this.pendingSaves.put(chunkcoordintpair, new PendingChunkToSave(chunkcoordintpair, nbttagcompound)) != null) {
                 return;
             }
-            /*
-            if (this.b.contains(chunkcoordintpair)) {
-                for (int i = 0; i < this.a.size(); ++i) {
-                    if (((PendingChunkToSave) this.a.get(i)).a.equals(chunkcoordintpair)) {
-                        this.a.set(i, new PendingChunkToSave(chunkcoordintpair, nbttagcompound));
-                        return;
-                    }
-                }
-            }
-
-            this.a.add(new PendingChunkToSave(chunkcoordintpair, nbttagcompound));
-            this.b.add(chunkcoordintpair);
-            */// Spigot end
+            // Spigot end
             FileIOThread.a.a(this);
         }
     }
@@ -181,16 +161,10 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
             if (this.pendingSaves.isEmpty()) {
                 return false;
             }
+
             pendingchunktosave = this.pendingSaves.values().iterator().next();
             this.pendingSaves.remove(pendingchunktosave.a);
-            /*
-            if (this.a.isEmpty()) {
-                return false;
-            }
-
-            pendingchunktosave = (PendingChunkToSave) this.a.remove(0);
-            this.b.remove(pendingchunktosave.a);
-            */// Spigot end
+            // Spigot end
         }
 
         if (pendingchunktosave != null) {
@@ -227,9 +201,10 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
         nbttagcompound.setLong("LastUpdate", world.getTime());
         nbttagcompound.setIntArray("HeightMap", chunk.heightMap);
         nbttagcompound.setBoolean("TerrainPopulated", chunk.done);
+        nbttagcompound.setLong("InhabitedTime", chunk.q);
         ChunkSection[] achunksection = chunk.i();
         NBTTagList nbttaglist = new NBTTagList("Sections");
-        boolean flag = !world.worldProvider.f;
+        boolean flag = !world.worldProvider.g;
         ChunkSection[] achunksection1 = achunksection;
         int i = achunksection.length;
 
@@ -324,10 +299,11 @@ public class ChunkRegionLoader implements IAsyncChunkSaver, IChunkLoader {
 
         chunk.heightMap = nbttagcompound.getIntArray("HeightMap");
         chunk.done = nbttagcompound.getBoolean("TerrainPopulated");
+        chunk.q = nbttagcompound.getLong("InhabitedTime");
         NBTTagList nbttaglist = nbttagcompound.getList("Sections");
         byte b0 = 16;
         ChunkSection[] achunksection = new ChunkSection[b0];
-        boolean flag = !world.worldProvider.f;
+        boolean flag = !world.worldProvider.g;
 
         for (int k = 0; k < nbttaglist.size(); ++k) {
             NBTTagCompound nbttagcompound1 = (NBTTagCompound) nbttaglist.get(k);

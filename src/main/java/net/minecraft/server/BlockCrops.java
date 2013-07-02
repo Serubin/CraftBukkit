@@ -12,11 +12,11 @@ public class BlockCrops extends BlockFlower {
         this.a(0.5F - f, 0.0F, 0.5F - f, 0.5F + f, 0.25F, 0.5F + f);
         this.a((CreativeModeTab) null);
         this.c(0.0F);
-        this.a(Block.i); // CraftBukkit - i -> Block.i, decompile error
-        this.D();
+        this.a(j);
+        this.C();
     }
 
-    protected boolean f_(int i) {
+    protected boolean g_(int i) {
         return i == Block.SOIL.id;
     }
 
@@ -28,7 +28,7 @@ public class BlockCrops extends BlockFlower {
             if (l < 7) {
                 float f = this.k(world, i, j, k);
 
-                if (random.nextInt((int) (world.growthOdds / world.getWorld().wheatGrowthModifier * (25.0F / f)) + 1) == 0) { // Spigot
+                if (random.nextInt((int) (world.growthOdds / world.spigotConfig.wheatModifier * (25.0F / f)) + 1) == 0) { // Spigot
                     org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(world, i, j, k, this.id, ++l); // CraftBukkit
                 }
             }

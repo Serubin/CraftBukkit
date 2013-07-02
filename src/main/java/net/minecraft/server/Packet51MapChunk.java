@@ -1,7 +1,7 @@
 package net.minecraft.server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -18,39 +18,23 @@ public class Packet51MapChunk extends Packet {
     public boolean e;
     private int size;
     private static byte[] buildBuffer = new byte[196864];
-    private static final byte[] unloadSequence = new byte[]{0x78, (byte) 0x9C, 0x63, 0x64, 0x1C, (byte) 0xD9, 0x00, 0x00, (byte) 0x81, (byte) 0x80, 0x01, 0x01}; // Spigot
 
     public Packet51MapChunk() {
         this.lowPriority = true;
     }
 
-    // Spigot start - add constructor for chunk removals for the client
-    public Packet51MapChunk(int x, int z) {
-        this.a = x;
-        this.b = z;
-        this.e = true;
-        this.c = 0;
-        this.d = 0;
-        this.size = unloadSequence.length;
-        this.buffer = unloadSequence;
-    }
-    // Spigot end
-
-    public Packet51MapChunk(Chunk chunk, boolean flag, int i, int obfuscate) { // Spigot (Orebfuscator) - added argument
+    public Packet51MapChunk(Chunk chunk, boolean flag, int i) {
         this.lowPriority = true;
         this.a = chunk.x;
         this.b = chunk.z;
         this.e = flag;
         ChunkMap chunkmap = a(chunk, flag, i);
-        Deflater deflater = new Deflater(4);
+        Deflater deflater = new Deflater(4); // Spigot 4 -> -1
 
         this.d = chunkmap.c;
         this.c = chunkmap.b;
-        // Spigot start - Orebfuscator
-        if (obfuscate > 0) {
-            org.spigotmc.OrebfuscatorManager.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world, obfuscate);
-        }
-        // Spigot end
+        chunk.world.spigotConfig.antiXrayInstance.obfuscateSync(chunk.x, chunk.z, i, chunkmap.a, chunk.world); // Spigot
+
         try {
             this.inflatedBuffer = chunkmap.a;
             deflater.setInput(chunkmap.a, 0, chunkmap.a.length);
@@ -61,25 +45,19 @@ public class Packet51MapChunk extends Packet {
             deflater.end();
         }
     }
-    
-    // Spigot start - add new default constructor to support new orebfuscator arg.
-    public Packet51MapChunk(Chunk chunk, boolean flag, int i) {
-        this(chunk, flag, i, 1);
-    }
-    // Spigot end
 
-    public void a(DataInputStream datainputstream) throws IOException { // CraftBukkit - throws IOException
-        this.a = datainputstream.readInt();
-        this.b = datainputstream.readInt();
-        this.e = datainputstream.readBoolean();
-        this.c = datainputstream.readShort();
-        this.d = datainputstream.readShort();
-        this.size = datainputstream.readInt();
+    public void a(DataInput datainput) throws java.io.IOException { // Spigot - throws
+        this.a = datainput.readInt();
+        this.b = datainput.readInt();
+        this.e = datainput.readBoolean();
+        this.c = datainput.readShort();
+        this.d = datainput.readShort();
+        this.size = datainput.readInt();
         if (buildBuffer.length < this.size) {
             buildBuffer = new byte[this.size];
         }
 
-        datainputstream.readFully(buildBuffer, 0, this.size);
+        datainput.readFully(buildBuffer, 0, this.size);
         int i = 0;
 
         int j;
@@ -107,14 +85,14 @@ public class Packet51MapChunk extends Packet {
         }
     }
 
-    public void a(DataOutputStream dataoutputstream) throws IOException { // CraftBukkit - throws IOException
-        dataoutputstream.writeInt(this.a);
-        dataoutputstream.writeInt(this.b);
-        dataoutputstream.writeBoolean(this.e);
-        dataoutputstream.writeShort((short) (this.c & '\uffff'));
-        dataoutputstream.writeShort((short) (this.d & '\uffff'));
-        dataoutputstream.writeInt(this.size);
-        dataoutputstream.write(this.buffer, 0, this.size);
+    public void a(DataOutput dataoutput) throws java.io.IOException { // Spigot - throws
+        dataoutput.writeInt(this.a);
+        dataoutput.writeInt(this.b);
+        dataoutput.writeBoolean(this.e);
+        dataoutput.writeShort((short) (this.c & '\uffff'));
+        dataoutput.writeShort((short) (this.d & '\uffff'));
+        dataoutput.writeInt(this.size);
+        dataoutput.write(this.buffer, 0, this.size);
     }
 
     public void handle(Connection connection) {
@@ -181,7 +159,7 @@ public class Packet51MapChunk extends Packet {
             }
         }
 
-        if (!chunk.world.worldProvider.f) {
+        if (!chunk.world.worldProvider.g) {
             for (l = 0; l < achunksection.length; ++l) {
                 if (achunksection[l] != null && (!flag || !achunksection[l].isEmpty()) && (i & 1 << l) != 0) {
                     nibblearray = achunksection[l].getSkyLightArray();

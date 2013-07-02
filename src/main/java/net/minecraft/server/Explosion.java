@@ -19,7 +19,7 @@ import org.bukkit.Location;
 
 public class Explosion {
 
-    public boolean a = false;
+    public boolean a;
     public boolean b = true;
     private int i = 16;
     private Random j = new Random();
@@ -133,7 +133,7 @@ public class Explosion {
 
                     // CraftBukkit start - Explosion damage hook
                     org.bukkit.entity.Entity damagee = (entity == null) ? null : entity.getBukkitEntity();
-                    int damageDone = (int) ((d10 * d10 + d10) / 2.0D * 8.0D * (double) this.size + 1.0D);
+                    float damageDone = (float) ((int) ((d10 * d10 + d10) / 2.0D * 8.0D * (double) this.size + 1.0D));
 
                     if (damagee == null) {
                         // nothing was hurt
@@ -143,7 +143,7 @@ public class Explosion {
 
                         if (!event.isCancelled()) {
                             damagee.setLastDamageCause(event);
-                            entity.damageEntity(DamageSource.explosion(this), event.getDamage());
+                            entity.damageEntity(DamageSource.explosion(this), (float) event.getDamage());
                             double d11 = EnchantmentProtection.a(entity, d10);
 
                             entity.motX += d0 * d11;
@@ -168,7 +168,7 @@ public class Explosion {
 
                         if (!event.isCancelled()) {
                             entity.getBukkitEntity().setLastDamageCause(event);
-                            entity.damageEntity(DamageSource.explosion(this), event.getDamage());
+                            entity.damageEntity(DamageSource.explosion(this), (float) event.getDamage());
 
                             entity.motX += d0 * d10;
                             entity.motY += d1 * d10;
@@ -240,7 +240,7 @@ public class Explosion {
                 j = chunkposition.y;
                 k = chunkposition.z;
                 l = this.world.getTypeId(i, j, k);
-                org.spigotmc.OrebfuscatorManager.updateNearbyBlocks(world, i, j, k); // Spigot (Orebfuscator)
+                world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, i, j, k); // Spigot
                 if (flag) {
                     double d0 = (double) ((float) i + this.world.random.nextFloat());
                     double d1 = (double) ((float) j + this.world.random.nextFloat());
@@ -288,7 +288,7 @@ public class Explosion {
                 l = this.world.getTypeId(i, j, k);
                 int i1 = this.world.getTypeId(i, j - 1, k);
 
-                if (l == 0 && Block.s[i1] && this.j.nextInt(3) == 0) {
+                if (l == 0 && Block.t[i1] && this.j.nextInt(3) == 0) {
                     // CraftBukkit start - Ignition by explosion
                     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.world, i, j, k, this).isCancelled()) {
                         this.world.setTypeIdUpdate(i, j, k, Block.FIRE.id);

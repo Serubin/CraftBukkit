@@ -17,7 +17,8 @@ import org.bukkit.plugin.Plugin;
  * override the methods you wish to use, and call
  * {@link #register(org.spigotmc.netty.PacketListener, org.bukkit.plugin.Plugin)}.
  */
-public class PacketListener {
+public class PacketListener
+{
 
     /**
      * A mapping of all registered listeners and their owning plugins.
@@ -26,7 +27,7 @@ public class PacketListener {
     /**
      * A baked list of all listeners, for efficiency sake.
      */
-    private static PacketListener[] baked = new PacketListener[0];
+    private static PacketListener[] baked = new PacketListener[ 0 ];
 
     /**
      * Used to register a handler for receiving notifications of packet
@@ -35,35 +36,44 @@ public class PacketListener {
      * @param listener the listener to register
      * @param plugin the plugin owning this listener
      */
-    public static synchronized void register(PacketListener listener, Plugin plugin) {
-        Preconditions.checkNotNull(listener, "listener");
-        Preconditions.checkNotNull(plugin, "plugin");
-        Preconditions.checkState(!listeners.containsKey(listener), "listener already registered");
+    public static synchronized void register(PacketListener listener, Plugin plugin)
+    {
+        Preconditions.checkNotNull( listener, "listener" );
+        Preconditions.checkNotNull( plugin, "plugin" );
+        Preconditions.checkState( !listeners.containsKey( listener ), "listener already registered" );
 
         int size = listeners.size();
-        Preconditions.checkState(baked.length == size);
-        listeners.put(listener, plugin);
-        baked = Arrays.copyOf(baked, size + 1);
+        Preconditions.checkState( baked.length == size );
+        listeners.put( listener, plugin );
+        baked = Arrays.copyOf( baked, size + 1 );
         baked[size] = listener;
     }
 
-    static Packet callReceived(INetworkManager networkManager, Connection connection, Packet packet) {
-        for (PacketListener listener : baked) {
-            try {
-                packet = listener.packetReceived(networkManager, connection, packet);
-            } catch (Throwable t) {
-                Bukkit.getServer().getLogger().log(Level.SEVERE, "Error whilst firing receive hook for packet", t);
+    static Packet callReceived(INetworkManager networkManager, Connection connection, Packet packet)
+    {
+        for ( PacketListener listener : baked )
+        {
+            try
+            {
+                packet = listener.packetReceived( networkManager, connection, packet );
+            } catch ( Throwable t )
+            {
+                Bukkit.getServer().getLogger().log( Level.SEVERE, "Error whilst firing receive hook for packet", t );
             }
         }
         return packet;
     }
 
-    static Packet callQueued(INetworkManager networkManager, Connection connection, Packet packet) {
-        for (PacketListener listener : baked) {
-            try {
-                packet = listener.packetQueued(networkManager, connection, packet);
-            } catch (Throwable t) {
-                Bukkit.getServer().getLogger().log(Level.SEVERE, "Error whilst firing queued hook for packet", t);
+    static Packet callQueued(INetworkManager networkManager, Connection connection, Packet packet)
+    {
+        for ( PacketListener listener : baked )
+        {
+            try
+            {
+                packet = listener.packetQueued( networkManager, connection, packet );
+            } catch ( Throwable t )
+            {
+                Bukkit.getServer().getLogger().log( Level.SEVERE, "Error whilst firing queued hook for packet", t );
             }
         }
         return packet;
@@ -80,7 +90,8 @@ public class PacketListener {
      * @param packet the received packet
      * @return the packet to be handled, or null to cancel
      */
-    public Packet packetReceived(INetworkManager networkManager, Connection connection, Packet packet) {
+    public Packet packetReceived(INetworkManager networkManager, Connection connection, Packet packet)
+    {
         return packet;
     }
 
@@ -94,7 +105,8 @@ public class PacketListener {
      * @param packet the queue packet
      * @return the packet to be sent, or null if the packet will not be sent.
      */
-    public Packet packetQueued(INetworkManager networkManager, Connection connection, Packet packet) {
+    public Packet packetQueued(INetworkManager networkManager, Connection connection, Packet packet)
+    {
         return packet;
     }
 }

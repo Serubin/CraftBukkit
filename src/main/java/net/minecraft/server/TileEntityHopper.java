@@ -178,19 +178,23 @@ public class TileEntityHopper extends TileEntity implements IHopper {
     public boolean j() {
         if (this.world != null && !this.world.isStatic) {
             if (!this.l() && BlockHopper.d(this.p())) {
-                boolean flag = this.u() | suckInItems(this);
+                boolean flag = this.u();
 
+                flag = suckInItems(this) || flag;
                 if (flag) {
-                    this.c(8);
+                    this.c(world.spigotConfig.hopperTransfer); // Spigot
                     this.update();
                     return true;
                 }
             }
-
-            return false;
-        } else {
-            return false;
         }
+        // Spigot start
+        if ( this.c == 0 )
+        {
+            this.c( world.spigotConfig.hopperCheck );
+        }
+        // Spigot end
+        return false;
     }
 
     private boolean u() {
@@ -217,7 +221,7 @@ public class TileEntityHopper extends TileEntity implements IHopper {
                     this.getWorld().getServer().getPluginManager().callEvent(event);
                     if (event.isCancelled()) {
                         this.setItem(i, itemstack);
-                        this.c(8); // Delay hopper checks
+                        this.c(world.spigotConfig.hopperTransfer); // Spigot
                         return false;
                     }
                     ItemStack itemstack1 = addItem(iinventory, CraftItemStack.asNMSCopy(event.getItem()), Facing.OPPOSITE_FACING[BlockHopper.c(this.p())]);
@@ -265,7 +269,7 @@ public class TileEntityHopper extends TileEntity implements IHopper {
                 }
             }
         } else {
-            EntityItem entityitem = getEntityItemAt(ihopper.getWorld(), ihopper.aA(), ihopper.aB() + 1.0D, ihopper.aC());
+            EntityItem entityitem = getEntityItemAt(ihopper.getWorld(), ihopper.az(), ihopper.aA() + 1.0D, ihopper.aB());
 
             if (entityitem != null) {
                 return addEntityItem(ihopper, entityitem);
@@ -298,9 +302,9 @@ public class TileEntityHopper extends TileEntity implements IHopper {
                 iinventory.setItem(i, itemstack1);
 
                 if (ihopper instanceof TileEntityHopper) {
-                    ((TileEntityHopper) ihopper).c(8); // Delay hopper checks
+                    ((TileEntityHopper) ihopper).c(ihopper.getWorld().spigotConfig.hopperTransfer); // Spigot
                 } else if (ihopper instanceof EntityMinecartHopper) {
-                    ((EntityMinecartHopper) ihopper).n(4); // Delay hopper minecart checks
+                    ((EntityMinecartHopper) ihopper).l(ihopper.getWorld().spigotConfig.hopperTransfer / 2); // Spigot
                 }
 
                 return false;
@@ -404,7 +408,8 @@ public class TileEntityHopper extends TileEntity implements IHopper {
 
             if (flag) {
                 if (iinventory instanceof TileEntityHopper) {
-                    ((TileEntityHopper) iinventory).c(8);
+                    ((TileEntityHopper) iinventory).c(((TileEntityHopper) iinventory).world.spigotConfig.hopperTransfer); // Spigot
+                    iinventory.update();
                 }
 
                 iinventory.update();
@@ -421,7 +426,7 @@ public class TileEntityHopper extends TileEntity implements IHopper {
     }
 
     public static IInventory getSourceInventory(IHopper ihopper) {
-        return getInventoryAt(ihopper.getWorld(), ihopper.aA(), ihopper.aB() + 1.0D, ihopper.aC());
+        return getInventoryAt(ihopper.getWorld(), ihopper.az(), ihopper.aA() + 1.0D, ihopper.aB());
     }
 
     public static EntityItem getEntityItemAt(World world, double d0, double d1, double d2) {
@@ -464,15 +469,15 @@ public class TileEntityHopper extends TileEntity implements IHopper {
         return itemstack.id != itemstack1.id ? false : (itemstack.getData() != itemstack1.getData() ? false : (itemstack.count > itemstack.getMaxStackSize() ? false : ItemStack.equals(itemstack, itemstack1)));
     }
 
-    public double aA() {
+    public double az() {
         return (double) this.x;
     }
 
-    public double aB() {
+    public double aA() {
         return (double) this.y;
     }
 
-    public double aC() {
+    public double aB() {
         return (double) this.z;
     }
 
