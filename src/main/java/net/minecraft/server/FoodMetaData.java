@@ -39,8 +39,7 @@ public class FoodMetaData {
                     this.foodLevel = event.getFoodLevel();
                 }
 
-                // Spigot - This next line fixes health scaling
-                ((EntityPlayer) entityhuman).playerConnection.sendPacket(new Packet8UpdateHealth(((EntityPlayer) entityhuman).getScaledHealth(), this.foodLevel, this.saturationLevel));
+                ((EntityPlayer) entityhuman).playerConnection.sendPacket(new Packet8UpdateHealth(entityhuman.getHealth(), this.foodLevel, this.saturationLevel));
                 // CraftBukkit end
             }
         }
