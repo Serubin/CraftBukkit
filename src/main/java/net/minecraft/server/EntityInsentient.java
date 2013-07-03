@@ -6,10 +6,6 @@ import java.util.UUID;
 
 //CraftBukkit start
 import org.bukkit.craftbukkit.event.CraftEventFactory;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-//CraftBukkit end
 
 public abstract class EntityInsentient extends EntityLiving {
 
@@ -27,7 +23,7 @@ public abstract class EntityInsentient extends EntityLiving {
     private ItemStack[] equipment = new ItemStack[5];
     public float[] dropChances = new float[5]; // CraftBukkit - protected -> public
     public boolean canPickUpLoot; // CraftBukkit - private -> public
-    public boolean persistent; // CraftBukkit - private -> public
+    public boolean persistent = !isTypeNotPersistent(); // CraftBukkit - private -> public
     protected float f;
     private Entity bu;
     protected int g;
@@ -529,7 +525,7 @@ public abstract class EntityInsentient extends EntityLiving {
         if (this.getGoalTarget() == null) {
             return 3;
         } else {
-            int i = (int) (this.getHealth() - this.maxHealth * 0.33F); // CraftBukkit - this.getMaxHealth() -> this.maxHealth
+            int i = (int) (this.getHealth() - this.getMaxHealth() * 0.33F);
 
             i -= (3 - this.world.difficulty) * 4;
             if (i < 0) {

@@ -1133,6 +1133,14 @@ public class PlayerConnection extends Connection {
                     this.server.getPluginManager().callEvent(event);
 
                     if (event.isCancelled()) {
+                        if (itemInHand != null && itemInHand.id == Item.LEASH.id && entity instanceof EntityInsentient) {
+                            // Refresh the current leash state
+                            this.sendPacket(new Packet39AttachEntity(1, entity, ((EntityInsentient) entity).bE()));
+                        }
+                        if (itemInHand != null && itemInHand.id == Item.NAME_TAG.id && entity instanceof EntityInsentient) {
+                            // Refresh the current entity metadata
+                            this.sendPacket(new Packet40EntityMetadata(entity.id, entity.datawatcher, true));
+                        }
                         return;
                     }
                     // CraftBukkit end

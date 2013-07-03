@@ -19,6 +19,7 @@ import net.minecraft.server.EntitySnowball;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.EntityPotion;
 import net.minecraft.server.EntityWitherSkull;
+import net.minecraft.server.GenericAttributes;
 import net.minecraft.server.MobEffect;
 import net.minecraft.server.MobEffectList;
 import net.minecraft.server.Packet42RemoveMobEffect;
@@ -83,13 +84,13 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     public double getMaxHealth() {
-        return getHandle().maxHealth;
+        return getHandle().getMaxHealth();
     }
 
     public void setMaxHealth(double amount) {
         Validate.isTrue(amount > 0, "Max health must be greater than 0");
 
-        getHandle().maxHealth = (float) amount;
+        getHandle().a(GenericAttributes.a).a(amount);
 
         if (getHealth() > amount) {
             setHealth(amount);
@@ -274,12 +275,7 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     }
 
     public void removePotionEffect(PotionEffectType type) {
-        getHandle().effects.remove(type.getId());
-        getHandle().updateEffects = true;
-        if (getHandle() instanceof EntityPlayer) {
-            if (((EntityPlayer) getHandle()).playerConnection == null) return;
-            ((EntityPlayer) getHandle()).playerConnection.sendPacket(new Packet42RemoveMobEffect(getHandle().id, new MobEffect(type.getId(), 0, 0)));
-        }
+        getHandle().k(type.getId()); // Should be removeEffect.
     }
 
     public Collection<PotionEffect> getActivePotionEffects() {
