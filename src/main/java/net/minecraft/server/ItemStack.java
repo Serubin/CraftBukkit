@@ -221,7 +221,7 @@ public final class ItemStack {
     public void damage(int i, EntityLiving entityliving) {
         if (!(entityliving instanceof EntityHuman) || !((EntityHuman) entityliving).abilities.canInstantlyBuild) {
             if (this.g()) {
-                if (this.isDamaged(i, entityliving.aB(), entityliving)) {
+                if (this.isDamaged(i, entityliving.aC(), entityliving)) {
                     entityliving.a(this);
                     --this.count;
                     if (entityliving instanceof EntityHuman) {
@@ -229,7 +229,7 @@ public final class ItemStack {
 
                         entityhuman.a(StatisticList.F[this.id], 1);
                         if (this.count == 0 && this.getItem() instanceof ItemBow) {
-                            entityhuman.bu();
+                            entityhuman.by();
                         }
                     }
 

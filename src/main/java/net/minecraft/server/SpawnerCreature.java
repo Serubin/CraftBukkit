@@ -191,7 +191,7 @@ public final class SpawnerCreature {
                                                                     continue label110;
                                                                 }
                                                                 // Spigot end
-                                                                if (j2 >= entityinsentient.br()) {
+                                                                if (j2 >= entityinsentient.bv()) {
                                                                     continue label110;
                                                                 }
                                                             }
