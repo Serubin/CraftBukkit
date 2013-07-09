@@ -234,14 +234,14 @@ public class ActivationRange
             {
                 return true;
             }
-            if ( entity instanceof EntityVillager && ( (EntityVillager) entity ).bQ() /* Getter for first boolean */ )
+            if ( entity instanceof EntityVillager && ( (EntityVillager) entity ).bU() /* Getter for first boolean */ )
             {
                 return true;
             }
             if ( entity instanceof EntityAnimal )
             {
                 EntityAnimal animal = (EntityAnimal) entity;
-                if ( animal.isBaby() || animal.bU() /*love*/ )
+                if ( animal.isBaby() || animal.bY() /*love*/ )
                 {
                     return true;
                 }
