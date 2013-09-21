@@ -62,28 +62,29 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     private boolean allowFlight;
     private String motd;
     private int D;
-    private long E;
+    private int E;
     private long F;
     private long G;
     private long H;
+    private long I;
     public final long[] f;
     public final long[] g;
     public final long[] h;
     public final long[] i;
     public final long[] j;
     public long[][] k;
-    private KeyPair I;
-    private String J;
+    private KeyPair J;
     private String K;
+    private String L;
     private boolean demoMode;
-    private boolean N;
     private boolean O;
-    private String P;
-    private boolean Q;
-    private long R;
-    private String S;
-    private boolean T;
+    private boolean P;
+    private String Q;
+    private boolean R;
+    private long S;
+    private String T;
     private boolean U;
+    private boolean V;
 
     // CraftBukkit start
     public List<WorldServer> worlds = new ArrayList<WorldServer>();
@@ -106,17 +107,18 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
     public MinecraftServer(OptionSet options) { // CraftBukkit - signature file -> OptionSet
         this.c = Proxy.NO_PROXY;
+        this.E = 0;
         this.f = new long[100];
         this.g = new long[100];
         this.h = new long[100];
         this.i = new long[100];
         this.j = new long[100];
-        this.P = "";
+        this.Q = "";
         l = this;
         // this.universe = file1; // CraftBukkit
         this.q = new CommandDispatcher();
         // this.convertable = new WorldLoaderServer(server.getWorldContainer()); // CraftBukkit - moved to DedicatedServer.init
-        this.ar();
+        this.as();
 
         // CraftBukkit start
         this.options = options;
@@ -143,7 +145,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public abstract PropertyManager getPropertyManager();
     // CraftBukkit end
 
-    private void ar() {
+    private void as() {
         DispenserRegistry.a();
     }
 
@@ -158,7 +160,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     protected synchronized void b(String s) {
-        this.S = s;
+        this.T = s;
     }
 
     protected void a(String s, String s1, long i, WorldType worldtype, String s2) {
@@ -331,7 +333,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     protected void saveChunks(boolean flag) throws ExceptionWorldConflict { // CraftBukkit - added throws
-        if (!this.O) {
+        if (!this.P) {
             // CraftBukkit start
             for (int j = 0; j < this.worlds.size(); ++j) {
                 WorldServer worldserver = this.worlds.get(j);
@@ -353,7 +355,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public void stop() throws ExceptionWorldConflict { // CraftBukkit - added throws
-        if (!this.O) {
+        if (!this.P) {
             this.getLogger().info("Stopping server");
             // CraftBukkit start
             if (this.server != null) {
@@ -407,7 +409,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
         try {
             if (this.init()) {
                 // Spigot start
-                for (long lastTick = 0L; this.isRunning; this.Q = true) {
+                for (long lastTick = 0L; this.isRunning; this.R = true) {
                     long curTime = System.nanoTime();
                     long wait = TICK_TIME - (curTime - lastTick) - catchupTime;
                     if (wait > 0) {
@@ -482,8 +484,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
         AxisAlignedBB.a().a();
         ++this.ticks;
-        if (this.T) {
-            this.T = false;
+        if (this.U) {
+            this.U = false;
             this.methodProfiler.a = true;
             this.methodProfiler.a();
         }
@@ -499,21 +501,21 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
         this.methodProfiler.a("tallying");
         this.j[this.ticks % 100] = System.nanoTime() - i;
-        this.f[this.ticks % 100] = Packet.q - this.E;
-        this.E = Packet.q;
-        this.g[this.ticks % 100] = Packet.r - this.F;
-        this.F = Packet.r;
-        this.h[this.ticks % 100] = Packet.o - this.G;
-        this.G = Packet.o;
-        this.i[this.ticks % 100] = Packet.p - this.H;
-        this.H = Packet.p;
+        this.f[this.ticks % 100] = Packet.q - this.F;
+        this.F = Packet.q;
+        this.g[this.ticks % 100] = Packet.r - this.G;
+        this.G = Packet.r;
+        this.h[this.ticks % 100] = Packet.o - this.H;
+        this.H = Packet.o;
+        this.i[this.ticks % 100] = Packet.p - this.I;
+        this.I = Packet.p;
         this.methodProfiler.b();
         this.methodProfiler.a("snooper");
-        if (!this.n.d() && this.ticks > 100) {
+        if (getSnooperEnabled() && !this.n.d() && this.ticks > 100) { // Spigot
             this.n.a();
         }
 
-        if (this.ticks % 6000 == 0) {
+        if (getSnooperEnabled() && this.ticks % 6000 == 0) { // Spigot
             this.n.b();
         }
 
@@ -773,7 +775,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
             }
 
             if (flag) {
-                dedicatedserver.at();
+                dedicatedserver.au();
             }
             */
 
@@ -830,7 +832,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public String getVersion() {
-        return "1.6.2";
+        return "1.6.4";
     }
 
     public int A() {
@@ -985,7 +987,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public void sendMessage(ChatMessage chatmessage) {
-        this.getLogger().info(chatmessage.toString());
+        this.console.sendMessage(chatmessage.toString()); // Spigot - we want coloured and pretty messages too!
     }
 
     public boolean a(int i, String s) {
@@ -997,7 +999,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public KeyPair H() {
-        return this.I;
+        return this.J;
     }
 
     public int I() {
@@ -1009,27 +1011,27 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public String J() {
-        return this.J;
-    }
-
-    public void j(String s) {
-        this.J = s;
-    }
-
-    public boolean K() {
-        return this.J != null;
-    }
-
-    public String L() {
         return this.K;
     }
 
-    public void k(String s) {
+    public void j(String s) {
         this.K = s;
     }
 
+    public boolean K() {
+        return this.K != null;
+    }
+
+    public String L() {
+        return this.L;
+    }
+
+    public void k(String s) {
+        this.L = s;
+    }
+
     public void a(KeyPair keypair) {
-        this.I = keypair;
+        this.J = keypair;
     }
 
     public void c(int i) {
@@ -1066,7 +1068,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public void c(boolean flag) {
-        this.N = flag;
+        this.O = flag;
     }
 
     public Convertable getConvertable() {
@@ -1074,7 +1076,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public void R() {
-        this.O = true;
+        this.P = true;
         this.getConvertable().d();
 
         // CraftBukkit start - This needs review, what does it do? (it's new)
@@ -1092,11 +1094,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public String getTexturePack() {
-        return this.P;
+        return this.Q;
     }
 
     public void setTexturePack(String s) {
-        this.P = s;
+        this.Q   = s;
     }
 
     public void a(MojangStatisticsGenerator mojangstatisticsgenerator) {
@@ -1245,7 +1247,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     }
 
     public void ak() {
-        this.T = true;
+        this.U = true;
     }
 
     public ChunkCoordinates b() {
@@ -1267,11 +1269,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
     public abstract IConsoleLogManager getLogger();
 
     public void setForceGamemode(boolean flag) {
-        this.U = flag;
+        this.V = flag;
     }
 
     public boolean getForceGamemode() {
-        return this.U;
+        return this.V;
     }
 
     public Proxy ap() {
@@ -1280,6 +1282,14 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IMo
 
     public static long aq() {
         return System.currentTimeMillis();
+    }
+
+    public int ar() {
+        return this.E;
+    }
+
+    public void e(int i) {
+        this.E = i;
     }
 
     public static PlayerList a(MinecraftServer minecraftserver) {

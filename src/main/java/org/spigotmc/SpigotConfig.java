@@ -52,7 +52,8 @@ public class SpigotConfig
 
         commands = new HashMap<String, Command>();
 
-        version = getInt( "config-version", 1 );
+        version = getInt( "config-version", 3 );
+        set( "config-version", 3 );
         readConfig( SpigotConfig.class, null );
     }
 
@@ -106,6 +107,11 @@ public class SpigotConfig
         {
             Bukkit.getLogger().log( Level.SEVERE, "Could not save " + CONFIG_FILE, ex );
         }
+    }
+
+    private static void set(String path, Object val)
+    {
+        config.set( path, val );
     }
 
     private static boolean getBoolean(String path, boolean def)
@@ -247,6 +253,8 @@ public class SpigotConfig
     public static String whitelistMessage;
     public static String unknownCommandMessage;
     public static String serverFullMessage;
+    public static String outdatedClientMessage;
+    public static String outdatedServerMessage;
     private static String transform(String s)
     {
         return ChatColor.translateAlternateColorCodes( '&', s ).replaceAll( "\\n", "\n" );
@@ -254,8 +262,10 @@ public class SpigotConfig
     private static void messages()
     {
         whitelistMessage = transform( getString( "messages.whitelist", "You are not whitelisted on this server!" ) );
-        unknownCommandMessage = transform( getString( "messages.unknown-command", "Unknown command. Type \"help\" for help." ) );
+        unknownCommandMessage = transform( getString( "messages.unknown-command", "Unknown command. Type \"/help\" for help." ) );
         serverFullMessage = transform( getString( "messages.server-full", "The server is full!" ) );
+        outdatedClientMessage = transform( getString( "messages.outdated-client", "Outdated client!" ) );
+        outdatedServerMessage = transform( getString( "messages.outdated-server", "Outdated server!" ) );
     }
 
     public static List<Pattern> logFilters;

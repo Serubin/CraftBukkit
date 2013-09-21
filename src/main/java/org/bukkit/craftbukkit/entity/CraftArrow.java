@@ -42,7 +42,7 @@ public class CraftArrow extends AbstractProjectile implements Arrow {
     }
 
     // Spigot start
-    private final Spigot spigot = new Spigot()
+    private final Arrow.Spigot spigot = new Arrow.Spigot()
     {
         @Override
         public double getDamage()
@@ -57,7 +57,7 @@ public class CraftArrow extends AbstractProjectile implements Arrow {
         }
     };
 
-    public Spigot spigot()
+    public Arrow.Spigot spigot()
     {
         return spigot;
     }

@@ -554,6 +554,13 @@ public class Chunk {
         entity.al = this.z;
         this.entitySlices[k].add(entity);
         // Spigot start - increment creature type count
+        // Keep this synced up with World.a(Class)
+        if (entity instanceof EntityInsentient) {
+            EntityInsentient entityinsentient = (EntityInsentient) entity;
+            if (entityinsentient.isTypeNotPersistent() && entityinsentient.isPersistent()) {
+                return;
+            }
+        }
         for ( EnumCreatureType creatureType : EnumCreatureType.values() )
         {
             if ( creatureType.a().isAssignableFrom( entity.getClass() ) )
@@ -579,6 +586,13 @@ public class Chunk {
 
         this.entitySlices[i].remove(entity);
         // Spigot start - decrement creature type count
+        // Keep this synced up with World.a(Class)
+        if (entity instanceof EntityInsentient) {
+            EntityInsentient entityinsentient = (EntityInsentient) entity;
+            if (entityinsentient.isTypeNotPersistent() && entityinsentient.isPersistent()) {
+                return;
+            }
+        }
         for ( EnumCreatureType creatureType : EnumCreatureType.values() )
         {
             if ( creatureType.a().isAssignableFrom( entity.getClass() ) )
@@ -677,7 +691,7 @@ public class Chunk {
             while (iterator.hasNext()) {
                 Entity entity = (Entity) iterator.next();
 
-                entity.Q();
+                entity.R();
             }
 
             this.world.a(this.entitySlices[i]);
@@ -756,7 +770,7 @@ public class Chunk {
 
                 if (entity1 != entity && entity1.boundingBox.b(axisalignedbb) && (ientityselector == null || ientityselector.a(entity1))) {
                     list.add(entity1);
-                    Entity[] aentity = entity1.an();
+                    Entity[] aentity = entity1.ao();
 
                     if (aentity != null) {
                         for (int i1 = 0; i1 < aentity.length; ++i1) {

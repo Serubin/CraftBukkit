@@ -58,6 +58,10 @@ public class LongHashSet {
 
     public boolean contains(int msw, int lsw) {
         // Spigot start
+        if ( elements == 0 )
+        {
+            return false;
+        }
         if ( flat.contains( msw, lsw ) )
         {
             return true;
@@ -68,6 +72,10 @@ public class LongHashSet {
 
     public boolean contains(long value) {
         // Spigot start
+        if ( elements == 0 )
+        {
+            return false;
+        }
         if ( flat.contains( value ) )
         {
             return true;

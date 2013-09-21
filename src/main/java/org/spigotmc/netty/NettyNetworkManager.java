@@ -3,8 +3,7 @@ package org.spigotmc.netty;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.MessageList;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -31,7 +30,7 @@ import net.minecraft.server.PlayerConnection;
  * {@link INetworkManager} and handles all events and inbound messages provided
  * by the upstream Netty process.
  */
-public class NettyNetworkManager extends ChannelInboundHandlerAdapter implements INetworkManager
+public class NettyNetworkManager extends SimpleChannelInboundHandler<Packet> implements INetworkManager
 {
 
     private static final ExecutorService threadPool = Executors.newCachedThreadPool( new ThreadFactoryBuilder().setNameFormat( "Async Packet Handler - %1$d" ).build() );
@@ -90,7 +89,6 @@ public class NettyNetworkManager extends ChannelInboundHandlerAdapter implements
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception
     {
-        writer.release();
         a( "disconnect.endOfStream", new Object[ 0 ] );
     }
 
@@ -109,37 +107,33 @@ public class NettyNetworkManager extends ChannelInboundHandlerAdapter implements
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageList<Object> msgs) throws Exception
+    protected void channelRead0(ChannelHandlerContext ctx, final Packet msg) throws Exception
     {
-        MessageList<Packet> packets = msgs.cast();
-        for ( final Packet msg : packets )
+        if ( connected )
         {
-            if ( connected )
+            if ( msg instanceof Packet252KeyResponse )
             {
-                if ( msg instanceof Packet252KeyResponse )
-                {
-                    secret = ( (Packet252KeyResponse) msg ).a( key );
-                    Cipher decrypt = NettyServerConnection.getCipher( Cipher.DECRYPT_MODE, secret );
-                    channel.pipeline().addBefore( "decoder", "decrypt", new CipherDecoder( decrypt ) );
-                }
+                secret = ( (Packet252KeyResponse) msg ).a( key );
+                Cipher decrypt = NettyServerConnection.getCipher( Cipher.DECRYPT_MODE, secret );
+                channel.pipeline().addBefore( "decoder", "decrypt", new CipherDecoder( decrypt ) );
+            }
 
-                if ( msg.a_() )
+            if ( msg.a_() )
+            {
+                threadPool.submit( new Runnable()
                 {
-                    threadPool.submit( new Runnable()
+                    public void run()
                     {
-                        public void run()
+                        Packet packet = PacketListener.callReceived( NettyNetworkManager.this, connection, msg );
+                        if ( packet != null )
                         {
-                            Packet packet = PacketListener.callReceived( NettyNetworkManager.this, connection, msg );
-                            if ( packet != null )
-                            {
-                                packet.handle( connection );
-                            }
+                            packet.handle( connection );
                         }
-                    } );
-                } else
-                {
-                    syncPackets.add( msg );
-                }
+                    }
+                } );
+            } else
+            {
+                syncPackets.add( msg );
             }
         }
     }
@@ -170,42 +164,41 @@ public class NettyNetworkManager extends ChannelInboundHandlerAdapter implements
         // Only send if channel is still connected
         if ( connected )
         {
-            if ( channel.eventLoop().inEventLoop() )
+            // Process packet via handler
+            final Packet packet0 = PacketListener.callQueued( this, connection, packet );
+            highPriorityQueue.add( packet0 );
+            // If handler indicates packet send
+            if ( packet0 != null )
             {
-                queue0( packet );
-            } else
-            {
-                channel.eventLoop().execute( new Runnable()
+                if ( channel.eventLoop().inEventLoop() )
                 {
-                    public void run()
+                    queue0( packet0 );
+                } else
+                {
+                    channel.eventLoop().execute( new Runnable()
                     {
-                        queue0( packet );
-                    }
-                } );
+                        public void run()
+                        {
+                            queue0( packet0 );
+                        }
+                    } );
+                }
             }
         }
     }
 
     private void queue0(Packet packet)
     {
-        // Process packet via handler
-        packet = PacketListener.callQueued( this, connection, packet );
-        // If handler indicates packet send
-        if ( packet != null )
+        if ( packet instanceof Packet255KickDisconnect )
         {
-            highPriorityQueue.add( packet );
+            writer.lastFlush = 0;
+        }
 
-            if ( packet instanceof Packet255KickDisconnect )
-            {
-                writer.lastFlush = 0;
-            }
-
-            writer.write( channel, this, packet );
-            if ( packet instanceof Packet252KeyResponse )
-            {
-                Cipher encrypt = NettyServerConnection.getCipher( Cipher.ENCRYPT_MODE, secret );
-                channel.pipeline().addBefore( "decoder", "encrypt", new CipherEncoder( encrypt ) );
-            }
+        writer.write( channel, this, packet );
+        if ( packet instanceof Packet252KeyResponse )
+        {
+            Cipher encrypt = NettyServerConnection.getCipher( Cipher.ENCRYPT_MODE, secret );
+            channel.pipeline().addBefore( "decoder", "encrypt", new CipherEncoder( encrypt ) );
         }
     }
 

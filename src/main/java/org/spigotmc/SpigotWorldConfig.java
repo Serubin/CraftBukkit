@@ -35,6 +35,11 @@ public class SpigotWorldConfig
         }
     }
 
+    private void set(String path, Object val)
+    {
+        config.set( "world-settings.default." + path, val );
+    }
+
     private boolean getBoolean(String path, boolean def)
     {
         config.addDefault( "world-settings.default." + path, def );
@@ -140,9 +145,13 @@ public class SpigotWorldConfig
         engineMode = getInt( "anti-xray.engine-mode", engineMode );
         log( "\tEngine Mode: " + engineMode );
 
+        if ( SpigotConfig.version < 3 )
+        {
+            set( "anti-xray.blocks", blocks );
+        }
         blocks = getList( "anti-xray.blocks", blocks );
         log( "\tBlocks: " + blocks );
-        
+
         antiXrayInstance = new AntiXray( this );
     }
 
@@ -183,8 +192,12 @@ public class SpigotWorldConfig
     public int hopperCheck = 8;
     private void hoppers()
     {
-        hopperCheck = getInt( "ticks-per.hopper-check", hopperCheck );
+        // Set the tick delay between hopper item movements
         hopperTransfer = getInt( "ticks-per.hopper-transfer", hopperTransfer );
+        // Set the tick delay between checking for items after the associated
+        // container is empty. Default to the hopperTransfer value to prevent
+        // hopper sorting machines from becoming out of sync.
+        hopperCheck = getInt( "ticks-per.hopper-check", hopperTransfer );
         log( "Hopper Transfer: " + hopperTransfer + " Hopper Check: " + hopperCheck );
     }
 
@@ -193,5 +206,17 @@ public class SpigotWorldConfig
     {
         randomLightUpdates = getBoolean( "random-light-updates", false );
         log( "Random Lighting Updates: " + randomLightUpdates );
+    }
+
+    public boolean saveStructureInfo;
+    private void structureInfo()
+    {
+        saveStructureInfo = getBoolean( "save-structure-info", true );
+        log( "Structure Info Saving: " + saveStructureInfo );
+        if ( !saveStructureInfo )
+        {
+            log( "*** WARNING *** You have selected to NOT save structure info. This may cause structures such as fortresses to not spawn mobs when updating to 1.7!" );
+            log( "*** WARNING *** Please use this option with caution, SpigotMC is not responsible for any issues this option may cause in the future!" );
+        }
     }
 }

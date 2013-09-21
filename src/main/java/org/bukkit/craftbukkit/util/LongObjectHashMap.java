@@ -63,6 +63,10 @@ public class LongObjectHashMap<V> implements Cloneable, Serializable {
 
     public V get(long key) {
         // Spigot start
+        if ( size == 0 )
+        {
+            return null;
+        }
         V val = flat.get( key );
         if ( val != null )
         {

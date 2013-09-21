@@ -53,7 +53,7 @@ public class AntiXray
         if ( world.spigotConfig.antiXray )
         {
             update.startTiming();
-            updateNearbyBlocks( world, x, y, z, 2 ); // 2 is the radius, we shouldn't change it as that would make it exponentially slower
+            updateNearbyBlocks( world, x, y, z, 2, false ); // 2 is the radius, we shouldn't change it as that would make it exponentially slower
             update.stopTiming();
         }
     }
@@ -104,6 +104,11 @@ public class AntiXray
                         {
                             for ( int x = 0; x < 16; x++ )
                             {
+                                // For some reason we can get too far ahead of ourselves (concurrent modification on bulk chunks?) so if we do, just abort and move on
+                                if ( index >= buffer.length )
+                                {
+                                    continue;
+                                }
                                 // Grab the block ID in the buffer.
                                 // TODO: extended IDs are not yet supported
                                 int blockId = buffer[index] & 0xFF;
@@ -136,11 +141,7 @@ public class AntiXray
                                     }
                                 }
 
-                                // For some reason we can get too far ahead of ourselves (concurrent modification on bulk chunks?) so if we do, just abort and move on
-                                if ( ++index >= buffer.length )
-                                {
-                                    return;
-                                }
+                                index++;
                             }
                         }
                     }
@@ -149,7 +150,7 @@ public class AntiXray
         }
     }
 
-    private void updateNearbyBlocks(World world, int x, int y, int z, int radius)
+    private void updateNearbyBlocks(World world, int x, int y, int z, int radius, boolean updateSelf)
     {
         // If the block in question is loaded
         if ( world.isLoaded( x, y, z ) )
@@ -158,7 +159,7 @@ public class AntiXray
             int id = world.getTypeId( x, y, z );
 
             // See if it needs update
-            if ( obfuscateBlocks[id] )
+            if ( updateSelf && obfuscateBlocks[id] )
             {
                 // Send the update
                 world.notify( x, y, z );
@@ -167,12 +168,12 @@ public class AntiXray
             // Check other blocks for updates
             if ( radius > 0 )
             {
-                updateNearbyBlocks( world, x + 1, y, z, radius - 1 );
-                updateNearbyBlocks( world, x - 1, y, z, radius - 1 );
-                updateNearbyBlocks( world, x, y + 1, z, radius - 1 );
-                updateNearbyBlocks( world, x, y - 1, z, radius - 1 );
-                updateNearbyBlocks( world, x, y, z + 1, radius - 1 );
-                updateNearbyBlocks( world, x, y, z - 1, radius - 1 );
+                updateNearbyBlocks( world, x + 1, y, z, radius - 1, true );
+                updateNearbyBlocks( world, x - 1, y, z, radius - 1, true );
+                updateNearbyBlocks( world, x, y + 1, z, radius - 1, true );
+                updateNearbyBlocks( world, x, y - 1, z, radius - 1, true );
+                updateNearbyBlocks( world, x, y, z + 1, radius - 1, true );
+                updateNearbyBlocks( world, x, y, z - 1, radius - 1, true );
             }
         }
     }
