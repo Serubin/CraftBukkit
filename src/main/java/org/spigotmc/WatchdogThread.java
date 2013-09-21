@@ -5,6 +5,7 @@ import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.minecraft.server.MinecraftServer;
 import org.bukkit.Bukkit;
 
 public class WatchdogThread extends Thread
@@ -59,35 +60,17 @@ public class WatchdogThread extends Thread
                 log.log( Level.SEVERE, "Be sure to include ALL relevant console errors and Minecraft crash reports" );
                 log.log( Level.SEVERE, "Spigot version: " + Bukkit.getServer().getVersion() );
                 //
-                log.log( Level.SEVERE, "Current Thread State:" );
+                log.log( Level.SEVERE, "------------------------------" );
+                log.log( Level.SEVERE, "Server thread dump (Look for plugins here before reporting to Spigot!):" );
+                dumpThread( ManagementFactory.getThreadMXBean().getThreadInfo( MinecraftServer.getServer().primaryThread.getId(), Integer.MAX_VALUE ), log );
+                log.log( Level.SEVERE, "------------------------------" );
+                //
+                log.log( Level.SEVERE, "Entire Thread Dump:" );
+                log.log( Level.SEVERE, "------------------------------" );
                 ThreadInfo[] threads = ManagementFactory.getThreadMXBean().dumpAllThreads( true, true );
                 for ( ThreadInfo thread : threads )
                 {
-                    if ( thread.getThreadState() != State.WAITING )
-                    {
-                        log.log( Level.SEVERE, "------------------------------" );
-                        //
-                        log.log( Level.SEVERE, "Current Thread: " + thread.getThreadName() );
-                        log.log( Level.SEVERE, "\tPID: " + thread.getThreadId()
-                                + " | Suspended: " + thread.isSuspended()
-                                + " | Native: " + thread.isInNative()
-                                + " | State: " + thread.getThreadState() );
-                        if ( thread.getLockedMonitors().length != 0 )
-                        {
-                            log.log( Level.SEVERE, "\tThread is waiting on monitor(s):" );
-                            for ( MonitorInfo monitor : thread.getLockedMonitors() )
-                            {
-                                log.log( Level.SEVERE, "\t\tLocked on:" + monitor.getLockedStackFrame() );
-                            }
-                        }
-                        log.log( Level.SEVERE, "\tStack:" );
-                        //
-                        StackTraceElement[] stack = thread.getStackTrace();
-                        for ( int line = 0; line < stack.length; line++ )
-                        {
-                            log.log( Level.SEVERE, "\t\t" + stack[line].toString() );
-                        }
-                    }
+                    dumpThread( thread, log );
                 }
                 log.log( Level.SEVERE, "------------------------------" );
 
@@ -104,6 +87,35 @@ public class WatchdogThread extends Thread
             } catch ( InterruptedException ex )
             {
                 interrupt();
+            }
+        }
+    }
+
+    private static void dumpThread(ThreadInfo thread, Logger log)
+    {
+        if ( thread.getThreadState() != State.WAITING )
+        {
+            log.log( Level.SEVERE, "------------------------------" );
+            //
+            log.log( Level.SEVERE, "Current Thread: " + thread.getThreadName() );
+            log.log( Level.SEVERE, "\tPID: " + thread.getThreadId()
+                    + " | Suspended: " + thread.isSuspended()
+                    + " | Native: " + thread.isInNative()
+                    + " | State: " + thread.getThreadState() );
+            if ( thread.getLockedMonitors().length != 0 )
+            {
+                log.log( Level.SEVERE, "\tThread is waiting on monitor(s):" );
+                for ( MonitorInfo monitor : thread.getLockedMonitors() )
+                {
+                    log.log( Level.SEVERE, "\t\tLocked on:" + monitor.getLockedStackFrame() );
+                }
+            }
+            log.log( Level.SEVERE, "\tStack:" );
+            //
+            StackTraceElement[] stack = thread.getStackTrace();
+            for ( int line = 0; line < stack.length; line++ )
+            {
+                log.log( Level.SEVERE, "\t\t" + stack[line].toString() );
             }
         }
     }

@@ -187,14 +187,16 @@ public class TileEntityHopper extends TileEntity implements IHopper {
                     return true;
                 }
             }
+            // Spigot start
+            if ( !this.l() )
+            {
+                this.c( world.spigotConfig.hopperCheck );
+            }
+            // Spigot end
+            return false;
+        } else {
+            return false;
         }
-        // Spigot start
-        if ( this.c == 0 )
-        {
-            this.c( world.spigotConfig.hopperCheck );
-        }
-        // Spigot end
-        return false;
     }
 
     private boolean u() {

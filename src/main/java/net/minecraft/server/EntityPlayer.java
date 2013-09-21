@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -39,6 +40,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     private int bU;
     private int bV;
     private boolean bW = true;
+    private long bX = 0L;
     private int containerCounter;
     public boolean h;
     public int ping;
@@ -51,8 +53,24 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public int newLevel = 0;
     public int newTotalExp = 0;
     public boolean keepLevel = false;
+    public double maxHealthCache;
     public int lastPing = -1; // Spigot
     // CraftBukkit end
+    // Spigot start
+    public boolean collidesWithEntities = true;
+
+    @Override
+    public boolean L()
+    {
+        return this.collidesWithEntities && super.L();
+    }
+
+    @Override
+    public boolean M()
+    {
+        return this.collidesWithEntities && super.M();
+    }
+    // Spigot end
 
     public EntityPlayer(MinecraftServer minecraftserver, World world, String s, PlayerInteractManager playerinteractmanager) {
         super(world, s);
@@ -85,6 +103,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         this.displayName = this.name;
         this.listName = this.name;
         // this.canPickUpLoot = true; TODO
+        this.maxHealthCache = this.getMaxHealth();
         // CraftBukkit end
     }
 
@@ -157,10 +176,9 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
             this.activeContainer = this.defaultContainer;
         }
 
-        // CraftBukkit start - Check inventory status every tick
-        if (!this.activeContainer.a(this)) { // Should be stillValid
-            this.closeInventory();
-            this.activeContainer = this.defaultContainer;
+        // CraftBukkit start
+        if (this.noDamageTicks > 0) {
+            --this.noDamageTicks;
         }
         // CraftBukkit end
 
@@ -215,6 +233,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
                 }
             }
         }
+
+        if (this.bX > 0L && this.server.ar() > 0 && MinecraftServer.aq() - this.bX > (long) (this.server.ar() * 1000 * 60)) {
+            this.playerConnection.disconnect("You have been idle for too long!");
+        }
     }
 
     public void h() {
@@ -235,17 +257,23 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
 
             if (this.getHealth() != this.bP || this.bQ != this.foodData.a() || this.foodData.e() == 0.0F != this.bR) {
                 // CraftBukkit - Optionally scale health
-                this.playerConnection.sendPacket(new Packet8UpdateHealth(getBukkitEntity().getScaledHealth(), this.foodData.a(), this.foodData.e()));
+                this.playerConnection.sendPacket(new Packet8UpdateHealth(this.getBukkitEntity().getScaledHealth(), this.foodData.a(), this.foodData.e()));
                 this.bP = this.getHealth();
                 this.bQ = this.foodData.a();
                 this.bR = this.foodData.e() == 0.0F;
             }
 
-            if (this.getHealth() + this.bm() != this.bO) {
-                this.bO = this.getHealth() + this.bm();
+            if (this.getHealth() + this.bn() != this.bO) {
+                this.bO = this.getHealth() + this.bn();
                 // CraftBukkit - Update ALL the scores!
                 this.world.getServer().getScoreboardManager().updateAllScoresForList(IScoreboardCriteria.f, this.getLocalizedName(), com.google.common.collect.ImmutableList.of(this));
             }
+
+            // CraftBukkit start - Force max health updates
+            if (this.maxHealthCache != this.getMaxHealth()) {
+                this.getBukkitEntity().updateScaledHealth();
+            }
+            // CraftBukkit end
 
             if (this.expTotal != this.lastSentExp) {
                 this.lastSentExp = this.expTotal;
@@ -294,7 +322,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
             }
         }
 
-        ChatMessage chatmessage = this.aQ().b();
+        ChatMessage chatmessage = this.aR().b();
 
         String deathmessage = chatmessage.toString();
         org.bukkit.event.entity.PlayerDeathEvent event = CraftEventFactory.callPlayerDeathEvent(this, loot, deathmessage);
@@ -333,7 +361,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
             scoreboardscore.incrementScore();
         }
 
-        EntityLiving entityliving = this.aR();
+        EntityLiving entityliving = this.aS();
 
         if (entityliving != null) {
             entityliving.b(this, this.bb);
@@ -462,12 +490,16 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
     public void setPassengerOf(Entity entity) {
         // mount(null) doesn't really fly for overloaded methods,
         // so this method is needed
+        Entity currentVehicle = this.vehicle;
 
         super.setPassengerOf(entity);
-        // CraftBukkit end
 
-        this.playerConnection.sendPacket(new Packet39AttachEntity(0, this, this.vehicle));
-        this.playerConnection.a(this.locX, this.locY, this.locZ, this.yaw, this.pitch);
+        // Check if the vehicle actually changed.
+        if (currentVehicle != this.vehicle) {
+            this.playerConnection.sendPacket(new Packet39AttachEntity(0, this, this.vehicle));
+            this.playerConnection.a(this.locX, this.locY, this.locZ, this.yaw, this.pitch);
+        }
+        // CraftBukkit end
     }
 
     protected void a(double d0, boolean flag) {}
@@ -860,6 +892,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
 
     public ChunkCoordinates b() {
         return new ChunkCoordinates(MathHelper.floor(this.locX), MathHelper.floor(this.locY + 0.5D), MathHelper.floor(this.locZ));
+    }
+
+    public void u() {
+        this.bX = MinecraftServer.aq();
     }
 
     // CraftBukkit start

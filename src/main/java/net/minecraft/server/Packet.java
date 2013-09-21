@@ -112,7 +112,7 @@ public abstract class Packet {
             ++o;
             p += (long) packet.a();
         } catch (EOFException eofexception) {
-            // iconsolelogmanager.severe("Reached end of stream for " + socket.getInetAddress()); // Spigot - too spammy
+            //iconsolelogmanager.severe("Reached end of stream for " + socket.getInetAddress()); // CraftBukkit - remove unnecessary logging
             return null;
         }
 

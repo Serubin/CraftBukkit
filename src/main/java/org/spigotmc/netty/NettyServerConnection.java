@@ -98,6 +98,13 @@ public class NettyServerConnection extends ServerConnection
                 {
                     // IP_TOS is not supported (Windows XP / Windows Server 2003)
                 }
+                try
+                {
+                    ch.config().setOption( ChannelOption.TCP_NODELAY, false );
+                } catch ( ChannelException ex )
+                {
+                    // TCP_NODELAY is not supported (Mac)
+                }
 
                 NettyNetworkManager networkManager = new NettyNetworkManager();
                 ch.pipeline()
@@ -105,7 +112,7 @@ public class NettyServerConnection extends ServerConnection
                         .addLast( "decoder", new PacketDecoder() )
                         .addLast( "manager", networkManager );
             }
-        } ).childOption( ChannelOption.TCP_NODELAY, false ).group( group ).localAddress( host, port ).bind().syncUninterruptibly();
+        } ).group( group ).localAddress( host, port ).bind().syncUninterruptibly();
     }
 
     /**
@@ -129,7 +136,7 @@ public class NettyServerConnection extends ServerConnection
 
             try
             {
-                connection.c();
+                connection.d();
             } catch ( Exception ex )
             {
                 connection.disconnect( "Internal server error" );

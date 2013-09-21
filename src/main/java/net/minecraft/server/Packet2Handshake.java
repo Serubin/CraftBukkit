@@ -14,14 +14,11 @@ public class Packet2Handshake extends Packet {
 
     public Packet2Handshake() {}
 
-    public static final java.util.regex.Pattern validName = java.util.regex.Pattern.compile("^[a-zA-Z0-9_-]{2,16}$");
     public void a(DataInput datainput) throws IOException { // CraftBukkit - throws IOException
         this.a = datainput.readByte();
         this.b = a(datainput, 16);
         this.c = a(datainput, 255);
         this.d = datainput.readInt();
-        // Spigot: TODO: md_5 hates this
-        if(!validName.matcher(this.b).matches()) throw new IOException("Invalid name!"); // Spigot
     }
 
     public void a(DataOutput dataoutput) throws IOException { // CraftBukkit - throws IOException

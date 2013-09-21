@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +62,9 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     private final Set<String> channels = new HashSet<String>();
     private final Map<String, Player> hiddenPlayers = new MapMaker().softValues().makeMap();
     private int hash = 0;
-    private boolean scaledHealth;
+    private double health = 20;
+    private boolean scaledHealth = false;
+    private double healthScale = 20;
 
     public CraftPlayer(CraftServer server, EntityPlayer entity) {
         super(server, entity);
@@ -257,13 +260,20 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void playSound(Location loc, Sound sound, float volume, float pitch) {
+        if (sound == null) {
+            return;
+        }
+        playSound(loc, CraftSound.getSound(sound), volume, pitch);
+    }
+
+    public void playSound(Location loc, String sound, float volume, float pitch) {
         if (loc == null || sound == null || getHandle().playerConnection == null) return;
 
         double x = loc.getBlockX() + 0.5;
         double y = loc.getBlockY() + 0.5;
         double z = loc.getBlockZ() + 0.5;
 
-        Packet62NamedSoundEffect packet = new Packet62NamedSoundEffect(CraftSound.getSound(sound), x, y, z, volume, pitch);
+        Packet62NamedSoundEffect packet = new Packet62NamedSoundEffect(sound, x, y, z, volume, pitch);
         getHandle().playerConnection.sendPacket(packet);
     }
 
@@ -942,7 +952,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setFlySpeed(float value) {
         validateSpeed(value);
         EntityPlayer player = getHandle();
-        player.abilities.flySpeed = value / 2f;
+        player.abilities.flySpeed = Math.max( value, 0.0001f ) / 2f; // Spigot
         player.updateAbilities();
 
     }
@@ -950,7 +960,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     public void setWalkSpeed(float value) {
         validateSpeed(value);
         EntityPlayer player = getHandle();
-        player.abilities.walkSpeed = value / 2f;
+        player.abilities.walkSpeed = Math.max( value, 0.0001f ) / 2f; // Spigot
         player.updateAbilities();
     }
 
@@ -977,6 +987,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     @Override
     public void setMaxHealth(double amount) {
         super.setMaxHealth(amount);
+        this.health = Math.min(this.health, health);
         getHandle().triggerHealthUpdate();
     }
 
@@ -1003,20 +1014,71 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
         this.server.getScoreboardManager().setPlayerBoard(this, scoreboard);
     }
 
+    public void setHealthScale(double value) {
+        Validate.isTrue((float) value > 0F, "Must be greater than 0");
+        healthScale = value;
+        scaledHealth = true;
+        updateScaledHealth();
+    }
+
+    public double getHealthScale() {
+        return healthScale;
+    }
+
+    public void setHealthScaled(boolean scale) {
+        if (scaledHealth != (scaledHealth = scale)) {
+            updateScaledHealth();
+        }
+    }
+
+    public boolean isHealthScaled() {
+        return scaledHealth;
+    }
+
     public float getScaledHealth() {
-        return (float) (this.scaledHealth ? getHealth() / getMaxHealth() * 20.0D : getHealth());
+        return (float) (isHealthScaled() ? getHealth() * getHealthScale() / getMaxHealth() : getHealth());
     }
 
-    public void setScaleHealth(boolean scale) {
-        this.scaledHealth = scale;
+    @Override
+    public double getHealth() {
+        return health;
     }
 
-    public boolean isScaledHealth() {
-        return this.scaledHealth;
+    public void setRealHealth(double health) {
+        this.health = health;
+    }
+
+    public void updateScaledHealth() {
+        AttributeMapServer attributemapserver = (AttributeMapServer) getHandle().aX();
+        Set set = attributemapserver.b();
+
+        injectScaledMaxHealth(set, true);
+
+        getHandle().getDataWatcher().watch(6, (float) getScaledHealth());
+        getHandle().playerConnection.sendPacket(new Packet8UpdateHealth(getScaledHealth(), getHandle().getFoodData().a(), getHandle().getFoodData().e()));
+        getHandle().playerConnection.sendPacket(new Packet44UpdateAttributes(getHandle().id, set));
+
+        set.clear();
+        getHandle().maxHealthCache = getMaxHealth();
+    }
+
+    public void injectScaledMaxHealth(Collection collection, boolean force) {
+        if (!scaledHealth && !force) {
+            return;
+        }
+        for (Object genericInstance : collection) {
+            IAttribute attribute = ((AttributeInstance) genericInstance).a();
+            if (attribute.a().equals("generic.maxHealth")) {
+                collection.remove(genericInstance);
+                break;
+            }
+            continue;
+        }
+        collection.add(new AttributeModifiable(getHandle().aX(), (new AttributeRanged("generic.maxHealth", scaledHealth ? healthScale : getMaxHealth(), 0.0D, Float.MAX_VALUE)).a("Max Health").a(true)));
     }
 
     // Spigot start
-    private final Spigot spigot = new Spigot()
+    private final Player.Spigot spigot = new Player.Spigot()
     {
         @Override
         public InetSocketAddress getRawAddress()
@@ -1060,9 +1122,22 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
 
             getHandle().playerConnection.sendPacket( packet );
         }
+
+        @Override
+        public boolean getCollidesWithEntities()
+        {
+            return getHandle().collidesWithEntities;
+        }
+
+        @Override
+        public void setCollidesWithEntities(boolean collides)
+        {
+            getHandle().collidesWithEntities = collides;
+            getHandle().m = collides; // First boolean of Entity
+        }
     };
 
-    public Spigot spigot()
+    public Player.Spigot spigot()
     {
         return spigot;
     }

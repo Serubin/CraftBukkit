@@ -3,12 +3,12 @@ package org.spigotmc.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.MessageList;
 import io.netty.handler.codec.ReplayingDecoder;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.List;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.Packet;
 import net.minecraft.server.Packet254GetInfo;
@@ -31,7 +31,7 @@ public class PacketDecoder extends ReplayingDecoder<ReadState>
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, MessageList<Object> out) throws Exception
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception
     {
         if ( shutdown )
         {

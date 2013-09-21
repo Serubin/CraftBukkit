@@ -29,7 +29,25 @@ import org.bukkit.event.weather.ThunderChangeEvent;
 public abstract class World implements IBlockAccess {
 
     public boolean d;
-    public List entityList = new ArrayList();
+    public List entityList = new ArrayList() { // Spigot start - guard entity list from removals
+        @Override
+        public Object remove(int index) {
+            guard();
+            return super.remove(index);
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            guard();
+            return super.remove(o);
+        }
+
+        private void guard() {
+            if (guardEntityList) {
+                throw new java.util.ConcurrentModificationException();
+            }
+        }
+    }; // Spigot end
     protected List f = new ArrayList();
     public Set tileEntityList = new HashSet(); // CraftBukkit - ArrayList -> HashSet
     private List a = new ArrayList();
@@ -74,6 +92,7 @@ public abstract class World implements IBlockAccess {
     int[] H;
     public boolean isStatic;
     // Spigot start
+    private boolean guardEntityList = false;
     protected final gnu.trove.map.hash.TLongShortHashMap chunkTickList;
     protected float growthOdds = 100;
     protected float modifiedOdds = 100;
@@ -1111,7 +1130,7 @@ public abstract class World implements IBlockAccess {
         List list = this.getEntities(entity, axisalignedbb.grow(d0, d0, d0));
 
         for (int j2 = 0; j2 < list.size(); ++j2) {
-            AxisAlignedBB axisalignedbb1 = ((Entity) list.get(j2)).D();
+            AxisAlignedBB axisalignedbb1 = ((Entity) list.get(j2)).E();
 
             if (axisalignedbb1 != null && axisalignedbb1.b(axisalignedbb)) {
                 this.M.add(axisalignedbb1);
@@ -1221,6 +1240,7 @@ public abstract class World implements IBlockAccess {
         CrashReport crashreport;
         CrashReportSystemDetails crashreportsystemdetails;
 
+        long lastChunk = Long.MIN_VALUE; // Spigot - cache chunk x, z cords for unload queue
         for (i = 0; i < this.i.size(); ++i) {
             entity = (Entity) this.i.get(i);
             // CraftBukkit start - Fixed an NPE, don't process entities in chunks queued for unload
@@ -1229,10 +1249,15 @@ public abstract class World implements IBlockAccess {
             }
 
             ChunkProviderServer chunkProviderServer = ((WorldServer) this).chunkProviderServer;
-            if (chunkProviderServer.unloadQueue.contains(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
-                continue;
+            // Spigot start - check last chunk to see if this loaded (fast cache)
+            long chunk = org.bukkit.craftbukkit.util.LongHash.toLong(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4);
+            if (lastChunk != chunk) {
+                if (chunkProviderServer.unloadQueue.contains(chunk)) { // Spigot end
+                    continue;
+                }
             }
             // CraftBukkit end
+            lastChunk = chunk; // Spigot
 
             try {
                 ++entity.ticksLived;
@@ -1253,6 +1278,7 @@ public abstract class World implements IBlockAccess {
                 this.i.remove(i--);
             }
         }
+        lastChunk = Long.MIN_VALUE; // Spigot
 
         this.methodProfiler.c("remove");
         this.entityList.removeAll(this.f);
@@ -1278,15 +1304,21 @@ public abstract class World implements IBlockAccess {
 
         org.spigotmc.ActivationRange.activateEntities(this); // Spigot
         timings.entityTick.startTiming(); // Spigot
+        guardEntityList = true; // Spigot
         for (i = 0; i < this.entityList.size(); ++i) {
             entity = (Entity) this.entityList.get(i);
 
             // CraftBukkit start - Don't tick entities in chunks queued for unload
             ChunkProviderServer chunkProviderServer = ((WorldServer) this).chunkProviderServer;
-            if (chunkProviderServer.unloadQueue.contains(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4)) {
-                continue;
+            // Spigot start - check last chunk to see if this loaded (fast cache)
+            long chunk = org.bukkit.craftbukkit.util.LongHash.toLong(MathHelper.floor(entity.locX) >> 4, MathHelper.floor(entity.locZ) >> 4);
+            if (lastChunk != chunk) {
+                if (chunkProviderServer.unloadQueue.contains(chunk)) { // Spigot end
+                    continue;
+                }
             }
             // CraftBukkit end
+            lastChunk = Long.MIN_VALUE; // Spigot
 
             if (entity.vehicle != null) {
                 if (!entity.vehicle.dead && entity.vehicle.passenger == entity) {
@@ -1320,12 +1352,15 @@ public abstract class World implements IBlockAccess {
                     this.getChunkAt(j, k).b(entity);
                 }
 
+                guardEntityList = false; // Spigot
                 this.entityList.remove(i--);
+                guardEntityList = true; // Spigot
                 this.b(entity);
             }
 
             this.methodProfiler.b();
         }
+        guardEntityList = false; // Spigot
 
         timings.entityTick.stopTiming(); // Spigot
         this.methodProfiler.c("tileEntities");
@@ -1452,7 +1487,7 @@ public abstract class World implements IBlockAccess {
             if (flag && entity.ai) {
                 ++entity.ticksLived;
                 if (entity.vehicle != null) {
-                    entity.U();
+                    entity.V();
                 } else {
                     entity.l_();
                 }
@@ -1653,7 +1688,7 @@ public abstract class World implements IBlockAccess {
                 }
             }
 
-            if (vec3d.b() > 0.0D && entity.aw()) {
+            if (vec3d.b() > 0.0D && entity.ax()) {
                 vec3d = vec3d.a();
                 double d1 = 0.014D;
 
@@ -2690,7 +2725,7 @@ public abstract class World implements IBlockAccess {
                 }
 
                 if (entityhuman1.isInvisible()) {
-                    float f = entityhuman1.bw();
+                    float f = entityhuman1.bx();
 
                     if (f < 0.1F) {
                         f = 0.1F;
@@ -2799,7 +2834,7 @@ public abstract class World implements IBlockAccess {
         return (double) this.i(1.0F) > 0.2D;
     }
 
-    public boolean F(int i, int j, int k) {
+    public boolean isRainingAt(int i, int j, int k) {
         if (!this.Q()) {
             return false;
         } else if (!this.l(i, j, k)) {

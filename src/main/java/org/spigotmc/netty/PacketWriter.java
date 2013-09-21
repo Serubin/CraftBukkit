@@ -3,10 +3,11 @@ package org.spigotmc.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.Channel;
-import io.netty.channel.MessageList;
 import io.netty.handler.codec.EncoderException;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import net.minecraft.server.Packet;
 import net.minecraft.server.PendingConnection;
 
@@ -20,17 +21,12 @@ public class PacketWriter
     private static final int FLUSH_TIME = 1;
     /*========================================================================*/
     long lastFlush;
-    private final MessageList<Packet> pending = MessageList.newInstance();
-
-    void release()
-    {
-        pending.recycle();
-    }
+    private final Queue<Packet> queue = new ArrayDeque<Packet>( 64 );
 
     void write(Channel channel, NettyNetworkManager networkManager, Packet msg)
     {
         // Append messages to queue
-        pending.add( msg );
+        queue.add( msg );
 
         // If we are not in the pending connect phase, and we have not reached our timer
         if ( !( networkManager.connection instanceof PendingConnection ) && System.currentTimeMillis() - lastFlush < FLUSH_TIME )
@@ -42,7 +38,7 @@ public class PacketWriter
 
         // Since we are writing in batches it can be useful to guess the size of our output to limit memcpy
         int estimatedSize = 0;
-        for ( Packet packet : pending )
+        for ( Packet packet : queue )
         {
             estimatedSize += packet.a();
         }
@@ -56,7 +52,7 @@ public class PacketWriter
         try
         {
             // Iterate through all packets, this is safe as we know we will only ever get packets in the pipeline
-            for ( Packet packet : pending )
+            for ( Packet packet : queue )
             {
                 // Write packet ID
                 outBuf.writeByte( packet.n() );
@@ -74,13 +70,13 @@ public class PacketWriter
             // Let Netty handle any errors from here on
             success = true;
             // Write down our single ByteBuf
-            channel.write( outBuf );
+            channel.writeAndFlush( outBuf );
         } finally
         {
             // Reset packet queue
-            pending.clear();
+            queue.clear();
             // If Netty didn't handle the freeing because we didn't get there, we must
-            if ( !success)
+            if ( !success )
             {
                 outBuf.release();
             }
