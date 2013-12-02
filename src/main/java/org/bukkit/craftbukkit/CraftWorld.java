@@ -377,7 +377,7 @@ public class CraftWorld implements World {
             gen = new WorldGenBigTree(true);
             break;
         case BIRCH:
-            gen = new WorldGenForest(true);
+            gen = new WorldGenForest(true, false);
             break;
         case REDWOOD:
             gen = new WorldGenTaiga2(true);
@@ -386,7 +386,7 @@ public class CraftWorld implements World {
             gen = new WorldGenTaiga1();
             break;
         case JUNGLE:
-            gen = new WorldGenMegaTree(true, 10 + rand.nextInt(20), 3, 3);
+            gen = new WorldGenMegaTree(true, rand.nextBoolean());
             break;
         case SMALL_JUNGLE:
             gen = new WorldGenTrees(true, 4 + rand.nextInt(7), 3, 3, false);
@@ -403,13 +403,19 @@ public class CraftWorld implements World {
         case SWAMP:
             gen = new WorldGenSwampTree();
             break;
+        case ACACIA:
+            gen = new WorldGenAcaciaTree(true);
+            break;
+        case DARK_OAK:
+            gen = new WorldGenForestTree(true);
+            break;
         case TREE:
         default:
             gen = new WorldGenTrees(true);
             break;
         }
 
-        return gen.generate(delegate, rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        return gen.generate(new CraftBlockChangeDelegate(delegate), rand, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
     }
 
     public TileEntity getTileEntityAt(final int x, final int y, final int z) {
@@ -458,7 +464,7 @@ public class CraftWorld implements World {
             CraftPlayer cp = (CraftPlayer) p;
             if (cp.getHandle().playerConnection == null) continue;
 
-            cp.getHandle().playerConnection.sendPacket(new Packet4UpdateTime(cp.getHandle().world.getTime(), cp.getHandle().getPlayerTime(), cp.getHandle().world.getGameRules().getBoolean("doDaylightCycle")));
+            cp.getHandle().playerConnection.sendPacket(new PacketPlayOutUpdateTime(cp.getHandle().world.getTime(), cp.getHandle().getPlayerTime(), cp.getHandle().world.getGameRules().getBoolean("doDaylightCycle")));
         }
     }
 
@@ -657,6 +663,7 @@ public class CraftWorld implements World {
     }
 
     public void save() {
+        this.server.checkSaveState();
         try {
             boolean oldSave = world.savingDisabled;
 
@@ -678,11 +685,11 @@ public class CraftWorld implements World {
     }
 
     public void setDifficulty(Difficulty difficulty) {
-        this.getHandle().difficulty = difficulty.getValue();
+        this.getHandle().difficulty = EnumDifficulty.a(difficulty.getValue());
     }
 
     public Difficulty getDifficulty() {
-        return Difficulty.getByValue(this.getHandle().difficulty);
+        return Difficulty.getByValue(this.getHandle().difficulty.ordinal());
     }
 
     public BlockMetadataStore getBlockMetadata() {
@@ -778,20 +785,30 @@ public class CraftWorld implements World {
         } else {
             Validate.isTrue(effect.getData() == null, "Wrong kind of data for this effect!");
         }
-        if (data != null && data.getClass().equals(org.bukkit.material.MaterialData.class)) {
-            org.bukkit.material.MaterialData materialData = (org.bukkit.material.MaterialData) data;
-            Validate.isTrue(!materialData.getItemType().isBlock(), "Material must be block");
-            spigot().playEffect(loc, effect, materialData.getItemType().getId(), materialData.getData(), 0, 0, 0, 1, 1, radius);
-        } else {
-            int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
-            playEffect(loc, effect, datavalue, radius);
-        }
+
+        int datavalue = data == null ? 0 : CraftEffect.getDataValue(effect, data);
+        playEffect(loc, effect, datavalue, radius);
     }
 
     public void playEffect(Location location, Effect effect, int data, int radius) {
-        spigot().playEffect(location,effect, data, 0, 0f, 0f, 0f, 1f, 1, radius);
-    }
+        Validate.notNull(location, "Location cannot be null");
+        Validate.notNull(effect, "Effect cannot be null");
+        Validate.notNull(location.getWorld(), "World cannot be null");
+        int packetData = effect.getId();
+        PacketPlayOutWorldEvent packet = new PacketPlayOutWorldEvent(packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), data, false);
+        int distance;
+        radius *= radius;
 
+        for (Player player : getPlayers()) {
+            if (((CraftPlayer) player).getHandle().playerConnection == null) continue;
+            if (!location.getWorld().equals(player.getWorld())) continue;
+
+            distance = (int) player.getLocation().distanceSquared(location);
+            if (distance <= radius) {
+                ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+            }
+        }
+    }
 
     public <T extends Entity> T spawn(Location location, Class<T> clazz) throws IllegalArgumentException {
         return spawn(location, clazz, SpawnReason.CUSTOM);
@@ -806,8 +823,8 @@ public class CraftWorld implements World {
         double y = location.getBlockY() + 0.5;
         double z = location.getBlockZ() + 0.5;
 
-        EntityFallingBlock entity = new EntityFallingBlock(world, x, y, z, material.getId(), data);
-        entity.c = 1; // ticksLived
+        EntityFallingBlock entity = new EntityFallingBlock(world, x, y, z, net.minecraft.server.Block.e(material.getId()), data);
+        entity.b = 1; // ticksLived
 
         world.addEntity(entity, SpawnReason.CUSTOM);
         return (FallingBlock) entity.getBukkitEntity();
@@ -841,7 +858,7 @@ public class CraftWorld implements World {
             int type = world.getTypeId((int) x, (int) y, (int) z);
             int data = world.getData((int) x, (int) y, (int) z);
 
-            entity = new EntityFallingBlock(world, x + 0.5, y + 0.5, z + 0.5, type, data);
+            entity = new EntityFallingBlock(world, x + 0.5, y + 0.5, z + 0.5, net.minecraft.server.Block.e(type), data);
         } else if (Projectile.class.isAssignableFrom(clazz)) {
             if (Snowball.class.isAssignableFrom(clazz)) {
                 entity = new EntitySnowball(world, x, y, z);
@@ -1001,11 +1018,11 @@ public class CraftWorld implements World {
                 entity = new EntityItemFrame(world, (int) x, (int) y, (int) z, dir);
             } else if (LeashHitch.class.isAssignableFrom(clazz)) {
                 entity = new EntityLeash(world, (int) x, (int) y, (int) z);
-                entity.p = true;
+                entity.o = true;
             }
 
             if (entity != null && !((EntityHanging) entity).survives()) {
-                entity = null;
+                throw new IllegalArgumentException("Cannot spawn hanging entity for " + clazz.getName() + " at " + location);
             }
         } else if (TNTPrimed.class.isAssignableFrom(clazz)) {
             entity = new EntityTNTPrimed(world, x, y, z, null);
@@ -1260,78 +1277,22 @@ public class CraftWorld implements World {
         ChunkProviderServer cps = world.chunkProviderServer;
         for (net.minecraft.server.Chunk chunk : cps.chunks.values()) {
             // If in use, skip it
-            if (isChunkInUse(chunk.x, chunk.z)) {
+            if (isChunkInUse(chunk.locX, chunk.locZ)) {
                 continue;
             }
 
             // Already unloading?
-            if (cps.unloadQueue.contains(chunk.x, chunk.z)) {
+            if (cps.unloadQueue.contains(chunk.locX, chunk.locZ)) {
                 continue;
             }
 
             // Add unload request
-            cps.queueUnload(chunk.x, chunk.z);
+            cps.queueUnload(chunk.locX, chunk.locZ);
         }
     }
     // Spigot start
     private final Spigot spigot = new Spigot()
     {
-        @Override
-        public void playEffect(Location location, Effect effect, int id, int data, float offsetX, float offsetY, float offsetZ, float speed, int particleCount, int radius)
-        {
-            Validate.notNull( location, "Location cannot be null" );
-            Validate.notNull( effect, "Effect cannot be null" );
-            Validate.notNull( location.getWorld(), "World cannot be null" );
-
-            Packet packet;
-            if ( effect.getType() != Effect.Type.PARTICLE )
-            {
-                int packetData = effect.getId();
-                packet = new Packet61WorldEvent( packetData, location.getBlockX(), location.getBlockY(), location.getBlockZ(), id, false );
-            } else
-            {
-                StringBuilder particleFullName = new StringBuilder();
-                particleFullName.append( effect.getName() );
-
-                if ( effect.getData() != null && ( effect.getData().equals( Material.class ) || effect.getData().equals( org.bukkit.material.MaterialData.class ) ) )
-                {
-                    particleFullName.append( '_' ).append( id );
-                }
-
-                if ( effect.getData() != null && effect.getData().equals( org.bukkit.material.MaterialData.class ) )
-                {
-                    particleFullName.append( '_' ).append( data );
-                }
-                packet = new Packet63WorldParticles( particleFullName.toString(), (float) location.getX(), (float) location.getY(), (float) location.getZ(), offsetX, offsetY, offsetZ, speed, particleCount );
-            }
-
-            int distance;
-            radius *= radius;
-
-            for ( Player player : getPlayers() )
-            {
-                if ( ( (CraftPlayer) player ).getHandle().playerConnection == null )
-                {
-                    continue;
-                }
-                if ( !location.getWorld().equals( player.getWorld() ) )
-                {
-                    continue;
-                }
-
-                distance = (int) player.getLocation().distanceSquared( location );
-                if ( distance <= radius )
-                {
-                    ( (CraftPlayer) player ).getHandle().playerConnection.sendPacket( packet );
-                }
-            }
-        }
-
-        @Override
-        public void playEffect(Location location, Effect effect)
-        {
-            CraftWorld.this.playEffect( location, effect, 0 );
-        }
     };
 
     public Spigot spigot()

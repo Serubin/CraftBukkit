@@ -13,45 +13,45 @@ import java.util.Set;
 
 public class RemoteControlListener extends RemoteConnectionThread
 {
-  private int g;
   private int h;
-  private String i;
-  private ServerSocket j = null;
-  private String k;
-  private Map l;
+  private int i;
+  private String j;
+  private ServerSocket k;
+  private String l;
+  private Map m;
 
   public RemoteControlListener(IMinecraftServer paramIMinecraftServer)
   {
-    super(paramIMinecraftServer);
-    this.g = paramIMinecraftServer.a("rcon.port", 0);
-    this.k = paramIMinecraftServer.a("rcon.password", "");
-    this.i = paramIMinecraftServer.a("rcon.ip", "");
-    this.h = paramIMinecraftServer.x();
-    if (0 == this.g)
+    super(paramIMinecraftServer, "RCON Listener");
+    this.h = paramIMinecraftServer.a("rcon.port", 0);
+    this.l = paramIMinecraftServer.a("rcon.password", "");
+    this.j = paramIMinecraftServer.a("rcon.ip", "");
+    this.i = paramIMinecraftServer.y();
+    if (0 == this.h)
     {
-      this.g = (this.h + 10);
-      info("Setting default rcon port to " + this.g);
-      paramIMinecraftServer.a("rcon.port", Integer.valueOf(this.g));
-      if (0 == this.k.length()) {
+      this.h = (this.i + 10);
+      info("Setting default rcon port to " + this.h);
+      paramIMinecraftServer.a("rcon.port", Integer.valueOf(this.h));
+      if (0 == this.l.length()) {
         paramIMinecraftServer.a("rcon.password", "");
       }
       paramIMinecraftServer.a();
     }
 
-    if (0 == this.i.length()) {
-      this.i = "0.0.0.0";
+    if (0 == this.j.length()) {
+      this.j = "0.0.0.0";
     }
 
     f();
-    this.j = null;
+    this.k = null;
   }
 
   private void f() {
-    this.l = new HashMap();
+    this.m = new HashMap();
   }
 
   private void g() {
-    Iterator localIterator = this.l.entrySet().iterator();
+    Iterator localIterator = this.m.entrySet().iterator();
     while (localIterator.hasNext()) {
       Map.Entry localEntry = (Map.Entry)localIterator.next();
       if (!((RemoteControlSession)localEntry.getValue()).c())
@@ -61,16 +61,16 @@ public class RemoteControlListener extends RemoteConnectionThread
 
   public void run()
   {
-    info("RCON running on " + this.i + ":" + this.g);
+    info("RCON running on " + this.j + ":" + this.h);
     try {
       while (this.running)
         try
         {
-          Socket localSocket = this.j.accept();
+          Socket localSocket = this.k.accept();
           localSocket.setSoTimeout(500);
           RemoteControlSession localRemoteControlSession = new RemoteControlSession(this.server, localSocket);
           localRemoteControlSession.a();
-          this.l.put(localSocket.getRemoteSocketAddress(), localRemoteControlSession);
+          this.m.put(localSocket.getRemoteSocketAddress(), localRemoteControlSession);
 
           g();
         }
@@ -83,19 +83,19 @@ public class RemoteControlListener extends RemoteConnectionThread
     }
     finally
     {
-      b(this.j);
+      b(this.k);
     }
   }
 
   public void a()
   {
-    if (0 == this.k.length()) {
-      warning("No rcon password set in '" + this.server.b_() + "', rcon disabled!");
+    if (0 == this.l.length()) {
+      warning("No rcon password set in '" + this.server.b() + "', rcon disabled!");
       return;
     }
 
-    if ((0 >= this.g) || (65535 < this.g)) {
-      warning("Invalid rcon port " + this.g + " found in '" + this.server.b_() + "', rcon disabled!");
+    if ((0 >= this.h) || (65535 < this.h)) {
+      warning("Invalid rcon port " + this.h + " found in '" + this.server.b() + "', rcon disabled!");
       return;
     }
 
@@ -104,11 +104,11 @@ public class RemoteControlListener extends RemoteConnectionThread
     }
     try
     {
-      this.j = new ServerSocket(this.g, 0, InetAddress.getByName(this.i));
-      this.j.setSoTimeout(500);
+      this.k = new ServerSocket(this.h, 0, InetAddress.getByName(this.j));
+      this.k.setSoTimeout(500);
       super.a();
     } catch (IOException localIOException) {
-      warning("Unable to initialise rcon on " + this.i + ":" + this.g + " : " + localIOException.getMessage());
+      warning("Unable to initialise rcon on " + this.j + ":" + this.h + " : " + localIOException.getMessage());
     }
   }
 }

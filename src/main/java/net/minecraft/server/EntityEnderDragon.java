@@ -42,19 +42,19 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         this.children = new EntityComplexPart[] { this.bq = new EntityComplexPart(this, "head", 6.0F, 6.0F), this.br = new EntityComplexPart(this, "body", 8.0F, 8.0F), this.bs = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.bt = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.bu = new EntityComplexPart(this, "tail", 4.0F, 4.0F), this.bv = new EntityComplexPart(this, "wing", 4.0F, 4.0F), this.bw = new EntityComplexPart(this, "wing", 4.0F, 4.0F)};
         this.setHealth(this.getMaxHealth());
         this.a(16.0F, 8.0F);
-        this.Z = true;
+        this.Y = true;
         this.fireProof = true;
         this.i = 100.0D;
-        this.am = true;
+        this.al = true;
     }
 
-    protected void az() {
-        super.az();
+    protected void aD() {
+        super.aD();
         this.getAttributeInstance(GenericAttributes.a).setValue(200.0D);
     }
 
-    protected void a() {
-        super.a();
+    protected void c() {
+        super.c();
     }
 
     public double[] b(int i, float f) {
@@ -77,7 +77,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         return adouble;
     }
 
-    public void c() {
+    public void e() {
         float f;
         float f1;
 
@@ -98,7 +98,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
             f2 = (this.random.nextFloat() - 0.5F) * 8.0F;
             this.world.addParticle("largeexplode", this.locX + (double) f, this.locY + 2.0D + (double) f1, this.locZ + (double) f2, 0.0D, 0.0D, 0.0D);
         } else {
-            this.bJ();
+            this.bN();
             f = 0.2F / (MathHelper.sqrt(this.motX * this.motX + this.motZ * this.motZ) * 10.0F + 1.0F);
             f *= (float) Math.pow(2.0D, this.motY);
             if (this.bA) {
@@ -195,8 +195,8 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                     this.j += this.random.nextGaussian() * 2.0D;
                 }
 
-                if (this.bz || d3 < 100.0D || d3 > 22500.0D || this.positionChanged || this.H) {
-                    this.bK();
+                if (this.bz || d3 < 100.0D || d3 > 22500.0D || this.positionChanged || this.G) {
+                    this.bO();
                 }
 
                 d1 /= (double) MathHelper.sqrt(d0 * d0 + d2 * d2);
@@ -277,11 +277,11 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
             float f11 = MathHelper.sin(f10);
             float f12 = MathHelper.cos(f10);
 
-            this.br.l_();
+            this.br.h();
             this.br.setPositionRotation(this.locX + (double) (f11 * 0.5F), this.locY, this.locZ - (double) (f12 * 0.5F), 0.0F, 0.0F);
-            this.bv.l_();
+            this.bv.h();
             this.bv.setPositionRotation(this.locX + (double) (f12 * 4.5F), this.locY + 2.0D, this.locZ + (double) (f11 * 4.5F), 0.0F, 0.0F);
-            this.bw.l_();
+            this.bw.h();
             this.bw.setPositionRotation(this.locX - (double) (f12 * 4.5F), this.locY + 2.0D, this.locZ - (double) (f11 * 4.5F), 0.0F, 0.0F);
             if (!this.world.isStatic && this.hurtTicks == 0) {
                 this.a(this.world.getEntities(this, this.bv.boundingBox.grow(4.0D, 2.0D, 4.0D).d(0.0D, -2.0D, 0.0D)));
@@ -295,7 +295,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
             f3 = MathHelper.sin(this.yaw * 3.1415927F / 180.0F - this.bg * 0.01F);
             float f13 = MathHelper.cos(this.yaw * 3.1415927F / 180.0F - this.bg * 0.01F);
 
-            this.bq.l_();
+            this.bq.h();
             this.bq.setPositionRotation(this.locX + (double) (f3 * 5.5F * f2), this.locY + (adouble1[1] - adouble[1]) * 1.0D + (double) (f9 * 5.5F), this.locZ - (double) (f13 * 5.5F * f2), 0.0F, 0.0F);
 
             for (int j = 0; j < 3; ++j) {
@@ -320,7 +320,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                 float f17 = 1.5F;
                 float f18 = (float) (j + 1) * 2.0F;
 
-                entitycomplexpart.l_();
+                entitycomplexpart.h();
                 entitycomplexpart.setPositionRotation(this.locX - (double) ((f11 * f17 + f15 * f18) * f2), this.locY + (adouble2[1] - adouble[1]) * 1.0D - (double) ((f18 + f17) * f9) + 1.5D, this.locZ + (double) ((f12 * f17 + f16 * f18) * f2), 0.0F, 0.0F);
             }
 
@@ -330,7 +330,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         }
     }
 
-    private void bJ() {
+    private void bN() {
         if (this.bC != null) {
             if (this.bC.dead) {
                 if (!this.world.isStatic) {
@@ -338,7 +338,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                 }
 
                 this.bC = null;
-            } else if (this.ticksLived % 10 == 0 && this.getHealth() < this.getMaxHealth()) { // CraftBukkit - this.getMaxHealth() -> this.maxHealth
+            } else if (this.ticksLived % 10 == 0 && this.getHealth() < this.getMaxHealth()) {
                 // CraftBukkit start
                 EntityRegainHealthEvent event = new EntityRegainHealthEvent(this.getBukkitEntity(), 1.0D, EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL);
                 this.world.getServer().getPluginManager().callEvent(event);
@@ -399,7 +399,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         }
     }
 
-    private void bK() {
+    private void bO() {
         this.bz = false;
         if (this.random.nextInt(2) == 0 && !this.world.players.isEmpty()) {
             this.bD = (Entity) this.world.players.get(this.random.nextInt(this.world.players.size()));
@@ -452,11 +452,11 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         for (int k1 = i; k1 <= l; ++k1) {
             for (int l1 = j; l1 <= i1; ++l1) {
                 for (int i2 = k; i2 <= j1; ++i2) {
-                    int j2 = this.world.getTypeId(k1, l1, i2);
+                    Block block = this.world.getType(k1, l1, i2);
 
-                    if (j2 != 0) {
-                        if (j2 != Block.OBSIDIAN.id && j2 != Block.WHITESTONE.id && j2 != Block.BEDROCK.id && j2 != Block.DRAGON_EGG.id && this.world.getGameRules().getBoolean("mobGriefing")) {
-                            // CraftBukkit start - add blocks to list rather than destroying them
+                    if (block.getMaterial() != Material.AIR) {
+                        if (block != Blocks.OBSIDIAN && block != Blocks.WHITESTONE && block != Blocks.BEDROCK &&  block != Blocks.DRAGON_EGG && this.world.getGameRules().getBoolean("mobGriefing")) {
+                            // CraftBukkit start - Add blocks to list rather than destroying them
                             // flag1 = this.world.setAir(k1, l1, i2) || flag1;
                             flag1 = true;
                             destroyedBlocks.add(craftWorld.getBlockAt(k1, l1, i2));
@@ -485,9 +485,8 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                 }
             } else {
                 for (org.bukkit.block.Block block : event.blockList()) {
-                    int blockId = block.getTypeId();
-
-                    if (blockId == 0) {
+                    org.bukkit.Material blockId = block.getType();
+                    if (blockId == org.bukkit.Material.AIR) {
                         continue;
                     }
 
@@ -495,10 +494,11 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                     int blockY = block.getY();
                     int blockZ = block.getZ();
 
-                    if (Block.byId[blockId].a(explosionSource)) {
-                        Block.byId[blockId].dropNaturally(this.world, blockX, blockY, blockZ, block.getData(), event.getYield(), 0);
+                    Block nmsBlock = org.bukkit.craftbukkit.util.CraftMagicNumbers.getBlock(blockId);
+                    if (nmsBlock.a(explosionSource)) {
+                        nmsBlock.dropNaturally(this.world, blockX, blockY, blockZ, block.getData(), event.getYield(), 0);
                     }
-                    Block.byId[blockId].wasExploded(world, blockX, blockY, blockZ, explosionSource);
+                    nmsBlock.wasExploded(world, blockX, blockY, blockZ, explosionSource);
 
                     this.world.setAir(blockX, blockY, blockZ);
                 }
@@ -543,7 +543,8 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         return super.damageEntity(damagesource, f);
     }
 
-    protected void aB() {
+    protected void aF() {
+        if (this.dead) return; // CraftBukkit - can't kill what's already dead
         ++this.bB;
         if (this.bB >= 180 && this.bB <= 200) {
             float f = (this.random.nextFloat() - 0.5F) * 8.0F;
@@ -558,7 +559,7 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
 
         if (!this.world.isStatic) {
             if (this.bB > 150 && this.bB % 5 == 0) {
-                i = expToDrop / 12; // CraftBukkit - drop experience as dragon falls from sky. use experience drop from death event. This is now set in getExpReward()
+                i = this.expToDrop / 12; // CraftBukkit - drop experience as dragon falls from sky. use experience drop from death event. This is now set in getExpReward()
 
                 while (i > 0) {
                     j = EntityExperienceOrb.getOrbValue(i);
@@ -568,14 +569,14 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
             }
 
             if (this.bB == 1) {
-                this.world.d(1018, (int) this.locX, (int) this.locY, (int) this.locZ, 0);
+                this.world.b(1018, (int) this.locX, (int) this.locY, (int) this.locZ, 0);
             }
         }
 
         this.move(0.0D, 0.10000000149011612D, 0.0D);
         this.aN = this.yaw += 20.0F;
         if (this.bB == 200 && !this.world.isStatic) {
-            i = expToDrop - 10 * (expToDrop / 12); // CraftBukkit - drop the remaining experience
+            i = this.expToDrop - (10 * this.expToDrop / 12); // CraftBukkit - drop the remaining experience
 
             while (i > 0) {
                 j = EntityExperienceOrb.getOrbValue(i);
@@ -583,12 +584,12 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
                 this.world.addEntity(new EntityExperienceOrb(this.world, this.locX, this.locY, this.locZ, j));
             }
 
-            this.c(MathHelper.floor(this.locX), MathHelper.floor(this.locZ));
+            this.b(MathHelper.floor(this.locX), MathHelper.floor(this.locZ));
             this.die();
         }
     }
 
-    private void c(int i, int j) {
+    private void b(int i, int j) {
         byte b0 = 64;
 
         //BlockEnderPortal.a = true;
@@ -597,8 +598,8 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         // CraftBukkit start - Replace any "this.world" in the following with just "world"!
         BlockStateListPopulator world = new BlockStateListPopulator(this.world.getWorld());
 
-        world.setTypeId(i, b0, j, Block.OBSIDIAN.id);
-        world.setTypeId(i, b0 + 1, j, Block.DRAGON_EGG.id);
+        world.setType(i, b0, j, Blocks.OBSIDIAN);
+        world.setType(i, b0 + 1, j, Blocks.DRAGON_EGG);
 
         world.updateList();
         // CraftBukkit end
@@ -606,29 +607,29 @@ public class EntityEnderDragon extends EntityInsentient implements IComplex, IMo
         //BlockEnderPortal.a = false;
     }
 
-    protected void u() {}
+    protected void w() {}
 
-    public Entity[] ao() {
+    public Entity[] at() {
         return this.children;
     }
 
-    public boolean L() {
+    public boolean R() {
         return false;
     }
 
-    public World b() {
+    public World a() {
         return this.world;
     }
 
-    protected String r() {
+    protected String t() {
         return "mob.enderdragon.growl";
     }
 
-    protected String aO() {
+    protected String aT() {
         return "mob.enderdragon.hit";
     }
 
-    protected float ba() {
+    protected float bf() {
         return 5.0F;
     }
 
