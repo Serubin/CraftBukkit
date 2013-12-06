@@ -168,6 +168,7 @@ public class PlayerConnection implements PacketPlayInListener {
         ChatComponentText chatcomponenttext = new ChatComponentText(s);
 
         this.networkManager.handle(new PacketPlayOutKickDisconnect(chatcomponenttext), new GenericFutureListener[] { new PlayerConnectionFuture(this, chatcomponenttext)});
+        this.a(chatcomponenttext); // CraftBukkit - Process quit immediately
         this.networkManager.g();
     }
 
@@ -678,6 +679,7 @@ public class PlayerConnection implements PacketPlayInListener {
     }
 
     public void a(IChatBaseComponent ichatbasecomponent) {
+        if (this.isDisconnected()) return; // CraftBukkit - Don't trigger twice on kicks
         c.info(this.player.getName() + " lost connection: " + ichatbasecomponent.c()); // CraftBukkit - Don't toString the component
         this.minecraftServer.au();
         // CraftBukkit start - Replace vanilla quit message handling with our own.
@@ -1602,12 +1604,12 @@ public class PlayerConnection implements PacketPlayInListener {
     }
 
     public void a(PacketPlayInAbilities packetplayinabilities) {
-        // CraftBukkit start
-        if (this.player.abilities.canFly && this.player.abilities.isFlying != packetplayinabilities.f()) {
+        // CraftBukkit start - d() should be isFlying()
+        if (this.player.abilities.canFly && this.player.abilities.isFlying != packetplayinabilities.d()) {
             PlayerToggleFlightEvent event = new PlayerToggleFlightEvent(this.server.getPlayer(this.player), packetplayinabilities.f());
             this.server.getPluginManager().callEvent(event);
             if (!event.isCancelled()) {
-                this.player.abilities.isFlying = packetplayinabilities.f(); // Actually set the player's flying status
+                this.player.abilities.isFlying = packetplayinabilities.d(); // Actually set the player's flying status
             }
             else {
                 this.player.updateAbilities(); // Tell the player their ability was reverted
