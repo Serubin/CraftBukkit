@@ -85,28 +85,27 @@ public class SpigotWorldConfig
     public int pumpkinModifier;
     public int saplingModifier;
     public int wheatModifier;
+    private int getAndValidateGrowth(String crop)
+    {
+        int modifier = getInt( "growth." + crop.toLowerCase() + "-modifier", 100 );
+        if ( modifier == 0 )
+        {
+            log( "Cannot set " + crop + " growth to zero, defaulting to 100" );
+            modifier = 100;
+        }
+        log( crop + " Growth Modifier: " + modifier + "%" );
+
+        return modifier;
+    }
     private void growthModifiers()
     {
-        cactusModifier = getInt( "growth.cactus-modifier", 100 );
-        log( "Cactus Growth Modifier: " + cactusModifier + "%" );
-
-        caneModifier = getInt( "growth.cane-modifier", 100 );
-        log( "Cane Growth Modifier: " + caneModifier + "%" );
-
-        melonModifier = getInt( "growth.melon-modifier", 100 );
-        log( "Melon Growth Modifier: " + melonModifier + "%" );
-
-        mushroomModifier = getInt( "growth.mushroom-modifier", 100 );
-        log( "Mushroom Growth Modifier: " + mushroomModifier + "%" );
-
-        pumpkinModifier = getInt( "growth.pumpkin-modifier", 100 );
-        log( "Pumpkin Growth Modifier: " + pumpkinModifier + "%" );
-
-        saplingModifier = getInt( "growth.sapling-modifier", 100 );
-        log( "Sapling Growth Modifier: " + saplingModifier + "%" );
-
-        wheatModifier = getInt( "growth.wheat-modifier", 100 );
-        log( "Wheat Growth Modifier: " + wheatModifier + "%" );
+        cactusModifier = getAndValidateGrowth( "Cactus" );
+        caneModifier = getAndValidateGrowth( "Cane" );
+        melonModifier = getAndValidateGrowth( "Melon" );
+        mushroomModifier = getAndValidateGrowth( "Mushroom" );
+        pumpkinModifier = getAndValidateGrowth( "Pumpkin" );
+        saplingModifier = getAndValidateGrowth( "Sapling" );
+        wheatModifier = getAndValidateGrowth( "Wheat" );
     }
 
     public double itemMerge;
