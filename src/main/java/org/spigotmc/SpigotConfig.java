@@ -47,8 +47,8 @@ public class SpigotConfig
 
         commands = new HashMap<String, Command>();
 
-        version = getInt( "config-version", 3 );
-        set( "config-version", 3 );
+        version = getInt( "config-version", 4 );
+        set( "config-version", 4 );
         readConfig( SpigotConfig.class, null );
     }
 
@@ -188,8 +188,13 @@ public class SpigotConfig
         WatchdogThread.doStart( timeoutTime, restartOnCrash );
     }
 
-    public static boolean bungee = true;
+    public static boolean bungee;
     private static void bungee() {
-        bungee = getBoolean("settings.bungeecord", true);
+        if ( version < 4 )
+        {
+            set( "settings.bungeecord", false );
+            System.out.println( "Oudated config, disabling BungeeCord support!" );
+        }
+        bungee = getBoolean( "settings.bungeecord", false );
     }
 }

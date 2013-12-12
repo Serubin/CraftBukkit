@@ -138,7 +138,6 @@ public abstract class Entity {
         this.random = new Random();
         this.maxFireTicks = 1;
         this.justCreated = true;
-        this.uniqueID = UUID.randomUUID();
         this.uniqueID = new UUID(random.nextLong(), random.nextLong()); // Spigot
         this.at = EnumEntitySize.SIZE_2;
         this.world = world;
