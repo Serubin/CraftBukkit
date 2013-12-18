@@ -636,6 +636,7 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
             }
 
             getHandle().playerInteractManager.setGameMode(EnumGamemode.a(mode.getValue()));
+            getHandle().fallDistance = 0;
             getHandle().playerConnection.sendPacket(new PacketPlayOutGameStateChange(3, mode.getValue()));
         }
     }
@@ -887,12 +888,14 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
     }
 
     public void setTexturePack(String url) {
-        Validate.notNull(url, "Texture pack URL cannot be null");
+        setResourcePack(url);
+    }
 
-        byte[] message = (url + "\0" + "16").getBytes();
-        Validate.isTrue(message.length <= Messenger.MAX_MESSAGE_SIZE, "Texture pack URL is too long");
+    @Override
+    public void setResourcePack(String url) {
+        Validate.notNull(url, "Resource pack URL cannot be null");
 
-        getHandle().playerConnection.sendPacket(new PacketPlayOutCustomPayload("MC|TPack", message));
+        getHandle().a(url); // should be setResourcePack
     }
 
     public void addChannel(String channel) {
