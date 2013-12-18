@@ -413,7 +413,6 @@ public class PlayerConnection implements PacketPlayInListener {
 
                 this.player.onGround = packetplayinflying.i();
                 this.minecraftServer.getPlayerList().d(this.player);
-                if (this.player.playerInteractManager.isCreative()) return; // CraftBukkit - fixed fall distance accumulating while being in Creative mode.
                 this.player.b(this.player.locY - d0, packetplayinflying.i());
             } else if (this.e % 20 == 0) {
                 this.a(this.y, this.z, this.q, this.player.yaw, this.player.pitch);
@@ -973,7 +972,17 @@ public class PlayerConnection implements PacketPlayInListener {
             Vec3D vec3d1 = vec3d.add((double) f7 * d3, (double) f6 * d3, (double) f8 * d3);
             MovingObjectPosition movingobjectposition = this.player.world.rayTrace(vec3d, vec3d1, true);
 
+            boolean valid = false;
             if (movingobjectposition == null || movingobjectposition.type != EnumMovingObjectType.BLOCK) {
+                valid = true;
+            } else {
+                Block block = this.player.world.getType(movingobjectposition.b, movingobjectposition.c, movingobjectposition.d);
+                if (!block.c()) { // Should be isBreakable?
+                    valid = true;
+                }
+            }
+
+            if (valid) {
                 CraftEventFactory.callPlayerInteractEvent(this.player, Action.LEFT_CLICK_AIR, this.player.inventory.getItemInHand());
             }
 
@@ -1612,7 +1621,7 @@ public class PlayerConnection implements PacketPlayInListener {
     public void a(PacketPlayInAbilities packetplayinabilities) {
         // CraftBukkit start - d() should be isFlying()
         if (this.player.abilities.canFly && this.player.abilities.isFlying != packetplayinabilities.d()) {
-            PlayerToggleFlightEvent event = new PlayerToggleFlightEvent(this.server.getPlayer(this.player), packetplayinabilities.f());
+            PlayerToggleFlightEvent event = new PlayerToggleFlightEvent(this.server.getPlayer(this.player), packetplayinabilities.d());
             this.server.getPluginManager().callEvent(event);
             if (!event.isCancelled()) {
                 this.player.abilities.isFlying = packetplayinabilities.d(); // Actually set the player's flying status

@@ -129,31 +129,6 @@ public class SpigotWorldConfig
         log( "View Distance: " + viewDistance );
     }
 
-    public boolean antiXray = true;
-    public int engineMode = 1;
-    public List<Integer> blocks = Arrays.asList( new Integer[]
-    {
-        1, 5, 14, 15, 16, 21, 48, 49, 54, 56, 73, 74, 82, 129, 130
-    } );
-    public AntiXray antiXrayInstance;
-    private void antiXray()
-    {
-        antiXray = getBoolean( "anti-xray.enabled", antiXray );
-        log( "Anti X-Ray: " + antiXray );
-
-        engineMode = getInt( "anti-xray.engine-mode", engineMode );
-        log( "\tEngine Mode: " + engineMode );
-
-        if ( SpigotConfig.version < 3 )
-        {
-            set( "anti-xray.blocks", blocks );
-        }
-        blocks = getList( "anti-xray.blocks", blocks );
-        log( "\tBlocks: " + blocks );
-
-        antiXrayInstance = new AntiXray( this );
-    }
-
     public byte mobSpawnRange;
     private void mobSpawnRange()
     {
@@ -231,5 +206,44 @@ public class SpigotWorldConfig
     {
         arrowDespawnRate = getInt( "arrow-despawn-rate", 1200  );
         log( "Arrow Despawn Rate: " + arrowDespawnRate );
+    }
+    
+    public boolean antiXray;
+    public int engineMode;
+    public List<Integer> hiddenBlocks;
+    public List<Integer> replaceBlocks;
+    public AntiXray antiXrayInstance;
+    private void antiXray()
+    {
+        antiXray = getBoolean( "anti-xray.enabled", true );
+        log( "Anti X-Ray: " + antiXray );
+
+        engineMode = getInt( "anti-xray.engine-mode", 1 );
+        log( "\tEngine Mode: " + engineMode );
+
+        if ( SpigotConfig.version < 5 )
+        {
+            set( "anti-xray.blocks", null );
+        }
+        hiddenBlocks = getList( "anti-xray.hide-blocks", Arrays.asList( new Integer[]
+        {
+            14, 15, 16, 21, 48, 49, 54, 56, 73, 74, 82, 129, 130
+        } ) );
+        log( "\tHidden Blocks: " + hiddenBlocks );
+
+        replaceBlocks = getList( "anti-xray.replace-blocks", Arrays.asList( new Integer[]
+        {
+            1, 5
+        } ) );
+        log( "\tReplace Blocks: " + hiddenBlocks );
+
+        antiXrayInstance = new AntiXray( this );
+    }
+
+    public boolean zombieAggressiveTowardsVillager;
+    private void zombieAggressiveTowardsVillager()
+    {
+        zombieAggressiveTowardsVillager = getBoolean( "zombie-aggressive-towards-villager", true );
+        log( "Zombie Aggressive Towards Villager: " + zombieAggressiveTowardsVillager );
     }
 }
