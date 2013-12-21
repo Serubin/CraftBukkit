@@ -603,7 +603,7 @@ public abstract class PlayerList {
         float pitch = enter.getPitch();
         double d0 = enter.getX();
         double d1 = enter.getZ();
-        double d2 = 8.0D;
+        double d2 = 3.0D;  // change nether ratio from 1:8 to 1:3
         /*
         double d3 = entity.locX;
         double d4 = entity.locY;

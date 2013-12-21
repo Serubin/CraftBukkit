@@ -11,7 +11,7 @@ public class CraftTravelAgent extends PortalTravelAgent implements TravelAgent {
 
     public static TravelAgent DEFAULT = null;
 
-    private int searchRadius = 128;
+    private int searchRadius = 64; // change from 128 to 64
     private int creationRadius = 16;
     private boolean canCreatePortal = true;
 
