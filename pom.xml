@@ -4,7 +4,7 @@
   <groupId>org.spigotmc</groupId>
   <artifactId>spigot</artifactId>
   <packaging>jar</packaging>
-  <version>1.7.2-R0.2-hydrox-SNAPSHOT</version>
+  <version>1.7.2-R0.3-hydrox-SNAPSHOT</version>
   <name>Spigot</name>
   <url>http://www.spigotmc.org</url>
 
