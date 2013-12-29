@@ -215,4 +215,9 @@ public class SpigotConfig
             VanillaCommandWrapper.allowedCommands.add( command );
         }
     }
+
+    public static boolean lateBind;
+    private static void lateBind() {
+        lateBind = getBoolean( "settings.late-bind", false );
+    }
 }

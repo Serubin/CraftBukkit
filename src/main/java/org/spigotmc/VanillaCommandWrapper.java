@@ -1,6 +1,7 @@
 package org.spigotmc;
 
 import com.google.common.collect.ImmutableList;
+import net.minecraft.server.ChatComponentText;
 import net.minecraft.server.ChunkCoordinates;
 import net.minecraft.server.EntityMinecartCommandBlock;
 import net.minecraft.server.IChatBaseComponent;
@@ -8,6 +9,7 @@ import net.minecraft.server.ICommandListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TileEntityCommand;
 import net.minecraft.server.World;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -94,7 +96,7 @@ public class VanillaCommandWrapper
         {
             return ( (EntityMinecartCommandBlock) ( (CraftMinecartCommand) sender ).getHandle() ).e();
         }
-        return null;
+        return new ConsoleListener(sender); // Assume console/rcon
     }
 
     private static class PlayerListener implements ICommandListener
@@ -141,6 +143,52 @@ public class VanillaCommandWrapper
         public World getWorld()
         {
             return handle.getWorld();
+        }
+    }
+
+    private static class ConsoleListener implements ICommandListener {
+
+        private final CommandSender sender;
+
+        public ConsoleListener( CommandSender sender )
+        {
+            this.sender = sender;
+        }
+
+        @Override
+        public String getName()
+        {
+            return sender.getName();
+        }
+
+        @Override
+        public IChatBaseComponent getScoreboardDisplayName()
+        {
+            return new ChatComponentText( getName() );
+        }
+
+        @Override
+        public void sendMessage( IChatBaseComponent iChatBaseComponent )
+        {
+            sender.sendMessage( iChatBaseComponent.e() );
+        }
+
+        @Override
+        public boolean a( int i, String s )
+        {
+            return true;
+        }
+
+        @Override
+        public ChunkCoordinates getChunkCoordinates()
+        {
+            return new ChunkCoordinates( 0, 0, 0 );
+        }
+
+        @Override
+        public World getWorld()
+        {
+            return MinecraftServer.getServer().getWorld();
         }
     }
 }
