@@ -116,6 +116,7 @@ public abstract class Entity {
     public final byte activationType = org.spigotmc.ActivationRange.initializeEntityActivationType(this);
     public final boolean defaultActivationState;
     public long activatedTick = 0;
+    public boolean fromMobSpawner;
     public void inactiveTick() { }
     // Spigot end
 
@@ -1131,6 +1132,7 @@ public abstract class Entity {
             nbttagcompound.setLong("WorldUUIDLeast", this.world.getDataManager().getUUID().getLeastSignificantBits());
             nbttagcompound.setLong("WorldUUIDMost", this.world.getDataManager().getUUID().getMostSignificantBits());
             nbttagcompound.setInt("Bukkit.updateLevel", CURRENT_LEVEL);
+            nbttagcompound.setInt("Spigot.ticksLived", this.ticksLived);
             // CraftBukkit end
             this.b(nbttagcompound);
             if (this.vehicle != null) {
@@ -1198,6 +1200,8 @@ public abstract class Entity {
             // CraftBukkit start
             if (this instanceof EntityLiving) {
                 EntityLiving entity = (EntityLiving) this;
+
+                this.ticksLived = nbttagcompound.getInt("Spigot.ticksLived");
 
                 // Reset the persistence for tamed animals
                 if (entity instanceof EntityTameableAnimal && !isLevelAtLeast(nbttagcompound, 2) && !nbttagcompound.getBoolean("PersistenceRequired")) {
